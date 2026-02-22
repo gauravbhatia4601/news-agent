@@ -4,7 +4,8 @@ WORKDIR /app
 # ---------- Dependencies ----------
 FROM base AS deps
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+# Skip postinstall (nuxt prepare) — it needs source files not yet available
+RUN npm ci --ignore-scripts
 
 # ---------- Build ----------
 FROM base AS build
@@ -14,7 +15,8 @@ COPY frontend/ .
 # Build-time default: backend URL used during SSR rendering in nuxt.config.ts
 ENV BACKEND_API_BASE=http://backend:8000
 
-RUN npm run build
+# Run nuxt prepare (generates .nuxt types) then build
+RUN npx nuxt prepare && npm run build
 
 # ---------- Production ----------
 FROM base AS production
