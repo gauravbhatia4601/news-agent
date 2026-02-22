@@ -1,0 +1,90 @@
+services:
+  # ── Backend (Laravel) ── internal only, no public port
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - storage-data:/var/www/html/storage/app/public
+    environment:
+      APP_NAME: ${APP_NAME:-The Daily Insight}
+      APP_ENV: ${APP_ENV:-production}
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:-http://localhost}
+
+      DB_CONNECTION: pgsql
+      DB_HOST: ${DB_HOST:-database}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      CACHE_STORE: ${CACHE_STORE:-database}
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+
+      AI_DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-openrouter}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+
+      NEWS_GENERATION_PROVIDER: ${NEWS_GENERATION_PROVIDER:-openrouter}
+      NEWS_GENERATION_MODEL: ${NEWS_GENERATION_MODEL:-perplexity/sonar}
+      NEWS_IMAGES_ENABLED: ${NEWS_IMAGES_ENABLED:-false}
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/categories"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Frontend (Nuxt) ── public facing, gets the domain
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Nuxt server-side proxy connects to backend via Docker network
+      NUXT_BACKEND_API_BASE: http://backend:8000
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Database (PostgreSQL) ── internal only
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-news_engine}
+      POSTGRES_USER: ${DB_USERNAME:-news_engine}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-news_engine}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  storage-data:
+  db-data:
+
+networks:
+  internal:
+    driver: bridge

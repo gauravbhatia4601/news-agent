@@ -1,0 +1,42 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Backend
+vendor
+node_modules
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/public/news-images/*
+bootstrap/cache/*.php
+
+# Frontend (handled by its own Dockerfile context)
+frontend/node_modules
+frontend/.nuxt
+frontend/.output
+frontend/.data
+
+# IDE
+.idea
+.vscode
+.fleet
+.nova
+.zed
+.phpactor.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+tests
+phpunit.xml
+.phpunit.cache
+.phpunit.result.cache
+
+# Docker (avoid recursive context)
+docker-compose.yml
