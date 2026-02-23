@@ -31,6 +31,9 @@ services:
       NEWS_GENERATION_PROVIDER: ${NEWS_GENERATION_PROVIDER:-openrouter}
       NEWS_GENERATION_MODEL: ${NEWS_GENERATION_MODEL:-perplexity/sonar}
       NEWS_IMAGES_ENABLED: ${NEWS_IMAGES_ENABLED:-false}
+    networks:
+      - default
+      - coolify
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8000/up"]
       interval: 15s
@@ -47,8 +50,23 @@ services:
     environment:
       # Nuxt server-side proxy connects to backend via compose-internal network
       NUXT_BACKEND_API_BASE: http://backend:8000
-    ports:
-    - "3000:3000"
+    expose:
+      - "3000"
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  storage-data:
+
+networks:
+  coolify:
+    external: true
