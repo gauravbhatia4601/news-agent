@@ -50,8 +50,7 @@ services:
       # Nuxt server-side proxy connects to backend via Docker network
       NUXT_BACKEND_API_BASE: http://backend:8000
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-    depends_on:
+    - "3000:3000"    depends_on:
       backend:
         condition: service_healthy
     networks:
