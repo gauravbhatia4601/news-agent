@@ -31,9 +31,6 @@ services:
       NEWS_GENERATION_PROVIDER: ${NEWS_GENERATION_PROVIDER:-openrouter}
       NEWS_GENERATION_MODEL: ${NEWS_GENERATION_MODEL:-perplexity/sonar}
       NEWS_IMAGES_ENABLED: ${NEWS_IMAGES_ENABLED:-false}
-    networks:
-      - default
-      - coolify
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8000/up"]
       interval: 15s
@@ -55,6 +52,3 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    networks:
-      - default
-          - coolify
