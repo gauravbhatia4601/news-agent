@@ -15,7 +15,7 @@ services:
       APP_URL: ${APP_URL:-http://localhost}
 
       DB_CONNECTION: pgsql
-      DB_HOST: ${DB_HOST:-database}
+      DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT:-5432}
       DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
@@ -59,22 +59,5 @@ services:
       retries: 3
       start_period: 15s
 
-  # ── Database (PostgreSQL) ── internal only
-  database:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_DATABASE:-news_engine}
-      POSTGRES_USER: ${DB_USERNAME:-news_engine}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-news_engine}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
 volumes:
   storage-data:
-  db-data:
