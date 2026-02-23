@@ -2,7 +2,7 @@
 const api = useNewsApi()
 const trending = await api.getPopular({ perPage: 18 })
 
-useHead({ title: 'Trending Stories — The Daily Insight' })
+useHead({ title: 'Trending Stories — The Trust Journal' })
 </script>
 
 <template>

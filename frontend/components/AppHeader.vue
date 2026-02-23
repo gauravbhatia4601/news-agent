@@ -22,7 +22,7 @@ function todayDate() {
     <div class="container flex h-14 max-w-screen-2xl items-center justify-between">
       <!-- Brand -->
       <NuxtLink to="/" class="flex items-center gap-2">
-        <span class="font-serif text-xl font-bold tracking-tight">The Daily Insight</span>
+        <span class="font-serif text-xl font-bold tracking-tight">The Trust Journal</span>
       </NuxtLink>
 
       <!-- Center: Today's date (hidden on small screens) -->

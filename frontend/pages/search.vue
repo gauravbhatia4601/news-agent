@@ -13,7 +13,7 @@ watch(
 )
 
 useHead({
-  title: () => query.value ? `Search: ${query.value} — The Daily Insight` : 'Search — The Daily Insight',
+  title: () => query.value ? `Search: ${query.value} — The Trust Journal` : 'Search — The Trust Journal',
 })
 </script>
 

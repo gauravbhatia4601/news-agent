@@ -16,7 +16,7 @@ const categorySections = await Promise.all(
 )
 
 useHead({
-  title: 'The Daily Insight — Latest News',
+  title: 'The Trust Journal — Latest News',
   meta: [
     { name: 'description', content: 'Stay informed with the latest news across technology, politics, sports, entertainment and more.' },
   ],

@@ -8,7 +8,7 @@ services:
     volumes:
       - storage-data:/var/www/html/storage/app/public
     environment:
-      APP_NAME: ${APP_NAME:-The Daily Insight}
+      APP_NAME: ${APP_NAME:-The Trust Journal}
       APP_ENV: ${APP_ENV:-production}
       APP_KEY: ${APP_KEY}
       APP_DEBUG: ${APP_DEBUG:-false}

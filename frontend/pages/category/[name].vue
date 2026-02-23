@@ -6,7 +6,7 @@ const api = useNewsApi()
 const articles = await api.getLatest({ category: categoryName, perPage: 18 })
 
 useHead({
-  title: `${categoryName.charAt(0).toUpperCase() + categoryName.slice(1)} News — The Daily Insight`,
+  title: `${categoryName.charAt(0).toUpperCase() + categoryName.slice(1)} News — The Trust Journal`,
 })
 </script>
 
