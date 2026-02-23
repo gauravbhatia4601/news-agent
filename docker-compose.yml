@@ -31,8 +31,6 @@ services:
       NEWS_GENERATION_PROVIDER: ${NEWS_GENERATION_PROVIDER:-openrouter}
       NEWS_GENERATION_MODEL: ${NEWS_GENERATION_MODEL:-perplexity/sonar}
       NEWS_IMAGES_ENABLED: ${NEWS_IMAGES_ENABLED:-false}
-    networks:
-      - internal
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/categories"]
       interval: 30s
@@ -49,13 +47,11 @@ services:
     environment:
       # Nuxt server-side proxy connects to backend via Docker network
       NUXT_BACKEND_API_BASE: http://backend:8000
-    ports:
-      - "3000:3000"    
+    expose:
+      - "3000"
     depends_on:
       backend:
         condition: service_healthy
-    networks:
-      - internal
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
       interval: 30s
@@ -73,8 +69,6 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
-    networks:
-      - internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-news_engine}"]
       interval: 10s
@@ -84,7 +78,3 @@ services:
 volumes:
   storage-data:
   db-data:
-
-networks:
-  internal:
-    driver: bridge
