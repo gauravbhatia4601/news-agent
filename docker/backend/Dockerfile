@@ -15,17 +15,22 @@ RUN apk add --no-cache \
     git
 
 # PHP extensions
-RUN docker-php-ext-install \
-    pdo_pgsql \
-    pgsql \
-    mbstring \
-    xml \
-    curl \
-    intl \
-    opcache \
-    pcntl \
+RUN apk add --no-cache --virtual .build-deps \
+        $PHPIZE_DEPS \
+        linux-headers \
+    && docker-php-ext-install \
+        pdo_pgsql \
+        pgsql \
+        mbstring \
+        xml \
+        curl \
+        intl \
+        opcache \
+        pcntl \
     && pecl install redis \
-    && docker-php-ext-enable redis
+    && docker-php-ext-enable redis \
+    && apk del --purge .build-deps \
+    && rm -rf /tmp/pear
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
