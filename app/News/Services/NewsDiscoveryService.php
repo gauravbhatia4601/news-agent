@@ -128,6 +128,22 @@ class NewsDiscoveryService
     }
 
     /**
+     * @return NewsSource[]
+     * @deprecated Kept for any callers expecting both sources. Discovery now uses Google RSS primary + Brave fallback.
+     */
+    private function resolveSources(): array
+    {
+        $sources = [$this->resolveGoogleSource()];
+
+        $brave = $this->resolveBraveSource();
+        if ($brave !== null) {
+            $sources[] = $brave;
+        }
+
+        return $sources;
+    }
+
+    /**
      * @param  array{slug: string, name: string, category_id: int}  $location
      * @param  array<int, array>  $candidates
      * @return DiscoveredTopic[]

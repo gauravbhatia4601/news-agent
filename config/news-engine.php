@@ -22,10 +22,10 @@ return [
     'discovery' => [
         'default_limit' => (int) env('NEWS_DISCOVERY_LIMIT', 3),
         'default_fresh_hours' => (int) env('NEWS_DISCOVERY_FRESH_HOURS', 12),
-        'default_sources_per_topic' => (int) env('NEWS_DISCOVERY_SOURCES_PER_TOPIC', 3),
+        'default_sources_per_topic' => (int) env('NEWS_DISCOVERY_SOURCES_PER_TOPIC', 5),
         'seen_cache_key' => env('NEWS_DISCOVERY_SEEN_CACHE_KEY', 'news-engine:rss:seen-signatures'),
         'seen_cache_ttl_seconds' => (int) env('NEWS_DISCOVERY_SEEN_CACHE_TTL_SECONDS', 172800),
-        'brave_fallback_threshold' => (int) env('NEWS_DISCOVERY_BRAVE_FALLBACK_THRESHOLD', 12),
+        'brave_fallback_threshold' => (int) env('NEWS_DISCOVERY_BRAVE_FALLBACK_THRESHOLD', 8),
     ],
 
     /*
