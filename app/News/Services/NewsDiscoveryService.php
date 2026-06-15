@@ -47,23 +47,33 @@ class NewsDiscoveryService
         );
 
         $allTopics = [];
-        $sources = $this->resolveSources();
+        $googleSource = $this->resolveGoogleSource();
+        $braveSource = $this->resolveBraveSource();
+        $braveFallbackThreshold = (int) config('news-engine.discovery.brave_fallback_threshold', 12);
 
         foreach ($locations as $location) {
-            $candidates = [];
             $fetchLimit = max($limit * 12, 40);
             $locationSlug = $location['slug'];
 
-            foreach ($sources as $source) {
-                $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit);
+            $candidates = $this->fetchFromSource(
+                $googleSource,
+                $locationSlug,
+                $freshThreshold,
+                $fetchLimit,
+                $seenSignatures,
+            );
 
-                foreach ($rows as $row) {
-                    if (isset($seenSignatures[$row['signature']])) {
-                        continue;
-                    }
+            // Fall back to Brave only if Google RSS didn't return enough fresh candidates.
+            if ($braveSource !== null && count($candidates) < $braveFallbackThreshold) {
+                $braveCandidates = $this->fetchFromSource(
+                    $braveSource,
+                    $locationSlug,
+                    $freshThreshold,
+                    $fetchLimit,
+                    $seenSignatures,
+                );
 
-                    $candidates[] = $row;
-                }
+                $candidates = array_merge($candidates, $braveCandidates);
             }
 
             if ($candidates === []) {
@@ -91,6 +101,30 @@ class NewsDiscoveryService
         Cache::put($cacheKey, $seenSignatures, now()->addSeconds($cacheTtlSeconds));
 
         return $allTopics;
+    }
+
+    /**
+     * @return array<int, array>
+     */
+    private function fetchFromSource(
+        NewsSource $source,
+        string $locationSlug,
+        Carbon $freshThreshold,
+        int $fetchLimit,
+        array $seenSignatures,
+    ): array {
+        $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit);
+
+        $candidates = [];
+        foreach ($rows as $row) {
+            if (isset($seenSignatures[$row['signature']])) {
+                continue;
+            }
+
+            $candidates[] = $row;
+        }
+
+        return $candidates;
     }
 
     /**
@@ -222,26 +256,17 @@ class NewsDiscoveryService
         return $topics;
     }
 
-    /**
-     * @return NewsSource[]
-     */
-    private function resolveSources(): array
+    private function resolveGoogleSource(): GoogleNewsRssSource
     {
-        $enabledSources = config('news-engine.sources.enabled', ['google_rss', 'brave_search']);
-        $enabledSources = is_array($enabledSources) ? $enabledSources : ['google_rss', 'brave_search'];
+        return new GoogleNewsRssSource(config('news-engine.sources.google_rss', []));
+    }
 
-        $resolved = [];
-
-        foreach ($enabledSources as $sourceName) {
-            $source = match ($sourceName) {
-                'google_rss' => new GoogleNewsRssSource(config('news-engine.sources.google_rss', [])),
-                'brave_search' => new BraveSearchSource(config('news-engine.sources.brave_search', [])),
-                default => throw new RuntimeException("Unknown news source [{$sourceName}] configured."),
-            };
-
-            $resolved[] = $source;
+    private function resolveBraveSource(): ?BraveSearchSource
+    {
+        if (! (bool) config('news-engine.sources.brave_search.enabled', true)) {
+            return null;
         }
 
-        return $resolved;
+        return new BraveSearchSource(config('news-engine.sources.brave_search', []));
     }
 }

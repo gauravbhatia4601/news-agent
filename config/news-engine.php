@@ -25,6 +25,7 @@ return [
         'default_sources_per_topic' => (int) env('NEWS_DISCOVERY_SOURCES_PER_TOPIC', 3),
         'seen_cache_key' => env('NEWS_DISCOVERY_SEEN_CACHE_KEY', 'news-engine:rss:seen-signatures'),
         'seen_cache_ttl_seconds' => (int) env('NEWS_DISCOVERY_SEEN_CACHE_TTL_SECONDS', 172800),
+        'brave_fallback_threshold' => (int) env('NEWS_DISCOVERY_BRAVE_FALLBACK_THRESHOLD', 12),
     ],
 
     /*
@@ -87,7 +88,7 @@ return [
         'enabled' => array_filter(array_map('trim', explode(',', env('NEWS_DISCOVERY_SOURCES', 'google_rss')))),
 
         'brave_search' => [
-            'enabled' => (bool) env('BRAVE_SEARCH_ENABLED', false),
+            'enabled' => (bool) env('BRAVE_SEARCH_ENABLED', true),
             'api_key' => env('BRAVE_SEARCH_API_KEY'),
             'base_url' => env('BRAVE_SEARCH_BASE_URL', 'https://api.search.brave.com/res/v1'),
             'timeout' => (int) env('BRAVE_SEARCH_TIMEOUT', 20),

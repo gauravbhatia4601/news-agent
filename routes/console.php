@@ -39,7 +39,7 @@ Artisan::command('news:retry {--max-retries=3}', function (
     $this->info('Done.');
 })->purpose('Retry generation for failed topics within retry limit');
 
-Schedule::command('news:discover --queue')->cron('*/45 * * * *');
+Schedule::command('news:discover --queue')->hourly();
 Schedule::command('news:sitemap-generate')->everyThirtyMinutes()
     ->withoutOverlapping(600)
     ->runInBackground();
