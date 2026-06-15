@@ -17,6 +17,24 @@ services:
       APP_URL: ${APP_URL:-http://localhost}
       FRONTEND_URL: ${FRONTEND_URL:-${APP_URL:-http://localhost}}
 
+      # Database (Coolify-managed Postgres)
+      DB_CONNECTION: pgsql
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # Redis (Coolify-managed Redis)
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_USERNAME: ${REDIS_USERNAME}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_CACHE_DB: ${REDIS_CACHE_DB:-1}
+      REDIS_QUEUE_DB: ${REDIS_QUEUE_DB:-2}
+      REDIS_URL: ${REDIS_URL}
+
       CACHE_STORE: ${CACHE_STORE:-redis}
       SESSION_DRIVER: ${SESSION_DRIVER:-redis}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
