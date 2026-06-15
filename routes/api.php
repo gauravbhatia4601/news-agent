@@ -36,17 +36,32 @@ Route::prefix('v1/admin')->group(function () {
 
         Route::get('/dashboard', DashboardController::class);
 
-        Route::apiResource('articles', AdminArticleController::class)->except(['store']);
-        Route::post('/articles/batch', [AdminArticleController::class, 'batch']);
-        Route::post('/articles/{id}/regenerate', [AdminArticleController::class, 'regenerate']);
+        Route::apiResource('articles', AdminArticleController::class)->except(['store'])->names([
+            'index' => 'admin.articles.index',
+            'show' => 'admin.articles.show',
+            'update' => 'admin.articles.update',
+            'destroy' => 'admin.articles.destroy',
+        ]);
+        Route::post('/articles/batch', [AdminArticleController::class, 'batch'])->name('admin.articles.batch');
+        Route::post('/articles/{id}/regenerate', [AdminArticleController::class, 'regenerate'])->name('admin.articles.regenerate');
 
-        Route::apiResource('topics', AdminTopicController::class)->except(['store', 'update']);
-        Route::post('/topics/batch', [AdminTopicController::class, 'batch']);
-        Route::post('/topics/{id}/retry', [AdminTopicController::class, 'retry']);
-        Route::post('/topics/{id}/dispatch', [AdminTopicController::class, 'dispatch']);
+        Route::apiResource('topics', AdminTopicController::class)->except(['store', 'update'])->names([
+            'index' => 'admin.topics.index',
+            'show' => 'admin.topics.show',
+            'destroy' => 'admin.topics.destroy',
+        ]);
+        Route::post('/topics/batch', [AdminTopicController::class, 'batch'])->name('admin.topics.batch');
+        Route::post('/topics/{id}/retry', [AdminTopicController::class, 'retry'])->name('admin.topics.retry');
+        Route::post('/topics/{id}/dispatch', [AdminTopicController::class, 'dispatch'])->name('admin.topics.dispatch');
 
-        Route::apiResource('categories', AdminCategoryController::class);
-        Route::post('/categories/reorder', [AdminCategoryController::class, 'reorder']);
+        Route::apiResource('categories', AdminCategoryController::class)->names([
+            'index' => 'admin.categories.index',
+            'store' => 'admin.categories.store',
+            'show' => 'admin.categories.show',
+            'update' => 'admin.categories.update',
+            'destroy' => 'admin.categories.destroy',
+        ]);
+        Route::post('/categories/reorder', [AdminCategoryController::class, 'reorder'])->name('admin.categories.reorder');
 
         Route::post('/discovery/trigger', [DiscoveryController::class, 'trigger']);
         Route::post('/discovery/retry-failed', [DiscoveryController::class, 'retryFailed']);
@@ -55,8 +70,14 @@ Route::prefix('v1/admin')->group(function () {
         Route::post('/generation/sitemap', [GenerationController::class, 'regenerateSitemap']);
         Route::get('/generation/stats', [GenerationController::class, 'stats']);
 
-        Route::get('/users/roles', [UserController::class, 'roles']);
-        Route::apiResource('users', UserController::class);
+        Route::get('/users/roles', [UserController::class, 'roles'])->name('admin.users.roles');
+        Route::apiResource('users', UserController::class)->names([
+            'index' => 'admin.users.index',
+            'store' => 'admin.users.store',
+            'show' => 'admin.users.show',
+            'update' => 'admin.users.update',
+            'destroy' => 'admin.users.destroy',
+        ]);
 
         Route::get('/audit', [AuditLogController::class, 'index']);
     });
