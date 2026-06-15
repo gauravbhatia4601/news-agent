@@ -4,6 +4,7 @@ FROM php:8.4-fpm-alpine AS base
 RUN apk add --no-cache \
     nginx \
     supervisor \
+    curl \
     libpq-dev \
     libxml2-dev \
     oniguruma-dev \

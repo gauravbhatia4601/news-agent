@@ -1,23 +1,52 @@
 <script setup lang="ts">
+import type { CategoryNode } from '~/types/news'
+
 const route = useRoute()
-const categoryName = route.params.name as string
+const categorySlug = route.params.name as string
 
 const api = useNewsApi()
-const articles = await api.getLatest({ category: categoryName, perPage: 18 })
+
+const { data: categoryTree } = await useAsyncData(
+  `category-tree-${categorySlug}`,
+  () => api.getCategoryTree(),
+  { default: () => [] as CategoryNode[] }
+)
+
+const categoryName = computed(() => {
+  const flat = (categoryTree.value ?? []).flatMap((c: CategoryNode) => [c, ...(c.children ?? [])])
+  const match = flat.find((c) => c.slug === categorySlug)
+  return match?.name ?? categorySlug
+})
+
+const { data: articles } = await useAsyncData(
+  `category-${categorySlug}`,
+  () => api.getLatest({ category: categorySlug, perPage: 18 }),
+  { default: () => [] as any[] }
+)
 
 useHead({
-  title: `${categoryName.charAt(0).toUpperCase() + categoryName.slice(1)} News — The Trust Journal`,
+  title: computed(() => `${categoryName.value} News — The AI Journal`),
 })
 </script>
 
 <template>
   <div class="space-y-8">
+    <!-- Breadcrumb + header -->
     <header class="border-b pb-6">
-      <h1 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight capitalize mb-2">{{ categoryName }}</h1>
-      <p class="text-muted-foreground">Latest stories in {{ categoryName }}.</p>
+      <div class="flex items-center gap-2 font-label text-xs text-muted-foreground mb-3">
+        <NuxtLink to="/" class="hover:text-foreground transition-colors">Home</NuxtLink>
+        <span>/</span>
+        <span class="text-foreground font-medium capitalize">{{ categoryName }}</span>
+      </div>
+      <h1 class="font-display text-3xl sm:text-4xl font-bold tracking-tight capitalize mb-2">
+        {{ categoryName }}
+      </h1>
+      <p class="font-serif text-muted-foreground">
+        Latest stories in {{ categoryName }}.
+      </p>
     </header>
 
-    <div v-if="articles.length === 0" class="py-16 text-center text-muted-foreground">
+    <div v-if="articles && articles.length === 0" class="py-16 text-center font-serif text-muted-foreground">
       No articles found for this category yet.
     </div>
 

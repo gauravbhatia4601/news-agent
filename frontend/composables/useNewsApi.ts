@@ -1,6 +1,8 @@
 import type {
   ApiCollectionResponse,
   ApiItemResponse,
+  CategoryDetail,
+  CategoryNode,
   NewsArticleCard,
   NewsArticleDetail,
 } from '~/types/news'
@@ -10,17 +12,12 @@ export function useNewsApi() {
     baseURL: '/api/v1',
   })
 
-  /**
-   * Normalize image URLs so they always point to the /storage proxy route.
-   * The Nuxt server-side route forwards /storage/* to the backend internally.
-   */
   const normalizeMediaUrl = (url?: string | null): string | null => {
     if (!url) return null
 
     const trimmed = String(url).trim()
     if (!trimmed) return null
 
-    // Already a relative /storage path — perfect
     if (trimmed.startsWith('/storage/')) {
       return trimmed
     }
@@ -28,14 +25,12 @@ export function useNewsApi() {
       return `/${trimmed}`
     }
 
-    // Legacy absolute URLs (e.g. http://localhost/storage/...) → convert to relative
     try {
       const parsed = new URL(trimmed)
       if (parsed.pathname.startsWith('/storage/')) {
         return parsed.pathname + parsed.search
       }
     } catch {
-      // not a URL, return as-is
     }
 
     return trimmed
@@ -53,8 +48,8 @@ export function useNewsApi() {
   }
 
   return {
-    async getCategories(): Promise<string[]> {
-      const response = await client<{ data: string[] }>('/categories')
+    async getCategoryTree(): Promise<CategoryNode[]> {
+      const response = await client<{ data: CategoryNode[] }>('/categories')
       return response.data ?? []
     },
 
@@ -75,6 +70,25 @@ export function useNewsApi() {
           category: params.category,
           per_page: params.perPage ?? 12,
         },
+      })
+
+      return (response.data ?? []).map(normalizeArticleMedia)
+    },
+
+    async getHot(params: { category?: string; perPage?: number } = {}): Promise<NewsArticleCard[]> {
+      const response = await client<ApiCollectionResponse<NewsArticleCard>>('/articles/hot', {
+        query: {
+          category: params.category,
+          per_page: params.perPage ?? 12,
+        },
+      })
+
+      return (response.data ?? []).map(normalizeArticleMedia)
+    },
+
+    async getTrending(limit = 10): Promise<NewsArticleCard[]> {
+      const response = await client<ApiCollectionResponse<NewsArticleCard>>('/articles/trending', {
+        query: { per_page: limit },
       })
 
       return (response.data ?? []).map(normalizeArticleMedia)

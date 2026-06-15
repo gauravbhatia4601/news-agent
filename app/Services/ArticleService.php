@@ -16,19 +16,39 @@ class ArticleService
         return $this->articleRepository->getCategories();
     }
 
-    public function getLatestArticles(int $perPage = 15, ?string $category = null)
+    public function getCategoryTree(): array
     {
-        return $this->articleRepository->paginateLatest($perPage, $category);
+        return $this->articleRepository->getCategoryTree();
     }
 
-    public function getPopularArticles(int $perPage = 15, ?string $category = null)
+    public function getCategoryBySlug(string $slug): ?array
     {
-        return $this->articleRepository->paginatePopular($perPage, $category);
+        return $this->articleRepository->getCategoryBySlug($slug);
     }
 
-    public function getHeadlines(int $limit = 5, ?string $category = null)
+    public function getLatestArticles(int $perPage = 15, ?string $categorySlug = null)
     {
-        return $this->articleRepository->getHeadlines($limit, $category);
+        return $this->articleRepository->paginateLatest($perPage, $categorySlug);
+    }
+
+    public function getPopularArticles(int $perPage = 15, ?string $categorySlug = null)
+    {
+        return $this->articleRepository->paginatePopular($perPage, $categorySlug);
+    }
+
+    public function getHotArticles(int $perPage = 15, ?string $categorySlug = null)
+    {
+        return $this->articleRepository->paginateHot($perPage, $categorySlug);
+    }
+
+    public function getTrendingArticles(int $limit = 10, ?string $categorySlug = null)
+    {
+        return $this->articleRepository->getTrending($limit, $categorySlug);
+    }
+
+    public function getHeadlines(int $limit = 5, ?string $categorySlug = null)
+    {
+        return $this->articleRepository->getHeadlines($limit, $categorySlug);
     }
 
     public function getArticle(string $slug)
@@ -41,18 +61,17 @@ class ArticleService
         try {
             $this->articleRepository->incrementViews($slug);
         } catch (ModelNotFoundException $e) {
-            // Ignore if article doesn't exist
         }
     }
 
-    public function searchArticles(string $keyword, int $perPage = 15, ?string $category = null)
+    public function searchArticles(string $keyword, int $perPage = 15, ?string $categorySlug = null)
     {
-        return $this->articleRepository->search($keyword, $perPage, $category);
+        return $this->articleRepository->search($keyword, $perPage, $categorySlug);
     }
 
-    public function getRelatedArticles(int $articleId, string $category, int $limit = 3)
+    public function getRelatedArticles(int $articleId, string $categorySlug, int $limit = 3)
     {
-        return $this->articleRepository->getRelated($articleId, $category, $limit);
+        return $this->articleRepository->getRelated($articleId, $categorySlug, $limit);
     }
 
     public function getFeaturedArticle()

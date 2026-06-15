@@ -35,12 +35,15 @@ function timeAgo(dateStr: string) {
   const days = Math.floor(hours / 24)
   return days === 1 ? '1 day ago' : `${days} days ago`
 }
+
+const categoryName = computed(() => props.article.category?.name ?? '')
+const categorySlug = computed(() => props.article.category?.slug ?? '')
 </script>
 
 <template>
   <section class="group">
     <NuxtLink :to="`/article/${article.slug}`" class="block">
-      <div v-if="article.image_url" class="mb-5 overflow-hidden rounded-lg">
+      <div v-if="article.image_url" class="mb-4 overflow-hidden">
         <img
           :src="article.image_url"
           :alt="article.title"
@@ -49,25 +52,25 @@ function timeAgo(dateStr: string) {
         >
       </div>
 
-      <div class="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-        <span class="font-semibold text-primary uppercase tracking-widest text-[11px]">{{ article.category }}</span>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ categoryName }}</span>
         <span class="text-border">|</span>
-        <span>{{ timeAgo(article.published_at) }}</span>
+        <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(article.published_at) }}</span>
       </div>
 
-      <h1 class="font-serif text-3xl sm:text-4xl lg:text-[2.75rem] font-bold leading-[1.15] mb-4 group-hover:underline decoration-primary/40 underline-offset-4 decoration-2">
+      <h1 class="font-display text-2xl sm:text-3xl md:text-[2.25rem] font-bold leading-[1.15] mb-3 group-hover:underline decoration-1 underline-offset-4">
         {{ article.title }}
       </h1>
 
-      <p class="text-muted-foreground text-base sm:text-lg leading-relaxed mb-5 max-w-3xl">
+      <p class="font-serif text-sm sm:text-base leading-relaxed text-muted-foreground mb-4 max-w-3xl">
         {{ cleanExcerpt(article.content) }}
       </p>
 
-      <div class="flex items-center gap-3 text-sm text-muted-foreground">
+      <div class="flex items-center gap-2 font-label text-xs text-muted-foreground">
         <span class="font-medium text-foreground">{{ article.author }}</span>
-        <span class="text-border">·</span>
+        <span>·</span>
         <span>{{ article.read_time_minutes }} min read</span>
-        <span class="text-border">·</span>
+        <span>·</span>
         <span>{{ formatDate(article.published_at) }}</span>
       </div>
     </NuxtLink>

@@ -1,9 +1,8 @@
 <template>
   <div class="relative flex min-h-screen flex-col bg-background">
     <AppHeader />
-    <NewsTopCategoryNav />
     <main class="flex-1">
-      <div class="container max-w-screen-2xl py-6 md:py-8 lg:py-10">
+      <div class="mx-auto max-w-[960px] px-5 py-6 md:py-8 xl:max-w-[1280px]">
         <slot />
       </div>
     </main>

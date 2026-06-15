@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "df3a2a99060d973516c88150770cf77d",
+    "content-hash": "ab6844d27758b0bc0fc767ec1bb15f04",
     "packages": [
         {
             "name": "brick/math",
@@ -1401,30 +1401,30 @@
         },
         {
             "name": "laravel/sanctum",
-            "version": "v4.2.1",
+            "version": "v4.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/sanctum.git",
-                "reference": "f5fb373be39a246c74a060f2cf2ae2c2145b3664"
+                "reference": "2a9bccc18e9907808e0018dd15fa643937886b1e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/sanctum/zipball/f5fb373be39a246c74a060f2cf2ae2c2145b3664",
-                "reference": "f5fb373be39a246c74a060f2cf2ae2c2145b3664",
+                "url": "https://api.github.com/repos/laravel/sanctum/zipball/2a9bccc18e9907808e0018dd15fa643937886b1e",
+                "reference": "2a9bccc18e9907808e0018dd15fa643937886b1e",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
-                "illuminate/console": "^11.0|^12.0",
-                "illuminate/contracts": "^11.0|^12.0",
-                "illuminate/database": "^11.0|^12.0",
-                "illuminate/support": "^11.0|^12.0",
+                "illuminate/console": "^11.0|^12.0|^13.0",
+                "illuminate/contracts": "^11.0|^12.0|^13.0",
+                "illuminate/database": "^11.0|^12.0|^13.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
                 "php": "^8.2",
-                "symfony/console": "^7.0"
+                "symfony/console": "^7.0|^8.0"
             },
             "require-dev": {
                 "mockery/mockery": "^1.6",
-                "orchestra/testbench": "^9.15|^10.8",
+                "orchestra/testbench": "^9.15|^10.8|^11.0",
                 "phpstan/phpstan": "^1.10"
             },
             "type": "library",
@@ -1460,7 +1460,7 @@
                 "issues": "https://github.com/laravel/sanctum/issues",
                 "source": "https://github.com/laravel/sanctum"
             },
-            "time": "2025-11-21T13:59:03+00:00"
+            "time": "2026-04-30T11:46:25+00:00"
         },
         {
             "name": "laravel/serializable-closure",

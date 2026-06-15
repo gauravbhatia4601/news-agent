@@ -1,7 +1,7 @@
 <?php
 
-use App\News\Services\NewsDiscoveryService;
 use App\News\Services\NewsArticleGenerationService;
+use App\News\Repositories\NewsTopicRepository;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -11,79 +11,38 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Artisan::command('news:discover {--limit=} {--fresh-hours=} {--sources-per-topic=}', function (
-    NewsDiscoveryService $service,
-    NewsArticleGenerationService $generationService
+Artisan::command('news:retry {--max-retries=3}', function (
+    NewsArticleGenerationService $generationService,
+    NewsTopicRepository $repository,
 ) {
-    $categories = config('news-engine.categories', []);
-    $defaultLimit = max(1, (int) config('news-engine.discovery.default_limit', 5));
-    $defaultFreshHours = max(1, (int) config('news-engine.discovery.default_fresh_hours', 12));
-    $defaultSourcesPerTopic = max(2, (int) config('news-engine.discovery.default_sources_per_topic', 3));
+    $maxRetries = max(1, min((int) $this->option('max-retries'), 10));
 
-    $limit = $this->option('limit') !== null
-        ? max(1, min((int) $this->option('limit'), 20))
-        : $defaultLimit;
-    $freshHours = $this->option('fresh-hours') !== null
-        ? max(1, min((int) $this->option('fresh-hours'), 48))
-        : $defaultFreshHours;
-    $sourcesPerTopic = $this->option('sources-per-topic') !== null
-        ? max(2, min((int) $this->option('sources-per-topic'), 6))
-        : $defaultSourcesPerTopic;
+    $this->info("Retrying failed topics (max {$maxRetries} retries)...");
 
-    $this->info(
-        "News discovery started. Limit/category: {$limit}. Sources/topic: {$sourcesPerTopic}. Fresh window: {$freshHours}h"
-    );
-    $this->newLine();
+    $signatures = $repository->retryFailed($maxRetries);
 
-    try {
-        $results = $service->discover($categories, $limit, $freshHours, $sourcesPerTopic);
-    } catch (\Throwable $e) {
-        $this->error('Discovery failed: '.$e->getMessage());
-
+    if ($signatures === []) {
+        $this->warn('No eligible failed topics to retry.');
         return;
     }
 
-    $discoveredTopicSignatures = [];
-
-    foreach ($categories as $category) {
-        $this->info("Category: {$category}");
-        $topics = $results[$category] ?? [];
-
-        if ($topics === []) {
-            $this->warn('  No new multi-source topics found.');
-            $this->newLine();
-            continue;
-        }
-
-        foreach ($topics as $topicIndex => $topic) {
-            $discoveredTopicSignatures[] = $topic->signature;
-            $this->line('  '.($topicIndex + 1).'. Topic: '.$topic->name);
-
-            foreach ($topic->sources as $sourceIndex => $source) {
-                $this->line('     ['.($sourceIndex + 1).'] '.$source->sourceName.' - '.Str::limit($source->headline, 140));
-                $this->line('         '.Str::limit($source->summary, 180));
-                $this->line('         URL: '.$source->sourceUrl);
-                $this->line('         Published: '.($source->publishedAt?->toRfc7231String() ?? 'N/A'));
-            }
-        }
-
-        $this->newLine();
-    }
+    $this->line('Retryable topics: ' . count($signatures));
 
     if ((bool) config('news-engine.generation.enabled', true)) {
-        $this->info('Article generation started for newly discovered topics...');
-        \Log::info($discoveredTopicSignatures);
-        $generationStats = $generationService->generateForDiscoveredTopics($discoveredTopicSignatures);
-
-        $this->line('  Generated: '.$generationStats['generated']);
-        $this->line('  Failed: '.$generationStats['failed']);
-        $this->newLine();
+        $stats = $generationService->generateForDiscoveredTopics($signatures);
+        $this->line('  Generated: ' . $stats['generated']);
+        $this->line('  Failed: ' . $stats['failed']);
     } else {
-        $this->warn('Article generation is disabled by configuration.');
-        $this->newLine();
+        $this->warn('Generation disabled by config.');
     }
 
-    $this->info('News discovery finished.');
-})->purpose('Discover and persist multi-source RSS topics with generation status tracking');
+    $this->info('Done.');
+})->purpose('Retry generation for failed topics within retry limit');
 
-Schedule::command('news:discover')->everyThirtyMinutes();
+Schedule::command('news:discover --queue')->everyThirtyMinutes();
+Schedule::command('news:sitemap-generate')->everyThirtyMinutes()
+    ->withoutOverlapping(600)
+    ->runInBackground();
+Schedule::command('news:recompute-rankings')->everyFifteenMinutes()
+    ->withoutOverlapping(120)
+    ->runInBackground();

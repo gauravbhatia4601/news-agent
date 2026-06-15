@@ -1,29 +1,38 @@
 <script setup lang="ts">
 const api = useNewsApi()
-const trending = await api.getPopular({ perPage: 18 })
 
-useHead({ title: 'Trending Stories — The Trust Journal' })
+const { data: trending } = await useAsyncData('trending-page', () => api.getTrending(20), { default: () => [] as any[] })
+
+useHead({
+  title: 'Trending — The AI Journal',
+  meta: [
+    { name: 'description', content: 'What\'s trending right now — the fastest-moving stories across India.' },
+  ],
+})
 </script>
 
 <template>
   <div class="space-y-8">
-    <header class="border-b pb-6">
-      <h1 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight mb-2">Trending Stories</h1>
-      <p class="text-muted-foreground">Most read stories right now, curated by real reader interest.</p>
-    </header>
-
-    <div v-if="trending.length === 0" class="py-16 text-center text-muted-foreground">
-      No trending stories available yet.
+    <div class="border-b border-border pb-4">
+      <h1 class="font-display text-2xl font-bold">Trending Now</h1>
+      <p class="text-sm text-muted-foreground mt-1">Stories gaining the most momentum right now</p>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">
-      <NewsCompactArticleCard
-        v-for="item in trending"
-        :key="item.slug"
-        :article="item"
-        variant="default"
-        :show-image="!!item.image_url || !!item.thumbnail_url"
-      />
+    <div v-if="trending && trending.length > 0" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <NewsCompactArticleCard
+          v-for="article in trending"
+          :key="article.slug"
+          :article="article"
+          variant="default"
+          :show-image="!!article.image_url || !!article.thumbnail_url"
+        />
+      </div>
+    </div>
+
+    <div v-else class="text-center py-16 text-muted-foreground">
+      <p class="text-lg">No trending stories right now</p>
+      <p class="text-sm mt-1">Check back soon — trending stories appear when articles gain rapid attention</p>
     </div>
   </div>
 </template>

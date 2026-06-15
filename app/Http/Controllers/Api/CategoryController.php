@@ -14,10 +14,8 @@ class CategoryController extends Controller
 
     public function index(): JsonResponse
     {
-        $categories = $this->articleService->getCategories();
-        
         return response()->json([
-            'data' => $categories
+            'data' => $this->articleService->getCategoryTree(),
         ]);
     }
 }

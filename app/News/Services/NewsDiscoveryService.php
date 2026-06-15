@@ -6,6 +6,7 @@ use App\News\DTO\DiscoveredSource;
 use App\News\DTO\DiscoveredTopic;
 use App\News\Repositories\NewsTopicRepository;
 use App\News\Sources\Contracts\NewsSource;
+use App\News\Sources\BraveSearchSource;
 use App\News\Sources\GoogleNewsRssSource;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -14,16 +15,18 @@ use RuntimeException;
 
 class NewsDiscoveryService
 {
-    public function __construct(private readonly NewsTopicRepository $repository)
-    {
+    public function __construct(
+        private readonly NewsTopicRepository $repository,
+        private readonly TopicCategoryDetectionService $topicDetection,
+    ) {
     }
 
     /**
-     * @param  string[]  $categories
-     * @return array<string, DiscoveredTopic[]>
+     * @param  array<int, array{slug: string, name: string, category_id: int}>  $locations
+     * @return DiscoveredTopic[]
      */
     public function discover(
-        array $categories,
+        array $locations,
         int $limit,
         int $freshHours,
         int $sourcesPerTopic,
@@ -43,15 +46,16 @@ class NewsDiscoveryService
             fn ($timestamp) => is_int($timestamp) && $timestamp >= ($nowTs - $cacheTtlSeconds)
         );
 
-        $results = [];
+        $allTopics = [];
         $sources = $this->resolveSources();
 
-        foreach ($categories as $category) {
+        foreach ($locations as $location) {
             $candidates = [];
             $fetchLimit = max($limit * 12, 40);
+            $locationSlug = $location['slug'];
 
             foreach ($sources as $source) {
-                $rows = $source->fetch($category, $freshThreshold, $fetchLimit);
+                $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit);
 
                 foreach ($rows as $row) {
                     if (isset($seenSignatures[$row['signature']])) {
@@ -63,49 +67,39 @@ class NewsDiscoveryService
             }
 
             if ($candidates === []) {
-                $results[$category] = [];
                 continue;
             }
 
             usort($candidates, fn ($a, $b) => ($b['published_at']?->timestamp ?? 0) <=> ($a['published_at']?->timestamp ?? 0));
 
-            $topics = $this->clusterCandidates($category, $candidates, $limit, $sourcesPerTopic);
+            $topics = $this->clusterCandidates($location, $candidates, $limit, $sourcesPerTopic);
             if ($topics === []) {
-                // Fallback for low-volume runs: slightly relax clustering thresholds
-                // so we can still form multi-source topics when the feed is sparse.
-                $topics = $this->clusterCandidates($category, $candidates, $limit, $sourcesPerTopic, true);
+                $topics = $this->clusterCandidates($location, $candidates, $limit, $sourcesPerTopic, true);
             }
-            
+
             foreach ($topics as $topic) {
                 $this->repository->saveTopicWithSources($topic);
 
                 foreach ($topic->sources as $source) {
                     $seenSignatures[$source->signature] = $nowTs;
                 }
-            }
 
-            $results[$category] = $topics;
+                $allTopics[] = $topic;
+            }
         }
 
         Cache::put($cacheKey, $seenSignatures, now()->addSeconds($cacheTtlSeconds));
 
-        return $results;
+        return $allTopics;
     }
 
     /**
-     * @param  array<int, array{
-     *   headline: string,
-     *   summary: string,
-     *   source_name: string,
-     *   source_url: string,
-     *   published_at: ?Carbon,
-     *   signature: string,
-     *   tokens: array<int, string>
-     * }>  $candidates
+     * @param  array{slug: string, name: string, category_id: int}  $location
+     * @param  array<int, array>  $candidates
      * @return DiscoveredTopic[]
      */
     private function clusterCandidates(
-        string $category,
+        array $location,
         array $candidates,
         int $limit,
         int $sourcesPerTopic,
@@ -178,9 +172,19 @@ class NewsDiscoveryService
                 continue;
             }
 
-            $topicTokens = $cluster['tokens'];
-            sort($topicTokens);
-            $topicSignature = sha1(Str::lower($category).'|'.implode('|', $topicTokens));
+            $allHeadlineTokens = array_map(fn ($item) => $item['tokens'], $cluster['items']);
+            $tokenCounts = [];
+            foreach ($allHeadlineTokens as $tokens) {
+                foreach ($tokens as $token) {
+                    $tokenCounts[$token] = ($tokenCounts[$token] ?? 0) + 1;
+                }
+            }
+            $coreTokens = array_keys(array_filter($tokenCounts, fn ($count) => $count >= 2));
+            sort($coreTokens);
+
+            $topicSignature = $coreTokens !== []
+                ? sha1(Str::lower($location['slug']).'|'.implode('|', $coreTokens))
+                : sha1(Str::lower($location['slug']).'|'.implode('|', $cluster['tokens']));
 
             $sources = array_map(function ($row) {
                 return new DiscoveredSource(
@@ -193,11 +197,25 @@ class NewsDiscoveryService
                 );
             }, $sourceRows);
 
+            $sourceData = array_map(fn ($s) => [
+                'headline' => $s->headline,
+                'summary' => $s->summary,
+            ], $sources);
+
+            $topicCategory = $this->topicDetection->detect($cluster['topic'], $sourceData);
+
+            if ($topicCategory['id'] === null) {
+                continue;
+            }
+
             $topics[] = new DiscoveredTopic(
-                category: $category,
+                category: $topicCategory['name'],
                 name: $cluster['topic'],
                 signature: $topicSignature,
                 sources: $sources,
+                categoryId: $topicCategory['id'],
+                coreTokens: $coreTokens,
+                locationCategoryId: $location['category_id'],
             );
         }
 
@@ -209,14 +227,15 @@ class NewsDiscoveryService
      */
     private function resolveSources(): array
     {
-        $enabledSources = config('news-engine.sources.enabled', ['google_rss']);
-        $enabledSources = is_array($enabledSources) ? $enabledSources : ['google_rss'];
+        $enabledSources = config('news-engine.sources.enabled', ['google_rss', 'brave_search']);
+        $enabledSources = is_array($enabledSources) ? $enabledSources : ['google_rss', 'brave_search'];
 
         $resolved = [];
 
         foreach ($enabledSources as $sourceName) {
             $source = match ($sourceName) {
                 'google_rss' => new GoogleNewsRssSource(config('news-engine.sources.google_rss', [])),
+                'brave_search' => new BraveSearchSource(config('news-engine.sources.brave_search', [])),
                 default => throw new RuntimeException("Unknown news source [{$sourceName}] configured."),
             };
 

@@ -122,6 +122,17 @@ return [
             'key' => env('OPENAI_API_KEY'),
         ],
 
+        'ollama_cloud' => [
+            'driver' => 'ollama',
+            'key' => env('OLLAMA_CLOUD_API_KEY', ''),
+            'url' => env('OLLAMA_CLOUD_BASE_URL', 'https://api.ollama.com'),
+            'models' => [
+                'text' => [
+                    'default' => env('OLLAMA_CLOUD_TEXT_MODEL', 'deepseek-v4-pro'),
+                ],
+            ],
+        ],
+
         'openrouter' => [
             'driver' => 'openrouter',
             'key' => env('OPENROUTER_API_KEY'),

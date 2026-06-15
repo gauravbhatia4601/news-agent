@@ -10,6 +10,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // SQLite stores VARCHAR and TEXT identically; no length enforcement needed.
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Clustered topic labels can exceed 255 chars; store as TEXT.
         DB::statement('ALTER TABLE news_topics ALTER COLUMN topic_name TYPE TEXT');
     }
@@ -19,6 +24,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Truncate on rollback to avoid failure when existing rows exceed 255 chars.
         DB::statement('ALTER TABLE news_topics ALTER COLUMN topic_name TYPE VARCHAR(255) USING LEFT(topic_name, 255)');
     }

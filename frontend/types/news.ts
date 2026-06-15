@@ -1,8 +1,45 @@
+export interface CategoryNode {
+  id: number
+  name: string
+  slug: string
+  parent_id: number | null
+  description?: string | null
+  children?: CategoryNode[]
+}
+
+export interface CategoryDetail {
+  id: number
+  name: string
+  slug: string
+  description?: string | null
+  parent_id: number | null
+  parent?: {
+    id: number
+    name: string
+    slug: string
+  } | null
+  children?: Omit<CategoryNode, 'children'>[]
+}
+
+export interface ArticleCategory {
+  id: number | null
+  name: string
+  slug: string
+  parent_id: number | null
+}
+
+export interface ArticleLocation {
+  id: number
+  name: string
+  slug: string
+}
+
 export interface NewsArticleCard {
   id: number
   slug: string
   title: string
-  category: string
+  category: ArticleCategory | null
+  location?: ArticleLocation | null
   topic_name?: string
   views: number
   author: string
@@ -11,12 +48,25 @@ export interface NewsArticleCard {
   thumbnail_url?: string | null
   published_at: string
   source_count?: number
+  excerpt?: string
 }
 
 export interface NewsSource {
   name: string
   url: string
   published_at?: string | null
+}
+
+export interface FaqItem {
+  question: string
+  answer: string
+}
+
+export interface ArticleEntities {
+  people: string[]
+  organizations: string[]
+  locations: string[]
+  primary_topic_term: string
 }
 
 export interface NewsArticleDetail extends NewsArticleCard {
@@ -30,6 +80,9 @@ export interface NewsArticleDetail extends NewsArticleCard {
     source_name: string
     source_url: string
   }>
+  faq_section: FaqItem[]
+  internal_links: string[]
+  entities: ArticleEntities
 }
 
 export interface ApiCollectionResponse<T> {

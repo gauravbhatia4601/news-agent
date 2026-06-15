@@ -3,8 +3,10 @@ const route = useRoute()
 const articleSlug = route.params.slug as string
 
 const api = useNewsApi()
-const article = await api.getArticle(articleSlug)
-const related = await api.getRelated(articleSlug)
+const { data: article } = await useAsyncData(`article-${articleSlug}`, () => api.getArticle(articleSlug))
+const { data: related } = await useAsyncData(`related-${articleSlug}`, () => api.getRelated(articleSlug), { default: () => [] as any[] })
+
+const siteUrl = 'https://thetrustjournal.com'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -12,72 +14,213 @@ function formatDate(dateStr: string) {
   })
 }
 
+function generateImageAlt(): string {
+  if (!article.value) return ''
+  const keywords = article.value.meta_keywords || article.value.entities?.primary_topic_term || article.value.title || ''
+  return `${article.value.category?.name || 'News'} - ${keywords.split(',')[0] || article.value.title}: Latest news and analysis`
+}
+
 useSeoMeta({
-  title: () => article ? (article.meta_title || article.title) : 'Article Not Found',
-  description: () => article ? (article.meta_description || article.title) : '',
-  keywords: () => article?.meta_keywords || '',
-  ogTitle: () => article ? (article.meta_title || article.title) : '',
-  ogDescription: () => article ? (article.meta_description || article.title) : '',
-  twitterTitle: () => article ? (article.meta_title || article.title) : '',
-  twitterDescription: () => article ? (article.meta_description || article.title) : '',
+  title: () => article.value ? (article.value.meta_title || article.value.title) : 'Article Not Found',
+  description: () => article.value ? (article.value.meta_description || article.value.title) : '',
+  keywords: () => article.value?.meta_keywords || '',
+  ogTitle: () => article.value ? (article.value.meta_title || article.value.title) : '',
+  ogDescription: () => article.value ? (article.value.meta_description || article.value.title) : '',
+  ogImage: () => article.value?.image_url || undefined,
+  twitterTitle: () => article.value ? (article.value.meta_title || article.value.title) : '',
+  twitterDescription: () => article.value ? (article.value.meta_description || article.value.title) : '',
+  twitterImage: () => article.value?.image_url || undefined,
+})
+
+useHead({
+  link: [
+    { rel: 'canonical', href: article.value ? `${siteUrl}/article/${article.value.slug}` : '' },
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      children: () => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'NewsArticle',
+        headline: article.value?.meta_title || article.value?.title,
+        description: article.value?.meta_description || '',
+        keywords: article.value?.meta_keywords || '',
+        datePublished: article.value?.published_at,
+        dateModified: article.value?.published_at,
+        author: {
+          '@type': 'Person',
+          name: article.value?.author || 'AI News Desk',
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'The AI Journal',
+          url: siteUrl,
+          logo: {
+            '@type': 'ImageObject',
+            url: `${siteUrl}/logo.png`,
+          },
+        },
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': `${siteUrl}/article/${article.value?.slug}`,
+        },
+        image: article.value?.image_url || undefined,
+        wordCount: article.value?.content ? article.value.content.replace(/<[^>]*>/g, '').split(/\s+/).length : undefined,
+        about: article.value?.entities ? {
+          '@type': 'Thing',
+          name: article.value.entities.primary_topic_term,
+        } : undefined,
+      }),
+    },
+    {
+      type: 'application/ld+json',
+      children: () => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: siteUrl,
+          },
+          article.value?.category ? {
+            '@type': 'ListItem',
+            position: 2,
+            name: article.value.category.name,
+            item: `${siteUrl}/category/${article.value.category.slug}`,
+          } : null,
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: article.value?.title || '',
+            item: `${siteUrl}/article/${article.value?.slug}`,
+          },
+        ].filter(Boolean),
+      }),
+    },
+    ...(article.value?.faq_section?.length ? [{
+      type: 'application/ld+json',
+      children: () => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: article.value!.faq_section.map((faq: { question: string; answer: string }) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer,
+          },
+        })),
+      }),
+    }] : []),
+  ],
 })
 </script>
 
 <template>
   <div v-if="!article" class="py-20 text-center">
-    <h1 class="text-3xl font-serif font-bold mb-4">Article Not Found</h1>
-    <p class="text-muted-foreground mb-8">We couldn't find the article you were looking for.</p>
-    <NuxtLink to="/" class="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">Return Home</NuxtLink>
+    <h1 class="font-display text-3xl font-bold mb-4">Article Not Found</h1>
+    <p class="font-serif text-muted-foreground mb-8">We couldn't find the article you were looking for.</p>
+    <NuxtLink to="/" class="inline-flex h-10 items-center justify-center bg-foreground px-8 font-label text-xs font-bold uppercase tracking-[0.062em] text-background hover:opacity-90 transition-opacity">Return Home</NuxtLink>
   </div>
 
   <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-12">
     <!-- Main Article Content -->
     <article class="lg:col-span-8 space-y-8">
       <header class="space-y-6 border-b pb-8">
-        <div class="flex items-center gap-x-2 text-sm text-primary font-medium">
-          <NuxtLink :to="`/category/${article.category}`" class="uppercase hover:underline underline-offset-4">{{ article.category }}</NuxtLink>
-        </div>
-        
-        <h1 class="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight">{{ article.title }}</h1>
-        
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
+        <nav aria-label="Breadcrumb" class="font-label text-xs text-muted-foreground">
+          <ol class="flex items-center gap-x-1.5 flex-wrap">
+            <li><NuxtLink to="/" class="hover:text-foreground transition-colors">Home</NuxtLink></li>
+            <li aria-hidden="true">/</li>
+            <li v-if="article.category">
+              <NuxtLink :to="`/category/${article.category.slug}`" class="font-bold uppercase tracking-[0.062em] hover:text-foreground transition-colors">{{ article.category.name }}</NuxtLink>
+            </li>
+          </ol>
+        </nav>
+
+        <h1 class="font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight">{{ article.title }}</h1>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-label text-xs text-muted-foreground">
           <div class="flex items-center gap-2">
             <span class="font-medium text-foreground">By {{ article.author }}</span>
-            <span>•</span>
+            <span>·</span>
             <span>{{ formatDate(article.published_at) }}</span>
           </div>
           <div class="flex items-center gap-4">
             <span class="flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               {{ article.read_time_minutes }} min read
             </span>
             <span class="flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               {{ article.views }} views
             </span>
           </div>
         </div>
 
-        <div v-if="article.image_url" class="overflow-hidden rounded-xl border">
+        <div v-if="article.image_url" class="overflow-hidden">
           <img
             :src="article.image_url"
-            :alt="article.title"
+            :alt="generateImageAlt()"
             class="h-64 w-full object-cover md:h-80"
-            loading="lazy"
+            loading="eager"
+            fetchpriority="high"
           >
         </div>
       </header>
 
-      <div class="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-primary prose-a:text-primary hover:prose-a:text-primary/80 prose-p:leading-relaxed prose-p:text-gray-800 dark:prose-p:text-gray-200">
-        <div v-html="article.content"></div>
+      <div class="article-body">
+        <div v-html="article.content" />
       </div>
 
-      <!-- Sources & Citations -->
+      <!-- FAQ Section -->
+      <section v-if="article.faq_section?.length" class="mt-12 pt-8 border-t">
+        <h2 class="font-display text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+        <div class="space-y-4">
+          <details v-for="(faq, idx) in article.faq_section" :key="idx" class="border rounded">
+            <summary class="font-display font-bold p-4 cursor-pointer hover:bg-accent transition-colors select-none">
+              {{ faq.question }}
+            </summary>
+            <div class="px-4 pb-4 font-serif text-sm leading-relaxed">
+              {{ faq.answer }}
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- Entities Tags -->
+      <section v-if="article.entities" class="mt-8 pt-6 border-t">
+        <div class="flex flex-wrap gap-2">
+          <span
+            v-for="person in article.entities.people"
+            :key="person"
+            class="inline-flex items-center rounded border px-2.5 py-0.5 font-label text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {{ person }}
+          </span>
+          <span
+            v-for="org in article.entities.organizations"
+            :key="org"
+            class="inline-flex items-center rounded border px-2.5 py-0.5 font-label text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {{ org }}
+          </span>
+          <span
+            v-for="loc in article.entities.locations"
+            :key="loc"
+            class="inline-flex items-center rounded border px-2.5 py-0.5 font-label text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {{ loc }}
+          </span>
+        </div>
+      </section>
+
       <footer v-if="article.sources?.length" class="mt-12 pt-8 border-t">
-        <h3 class="font-serif text-xl font-bold mb-4">Sources & References</h3>
+        <h3 class="font-display text-xl font-bold mb-4">Sources & References</h3>
         <ul class="space-y-3">
-          <li v-for="source in article.sources" :key="source.url" class="text-sm border rounded-lg p-4 bg-muted/20">
-            <a :href="source.url" target="_blank" rel="noopener noreferrer" class="font-medium hover:underline text-primary group flex items-start gap-2">
+          <li v-for="source in article.sources" :key="source.url" class="font-serif text-sm border p-4">
+            <a :href="source.url" target="_blank" rel="noopener noreferrer" class="font-medium hover:underline text-foreground group flex items-start gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0 opacity-50 group-hover:opacity-100"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
               <span>{{ source.name }}</span>
             </a>
@@ -88,17 +231,16 @@ useSeoMeta({
 
     <!-- Sidebar / Read Next -->
     <aside class="lg:col-span-4">
-      <div class="lg:sticky lg:top-[7.5rem] rounded-xl border bg-card p-5 shadow-sm">
-        <h3 class="font-serif text-lg font-bold mb-4 pb-3 border-b flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      <div class="lg:sticky lg:top-[7.5rem]">
+        <h3 class="font-display text-xl font-bold mb-4 pb-2 border-b-strong">
           Read Next
         </h3>
 
-        <div v-if="related.length === 0" class="text-sm text-muted-foreground">
+        <div v-if="related && related.length === 0" class="font-label text-xs text-muted-foreground">
           No related articles found.
         </div>
 
-        <div v-else class="divide-y divide-border/60">
+        <div v-else class="divide-y divide-border">
           <div v-for="rel in related" :key="rel.slug" class="py-3 first:pt-0 last:pb-0">
             <NewsCompactArticleCard :article="rel" variant="minimal" />
           </div>
@@ -107,3 +249,57 @@ useSeoMeta({
     </aside>
   </div>
 </template>
+
+<style scoped>
+.article-body :deep(h2) {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+
+.article-body :deep(h3) {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.article-body :deep(p) {
+  font-family: 'Source Serif 4', serif;
+  margin-bottom: 1.25rem;
+  line-height: 1.75;
+  font-size: 1.0625rem;
+}
+
+.article-body :deep(a) {
+  color: hsl(var(--foreground));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.article-body :deep(a:hover) {
+  opacity: 0.7;
+}
+
+.article-body :deep(ul),
+.article-body :deep(ol) {
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+}
+
+.article-body :deep(li) {
+  margin-bottom: 0.5rem;
+}
+
+.article-body :deep(blockquote) {
+  border-left: 2px solid hsl(var(--border));
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
+</style>

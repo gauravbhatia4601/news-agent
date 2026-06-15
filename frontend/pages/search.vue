@@ -3,35 +3,32 @@ const route = useRoute()
 const api = useNewsApi()
 
 const query = computed(() => String(route.query.q ?? '').trim())
-const results = ref(await (query.value ? api.search(query.value, { perPage: 24 }) : Promise.resolve([])))
-
-watch(
-  () => route.query.q,
-  async () => {
-    results.value = query.value ? await api.search(query.value, { perPage: 24 }) : []
-  }
+const { data: results } = await useAsyncData(
+  () => `search-${query.value}`,
+  () => query.value ? api.search(query.value, { perPage: 24 }) : Promise.resolve([] as any[]),
+  { default: () => [] as any[], watch: [query] }
 )
 
 useHead({
-  title: () => query.value ? `Search: ${query.value} — The Trust Journal` : 'Search — The Trust Journal',
+  title: () => query.value ? `Search: ${query.value} — The AI Journal` : 'Search — The AI Journal',
 })
 </script>
 
 <template>
   <div class="space-y-8">
     <header class="border-b pb-6">
-      <h1 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight mb-2">Search</h1>
-      <p class="text-muted-foreground">
+      <h1 class="font-display text-3xl sm:text-4xl font-bold tracking-tight mb-2">Search</h1>
+      <p class="font-serif text-muted-foreground">
         <template v-if="query">Results for: <span class="font-medium text-foreground">"{{ query }}"</span></template>
         <template v-else>Enter a keyword from the search bar above.</template>
       </p>
     </header>
 
-    <div v-if="!query" class="py-16 text-center text-muted-foreground">
+    <div v-if="!query" class="py-16 text-center font-serif text-muted-foreground">
       Enter a keyword to find stories.
     </div>
 
-    <div v-else-if="results.length === 0" class="py-16 text-center text-muted-foreground">
+    <div v-else-if="results && results.length === 0" class="py-16 text-center font-serif text-muted-foreground">
       No results found for "{{ query }}".
     </div>
 

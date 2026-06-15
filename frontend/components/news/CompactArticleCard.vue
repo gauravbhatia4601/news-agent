@@ -16,49 +16,51 @@ function timeAgo(dateStr: string) {
   const days = Math.floor(hours / 24)
   return days === 1 ? '1 day ago' : `${days} days ago`
 }
+
+const categoryName = computed(() => props.article.category?.name ?? '')
+const categorySlug = computed(() => props.article.category?.slug ?? '')
+const locationName = computed(() => props.article.location?.name ?? '')
 </script>
 
 <template>
-  <!-- Horizontal variant: image left, text right -->
-  <article v-if="variant === 'horizontal'" class="group flex gap-4">
-    <div v-if="showImage && (article.image_url || article.thumbnail_url)" class="shrink-0 w-28 h-20 overflow-hidden rounded-md">
-      <img
-        :src="article.thumbnail_url || article.image_url || ''"
-        :alt="article.title"
-        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        loading="lazy"
-      >
-    </div>
-    <div class="min-w-0 flex-1 flex flex-col justify-between">
-      <div>
-        <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
-          <span class="font-semibold text-primary uppercase tracking-wider">{{ article.category }}</span>
-          <span>·</span>
-          <span>{{ timeAgo(article.published_at) }}</span>
-        </div>
-        <NuxtLink :to="`/article/${article.slug}`">
-          <h3 class="text-sm font-semibold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-            {{ article.title }}
-          </h3>
-        </NuxtLink>
+  <article v-if="variant === 'horizontal'" class="group flex gap-3">
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-1.5 mb-0.5">
+        <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ categoryName }}</span>
+        <span class="text-border">·</span>
+        <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(article.published_at) }}</span>
       </div>
-      <div class="flex items-center gap-2 text-[11px] text-muted-foreground mt-1.5">
+      <NuxtLink :to="`/article/${article.slug}`">
+        <h3 class="font-display text-sm font-bold leading-snug line-clamp-2 group-hover:underline decoration-1 underline-offset-2">
+          {{ article.title }}
+        </h3>
+      </NuxtLink>
+      <p v-if="article.excerpt" class="text-xs text-muted-foreground leading-relaxed mt-1 line-clamp-2">{{ article.excerpt }}</p>
+      <div class="flex items-center gap-1.5 mt-1 font-label text-[11px] text-muted-foreground">
         <span>{{ article.author }}</span>
         <span>·</span>
         <span>{{ article.read_time_minutes }}m read</span>
       </div>
     </div>
+    <div v-if="showImage && (article.image_url || article.thumbnail_url)" class="shrink-0 w-[74px] h-[74px] overflow-hidden">
+      <img
+        :src="article.thumbnail_url || article.image_url || ''"
+        :alt="article.title"
+        class="h-full w-full object-cover"
+        loading="lazy"
+      >
+    </div>
   </article>
 
-  <!-- Minimal variant: title + meta only, no card border -->
   <article v-else-if="variant === 'minimal'" class="group py-3">
     <NuxtLink :to="`/article/${article.slug}`">
-      <h3 class="text-sm font-semibold leading-snug line-clamp-2 group-hover:text-primary transition-colors mb-1">
+      <h3 class="font-display text-sm font-bold leading-snug line-clamp-2 group-hover:underline decoration-1 underline-offset-2 mb-1">
         {{ article.title }}
       </h3>
     </NuxtLink>
-    <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-      <span class="capitalize">{{ article.category }}</span>
+    <p v-if="article.excerpt" class="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-1">{{ article.excerpt }}</p>
+    <div class="flex items-center gap-1.5 font-label text-[11px] text-muted-foreground">
+      <span class="capitalize">{{ categoryName }}</span>
       <span>·</span>
       <span>{{ timeAgo(article.published_at) }}</span>
       <span>·</span>
@@ -66,9 +68,8 @@ function timeAgo(dateStr: string) {
     </div>
   </article>
 
-  <!-- Default variant: vertical card -->
   <article v-else class="group flex flex-col">
-    <NuxtLink v-if="showImage && (article.image_url || article.thumbnail_url)" :to="`/article/${article.slug}`" class="mb-3 block overflow-hidden rounded-lg">
+    <NuxtLink v-if="showImage && (article.image_url || article.thumbnail_url)" :to="`/article/${article.slug}`" class="mb-3 block overflow-hidden">
       <img
         :src="article.thumbnail_url || article.image_url || ''"
         :alt="article.title"
@@ -77,21 +78,23 @@ function timeAgo(dateStr: string) {
       >
     </NuxtLink>
 
-    <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
-      <span class="font-semibold text-primary uppercase tracking-wider">{{ article.category }}</span>
-      <span>·</span>
-      <span>{{ timeAgo(article.published_at) }}</span>
+    <div class="flex items-center gap-1.5 mb-1.5">
+      <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ categoryName }}</span>
+      <span class="text-border">·</span>
+      <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(article.published_at) }}</span>
     </div>
 
     <NuxtLink :to="`/article/${article.slug}`" class="block flex-1">
-      <h3 class="font-serif text-lg font-bold leading-snug line-clamp-3 group-hover:underline decoration-primary/40 underline-offset-4 decoration-1 mb-2">
-        {{ article.title }}
-      </h3>
-    </NuxtLink>
+        <h3 class="font-display text-lg font-bold leading-snug line-clamp-3 group-hover:underline decoration-1 underline-offset-4 mb-2">
+          {{ article.title }}
+        </h3>
+      </NuxtLink>
 
-    <div class="flex items-center gap-2 text-xs text-muted-foreground mt-auto pt-2">
+      <p v-if="article.excerpt" class="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-2">{{ article.excerpt }}</p>
+
+      <div class="flex items-center gap-2 font-label text-xs text-muted-foreground mt-auto pt-2">
       <span class="truncate">{{ article.author }}</span>
-      <span class="text-border">·</span>
+      <span>·</span>
       <span class="whitespace-nowrap">{{ article.read_time_minutes }} min read</span>
     </div>
   </article>

@@ -41,10 +41,10 @@ class ArticleController extends Controller
     public function related(string $slug): AnonymousResourceCollection
     {
         $article = $this->articleService->getArticle($slug);
-        
+
         $relatedArticles = $this->articleService->getRelatedArticles(
             $article->id,
-            $article->topic?->category ?? '', 
+            $article->topic?->categoryRelation?->slug ?? '',
             3
         );
 
@@ -67,6 +67,26 @@ class ArticleController extends Controller
         $perPage = (int) $request->validated('per_page', 15);
 
         $articles = $this->articleService->getPopularArticles($perPage, $category);
+
+        return ArticleResource::collection($articles);
+    }
+
+    public function hot(ArticleListRequest $request): AnonymousResourceCollection
+    {
+        $category = $request->validated('category');
+        $perPage = (int) $request->validated('per_page', 15);
+
+        $articles = $this->articleService->getHotArticles($perPage, $category);
+
+        return ArticleResource::collection($articles);
+    }
+
+    public function trending(ArticleListRequest $request): AnonymousResourceCollection
+    {
+        $category = $request->validated('category');
+        $limit = (int) $request->validated('per_page', 10);
+
+        $articles = $this->articleService->getTrendingArticles($limit, $category);
 
         return ArticleResource::collection($articles);
     }

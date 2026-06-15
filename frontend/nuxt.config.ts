@@ -1,11 +1,9 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   srcDir: '.',
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
 
   runtimeConfig: {
-    // Server-only: used by Nitro proxy routes to reach backend
     backendApiBase: process.env.BACKEND_API_BASE || 'http://127.0.0.1:8001',
   },
 
@@ -16,8 +14,24 @@ export default defineNuxtConfig({
 
   googleFonts: {
     families: {
-      Inter: [400, 500, 600, 700],
-      Merriweather: [400, 700],
+      'Playfair Display': [400, 700],
+      'Source Serif 4': [400, 600, 700],
+      Inter: [400, 500, 700],
+    },
+  },
+
+  tailwindcss: {
+    config: {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            serif: ['"Source Serif 4"', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+            label: ['Inter', 'sans-serif'],
+          },
+        },
+      },
     },
   },
 
