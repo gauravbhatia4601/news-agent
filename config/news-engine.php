@@ -20,9 +20,9 @@ return [
     |--------------------------------------------------------------------------
     */
     'discovery' => [
-        'default_limit' => (int) env('NEWS_DISCOVERY_LIMIT', 5),
+        'default_limit' => (int) env('NEWS_DISCOVERY_LIMIT', 3),
         'default_fresh_hours' => (int) env('NEWS_DISCOVERY_FRESH_HOURS', 12),
-        'default_sources_per_topic' => (int) env('NEWS_DISCOVERY_SOURCES_PER_TOPIC', 5),
+        'default_sources_per_topic' => (int) env('NEWS_DISCOVERY_SOURCES_PER_TOPIC', 3),
         'seen_cache_key' => env('NEWS_DISCOVERY_SEEN_CACHE_KEY', 'news-engine:rss:seen-signatures'),
         'seen_cache_ttl_seconds' => (int) env('NEWS_DISCOVERY_SEEN_CACHE_TTL_SECONDS', 172800),
     ],
@@ -84,10 +84,10 @@ return [
     |--------------------------------------------------------------------------
     */
     'sources' => [
-        'enabled' => array_filter(array_map('trim', explode(',', env('NEWS_DISCOVERY_SOURCES', 'google_rss,brave_search')))),
+        'enabled' => array_filter(array_map('trim', explode(',', env('NEWS_DISCOVERY_SOURCES', 'google_rss')))),
 
         'brave_search' => [
-            'enabled' => (bool) env('BRAVE_SEARCH_ENABLED', true),
+            'enabled' => (bool) env('BRAVE_SEARCH_ENABLED', false),
             'api_key' => env('BRAVE_SEARCH_API_KEY'),
             'base_url' => env('BRAVE_SEARCH_BASE_URL', 'https://api.search.brave.com/res/v1'),
             'timeout' => (int) env('BRAVE_SEARCH_TIMEOUT', 20),
