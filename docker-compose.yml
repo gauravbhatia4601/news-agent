@@ -25,15 +25,11 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
 
-      # Redis (self-hosted or Coolify-managed; e.g. coolify-redis container)
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_USERNAME: ${REDIS_USERNAME}
+      # Redis (URL-only config; individual REDIS_HOST/PORT/PASSWORD are intentionally omitted so REDIS_URL wins)
+      REDIS_URL: ${REDIS_URL}
       REDIS_DB: ${REDIS_DB:-0}
       REDIS_CACHE_DB: ${REDIS_CACHE_DB:-1}
       REDIS_QUEUE_DB: ${REDIS_QUEUE_DB:-2}
-      REDIS_URL: ${REDIS_URL}
 
       CACHE_STORE: ${CACHE_STORE:-redis}
       SESSION_DRIVER: ${SESSION_DRIVER:-redis}
