@@ -2,8 +2,6 @@ import type { UseFetchOptions } from 'nuxt/app'
 
 export const useAdminApi = () => {
   const { token } = useAdminAuth()
-  const config = useRuntimeConfig()
-  const backendBase = String(config.backendApiBase || 'http://127.0.0.1:8001')
 
   const headers = computed(() => ({
     'Authorization': `Bearer ${token.value}`,
@@ -12,7 +10,7 @@ export const useAdminApi = () => {
   }))
 
   const authFetch = <T>(url: string, options: any = {}) => {
-    return $fetch<T>(`${backendBase}/api/v1/admin${url}`, {
+    return $fetch<T>(`/api/v1/admin${url}`, {
       ...options,
       headers: { ...headers.value, ...(options.headers || {}) },
     })
