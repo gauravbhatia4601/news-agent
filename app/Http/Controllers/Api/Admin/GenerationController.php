@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\NewsArticle;
 use App\Models\NewsTopic;
+use App\Models\QueueJobLog;
 use App\News\Sources\BraveSearchSource;
 use App\News\Sources\GoogleNewsRssSource;
 use App\Services\SitemapService;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -56,7 +58,6 @@ class GenerationController extends Controller
                     'recent_failed_jobs' => $recentFailed,
                     'connection' => $connection,
                     'queue_name' => $queueName,
-                    'help' => 'Queue failed jobs = jobs that crashed in the worker. Topic generation failures are shown separately under generation.failed_topics.',
                 ],
                 'sources' => [
                     'google_rss_hits' => (int) Cache::get(GoogleNewsRssSource::HIT_CACHE_KEY, 0),
@@ -271,6 +272,38 @@ class GenerationController extends Controller
         } catch (\Throwable) {
             return is_string($value) ? $value : null;
         }
+    }
+
+    public function queueHistory(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => 'nullable|string|in:pending,processing,processed,failed,released',
+            'per_page' => 'nullable|integer|min:10|max:200',
+            'page' => 'nullable|integer|min:1',
+        ]);
+
+        $status = $validated['status'] ?? null;
+        $perPage = (int) ($validated['per_page'] ?? 50);
+        $page = (int) ($validated['page'] ?? 1);
+
+        $query = QueueJobLog::query()
+            ->orderByDesc('created_at');
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $paginated = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => [
+                'jobs' => $paginated->items(),
+                'total' => $paginated->total(),
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+            ],
+        ]);
     }
 
     public function regenerateSitemap(): JsonResponse

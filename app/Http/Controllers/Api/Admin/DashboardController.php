@@ -8,6 +8,7 @@ use App\Models\NewsArticle;
 use App\Models\NewsTopic;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 class DashboardController extends Controller
 {
@@ -22,7 +23,8 @@ class DashboardController extends Controller
         $topicsPending = NewsTopic::where('generation_status', 'pending')->count();
         $topicsFailed = NewsTopic::where('generation_status', 'failed')->count();
 
-        $queueJobs = DB::table('jobs')->count();
+        $queueJobs = Queue::size(config("queue.connections." . config('queue.default', 'database') . ".queue", 'default'));
+        $failedQueueJobs = DB::table('failed_jobs')->count();
 
         $recentArticles = NewsArticle::with('topic.categoryRelation')
             ->where('status', 'published')
@@ -84,6 +86,7 @@ class DashboardController extends Controller
                     'failed' => $topicsFailed,
                 ],
                 'queue_jobs' => $queueJobs,
+                'failed_queue_jobs' => $failedQueueJobs,
                 'success_rate' => $successRate,
                 'recent_articles' => $recentArticles,
                 'recent_failed_topics' => $recentFailedTopics,

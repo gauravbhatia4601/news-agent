@@ -67,6 +67,7 @@ Route::prefix('v1/admin')->group(function () {
         Route::post('/discovery/retry-failed', [DiscoveryController::class, 'retryFailed']);
 
         Route::get('/generation/queue', [GenerationController::class, 'queueStatus']);
+        Route::get('/generation/queue-history', [GenerationController::class, 'queueHistory']);
         Route::post('/generation/sitemap', [GenerationController::class, 'regenerateSitemap']);
         Route::get('/generation/stats', [GenerationController::class, 'stats']);
 

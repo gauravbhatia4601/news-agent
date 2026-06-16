@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\NewsTopic;
 use App\News\Services\NewsArticleGenerationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,5 +24,20 @@ class GenerateArticle implements ShouldQueue
     public function handle(NewsArticleGenerationService $generationService): void
     {
         $generationService->generateForDiscoveredTopics([$this->topicSignature]);
+    }
+
+    /**
+     * Called when the job has failed permanently after all retries.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        $topic = NewsTopic::where('topic_signature', $this->topicSignature)->first();
+
+        if ($topic) {
+            $topic->update([
+                'generation_status' => 'failed',
+                'updated_at' => now(),
+            ]);
+        }
     }
 }

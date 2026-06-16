@@ -41,35 +41,12 @@
       </div>
     </div>
 
-    <!-- Queue status bar -->
-    <div class="bg-white rounded-lg border border-slate-200 p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-semibold text-sm">Queue Status</h2>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full" :class="stats.queue_jobs > 0 ? 'bg-green-500 animate-pulse' : 'bg-slate-300'" />
-          <span class="text-xs text-slate-500">{{ stats.queue_jobs > 0 ? 'Processing' : 'Idle' }}</span>
-        </div>
-      </div>
-      <div class="grid grid-cols-3 gap-4">
-        <div class="text-center p-3 bg-slate-50 rounded-md">
-          <p class="text-2xl font-bold text-blue-600">{{ stats.topics?.pending || 0 }}</p>
-          <p class="text-xs text-slate-500">Pending</p>
-        </div>
-        <div class="text-center p-3 bg-slate-50 rounded-md">
-          <p class="text-2xl font-bold text-emerald-600">{{ stats.topics?.generated || 0 }}</p>
-          <p class="text-xs text-slate-500">Generated</p>
-        </div>
-        <div class="text-center p-3 bg-slate-50 rounded-md">
-          <p class="text-2xl font-bold text-red-600">{{ stats.topics?.failed || 0 }}</p>
-          <p class="text-xs text-slate-500">Failed</p>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Failures -->
     <div v-if="stats.recent_failed_topics?.length" class="bg-white rounded-lg border border-red-200">
       <div class="px-4 py-3 border-b border-red-100 flex items-center justify-between bg-red-50">
-        <h2 class="font-semibold text-sm text-red-700">Recent Failures</h2>
+        <h2 class="font-semibold text-sm text-red-700">Recent Generation Failures</h2>
         <button @click="retryFailed" :disabled="retrying" class="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50">{{ retrying ? 'Retrying...' : 'Retry All' }}</button>
       </div>
       <div class="divide-y divide-slate-100">
@@ -93,8 +70,8 @@ const retrying = ref(false)
 
 const statsCards = computed(() => [
   { label: 'Published Articles', value: stats.value.articles?.published ?? '—', sub: 'Total', color: '' },
-  { label: 'Topics Pending', value: stats.value.topics?.pending ?? '—', sub: 'In queue', color: 'text-blue-600' },
-  { label: 'Failed', value: stats.value.topics?.failed ?? '—', sub: 'Need attention', color: 'text-red-600' },
+  { label: 'Pending Generation', value: stats.value.topics?.pending ?? '—', sub: 'Topics waiting', color: 'text-blue-600' },
+  { label: 'Generation Failed', value: stats.value.topics?.failed ?? '—', sub: 'Need retry', color: 'text-red-600' },
   { label: 'Success Rate', value: (stats.value.success_rate ?? '—') + '%', sub: 'All time', color: parseFloat(stats.value.success_rate || '0') > 80 ? 'text-emerald-600' : 'text-amber-600' },
 ])
 

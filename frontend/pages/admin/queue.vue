@@ -72,7 +72,7 @@
         <p class="text-3xl font-bold mt-1" :class="generation.failed_topics > 0 ? 'text-red-600' : 'text-slate-400'">
           {{ generation.failed_topics || 0 }}
         </p>
-        <p class="text-xs text-slate-400 mt-1">generation failures, not queue failures</p>
+        <p class="text-xs text-slate-400 mt-1">article generation failed</p>
       </div>
     </div>
 
@@ -227,58 +227,94 @@
       </div>
     </div>
 
-    <!-- Failed jobs table -->
-    <div class="bg-white rounded-lg border border-red-200 overflow-hidden">
-      <div class="px-4 py-3 border-b border-red-100 bg-red-50 flex items-center justify-between">
-        <h2 class="font-semibold text-red-700 flex items-center gap-2">
-          <AlertTriangle class="w-4 h-4" /> Failed Jobs ({{ queue.recent_failed_jobs?.length || 0 }} recent)
+    <!-- Job history -->
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-semibold flex items-center gap-2">
+          <List class="w-4 h-4 text-slate-500" /> Job History ({{ history.total || 0 }})
         </h2>
+        <div class="flex items-center gap-2 text-sm">
+          <label class="text-slate-500">Status:</label>
+          <select v-model="historyFilter.status" @change="loadHistory(1)" class="border border-slate-300 rounded-md px-2 py-1 text-sm">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="processed">Processed</option>
+            <option value="failed">Failed</option>
+            <option value="released">Released</option>
+          </select>
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-red-50/50">
+          <thead class="bg-slate-50">
             <tr>
-              <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">ID</th>
+              <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">Status</th>
               <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">Command / Topic</th>
               <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">Queue</th>
-              <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">Failed At</th>
+              <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">Attempts</th>
+              <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">Started</th>
+              <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">Duration</th>
               <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500">Exception</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-if="!queue.recent_failed_jobs?.length">
-              <td colspan="5" class="px-4 py-6 text-center text-slate-400">No failed jobs. 🎉</td>
+            <tr v-if="!history.jobs?.length">
+              <td colspan="7" class="px-4 py-6 text-center text-slate-400">No job history yet.</td>
             </tr>
-            <tr v-for="job in queue.recent_failed_jobs" :key="job.id" class="hover:bg-red-50/30 align-top">
-              <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ shortId(job.id) }}</td>
+            <tr v-for="job in history.jobs" :key="job.id" class="hover:bg-slate-50 align-top">
               <td class="px-4 py-3">
-                <span class="font-medium">{{ job.command || 'GenerateArticle' }}</span>
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="historyStatusClass(job.status)">
+                  {{ job.status }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-medium">{{ job.job_class || 'GenerateArticle' }}</div>
+                <div v-if="job.job_signature" class="text-xs text-slate-500 font-mono mt-0.5">{{ shortId(job.job_signature) }}</div>
               </td>
               <td class="px-4 py-3">{{ job.queue }}</td>
-              <td class="px-4 py-3 text-slate-500">{{ job.failed_at ? formatTime(job.failed_at) : '—' }}</td>
-              <td class="px-4 py-3">
-                <div class="max-w-xl">
-                  <pre class="text-xs text-red-700 bg-red-50 rounded p-2 overflow-x-auto whitespace-pre-wrap">{{ job.exception_preview || job.exception }}</pre>
+              <td class="px-4 py-3">{{ job.attempts || 0 }}</td>
+              <td class="px-4 py-3 text-slate-500">{{ job.started_at ? formatTime(job.started_at) : formatTime(job.created_at) }}</td>
+              <td class="px-4 py-3">{{ job.duration_seconds ? fmtDuration(job.duration_seconds) : '—' }}</td>
+              <td class="px-4 py-3 max-w-xl">
+                <div v-if="job.exception">
+                  <pre class="text-xs text-red-700 bg-red-50 rounded p-2 overflow-x-auto whitespace-pre-wrap">{{ strLimit(job.exception, 200) }}</pre>
                   <button
-                    v-if="job.exception && (job.exception_preview || '').length < (job.exception || '').length"
-                    @click="expandedFailed = expandedFailed === job.id ? null : job.id"
+                    v-if="job.exception.length > 200"
+                    @click="expandedHistory = expandedHistory === job.id ? null : job.id"
                     class="mt-1 text-xs text-slate-500 hover:text-slate-800 underline"
                   >
-                    {{ expandedFailed === job.id ? 'Collapse' : 'Expand full trace' }}
+                    {{ expandedHistory === job.id ? 'Collapse' : 'Expand full trace' }}
                   </button>
-                  <pre v-if="expandedFailed === job.id" class="text-xs text-slate-700 bg-slate-50 rounded p-2 overflow-x-auto whitespace-pre-wrap mt-2">{{ job.exception }}</pre>
+                  <pre v-if="expandedHistory === job.id" class="text-xs text-slate-700 bg-slate-50 rounded p-2 overflow-x-auto whitespace-pre-wrap mt-2">{{ job.exception }}</pre>
                 </div>
+                <span v-else class="text-slate-400">—</span>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+      <div v-if="history.last_page > 1" class="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
+        <span class="text-xs text-slate-500">Page {{ history.current_page }} of {{ history.last_page }}</span>
+        <div class="flex gap-1">
+          <button
+            @click="loadHistory(history.current_page - 1)"
+            :disabled="history.current_page <= 1"
+            class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50"
+          >Previous</button>
+          <button
+            @click="loadHistory(history.current_page + 1)"
+            :disabled="history.current_page >= history.last_page"
+            class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50"
+          >Next</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Activity, RefreshCw, Globe, Rss, Search, CalendarClock, Cpu, List, AlertTriangle } from 'lucide-vue-next'
+import { Activity, RefreshCw, Globe, Rss, Search, CalendarClock, Cpu, List } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -288,10 +324,12 @@ const queue = ref<any>({ pending_jobs: 0, total_failed_jobs: 0, pending_jobs_lis
 const sources = ref<any>({ google_rss_hits: 0, brave_search_hits: 0, brave_search_enabled: true, brave_fallback_threshold: 8 })
 const discovery = ref<any>({ last_run_at: null, next_run_at: null, next_run_in_seconds: null })
 const generation = ref<any>({ model: '', provider: '', enabled: true, articles_last_hour: 0, articles_last_24h: 0, avg_generation_seconds: 0 })
+const history = ref<any>({ jobs: [], total: 0, current_page: 1, last_page: 1, per_page: 50 })
+const historyFilter = reactive({ status: '' })
 const lastUpdate = ref<string | null>(null)
 const refreshing = ref(false)
 const isPaused = ref(false)
-const expandedFailed = ref<string | number | null>(null)
+const expandedHistory = ref<number | null>(null)
 
 let interval: ReturnType<typeof setInterval> | null = null
 
@@ -299,17 +337,48 @@ async function load(force = false) {
   if (isPaused.value && !force) return
   refreshing.value = true
   try {
-    const res = await api.getQueueStatus()
-    const d = res.data
+    const [statusRes, historyRes] = await Promise.all([
+      api.getQueueStatus(),
+      api.getQueueHistory({ status: historyFilter.status, page: history.value.current_page, per_page: history.value.per_page })
+    ])
+    const d = statusRes.data
     queue.value = d.queue || queue.value
     sources.value = d.sources || sources.value
     discovery.value = d.discovery || discovery.value
     generation.value = d.generation || generation.value
+    history.value = historyRes.data || history.value
     lastUpdate.value = d.timestamp || new Date().toISOString()
   } catch (e: any) {
     console.error('Queue monitor load failed', e)
   } finally {
     refreshing.value = false
+  }
+}
+
+async function loadHistory(page = 1) {
+  try {
+    const res = await api.getQueueHistory({ status: historyFilter.status, page, per_page: history.value.per_page })
+    history.value = res.data || history.value
+    expandedHistory.value = null
+  } catch (e: any) {
+    console.error('Queue history load failed', e)
+  }
+}
+
+function strLimit(value: string | null, limit: number, end = '…'): string {
+  if (!value) return ''
+  if (value.length <= limit) return value
+  return value.slice(0, limit) + end
+}
+
+function historyStatusClass(status: string): string {
+  switch (status) {
+    case 'processed': return 'bg-emerald-100 text-emerald-700'
+    case 'processing': return 'bg-blue-100 text-blue-700'
+    case 'pending': return 'bg-slate-100 text-slate-600'
+    case 'failed': return 'bg-red-100 text-red-700'
+    case 'released': return 'bg-amber-100 text-amber-700'
+    default: return 'bg-slate-100 text-slate-600'
   }
 }
 
@@ -360,7 +429,11 @@ function shortId(id: string | number): string {
 
 onMounted(() => {
   load()
-  interval = setInterval(() => load(), 5000)
+  loadHistory(1)
+  interval = setInterval(() => {
+    load()
+    loadHistory(history.value.current_page)
+  }, 5000)
 })
 
 onUnmounted(() => {

@@ -51,6 +51,10 @@ export const useAdminApi = () => {
     retryFailed: (maxRetries = 3) => authFetch<{ data: any }>('/discovery/retry-failed', { method: 'POST', body: { max_retries: maxRetries } }),
 
     getQueueStatus: () => authFetch<{ data: any }>('/generation/queue'),
+    getQueueHistory: (params: Record<string, string | number> = {}) => {
+      const query = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString()
+      return authFetch<any>(`/generation/queue-history${query ? '?' + query : ''}`)
+    },
     regenerateSitemap: () => authFetch<{ data: any }>('/generation/sitemap', { method: 'POST' }),
     getGenerationStats: () => authFetch<{ data: any }>('/generation/stats'),
   }

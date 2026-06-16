@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\QueueJobLog;
 use App\News\Services\NewsArticleGenerationService;
 use App\News\Repositories\NewsTopicRepository;
 use Illuminate\Foundation\Inspiring;
@@ -46,3 +47,8 @@ Schedule::command('news:sitemap-generate')->everyThirtyMinutes()
 Schedule::command('news:recompute-rankings')->everyFifteenMinutes()
     ->withoutOverlapping(120)
     ->runInBackground();
+
+Schedule::call(function () {
+    QueueJobLog::where('created_at', '<', now()->subHours(48))->delete();
+})->daily()
+->name('prune-queue-job-logs')->withoutOverlapping();

@@ -39,19 +39,18 @@ class NewsArticleGenerationService
         $agent = $isOllamaCloud ? new PlainTextNewsArticleAgent() : new NewsArticleAgent();
 
         foreach ($topics as $topic) {
-            try {
-                $sourceRows = array_map(function (array $source): array {
-                    return [
-                        'source_name' => $source['source_name'] ?? 'N/A',
-                        'source_url' => $source['source_url'] ?? '',
-                        'headline' => $source['headline'] ?? '',
-                        'summary' => $source['summary'] ?? '',
-                        'published_at' => $source['published_at'] ?? null,
-                    ];
-                }, $topic['sources']);
+            $sourceRows = array_map(function (array $source): array {
+                return [
+                    'source_name' => $source['source_name'] ?? 'N/A',
+                    'source_url' => $source['source_url'] ?? '',
+                    'headline' => $source['headline'] ?? '',
+                    'summary' => $source['summary'] ?? '',
+                    'published_at' => $source['published_at'] ?? null,
+                ];
+            }, $topic['sources']);
 
-                $entities = $this->entityExtractor->extract($sourceRows);
-                $entityContext = $entities->toPromptContext();
+            $entities = $this->entityExtractor->extract($sourceRows);
+            $entityContext = $entities->toPromptContext();
 
                 $payload = json_encode([
                     'entities_context' => "Extracted from sources:\n" . $entityContext,
@@ -176,14 +175,6 @@ class NewsArticleGenerationService
                 );
 
                 $generated++;
-            } catch (\Throwable $e) {
-                $this->repository->markGenerationFailed((int) $topic['id']);
-                \Log::error('News article generation failed: ' . $e->getMessage(), [
-                    'topic_id' => $topic['id'] ?? null,
-                    'topic_name' => $topic['topic_name'] ?? 'unknown',
-                ]);
-                $failed++;
-            }
         }
 
         return [
