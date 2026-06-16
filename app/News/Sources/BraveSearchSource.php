@@ -29,7 +29,7 @@ class BraveSearchSource implements NewsSource
         return 'brave_search';
     }
 
-    public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit): array
+    public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit, string $scope = 'india'): array
     {
         Cache::increment(self::HIT_CACHE_KEY);
 
@@ -46,7 +46,8 @@ class BraveSearchSource implements NewsSource
         $maxTokens = (int) ($this->config['max_tokens'] ?? 8192);
 
         $queryMap = $this->config['queries'] ?? [];
-        $query = $queryMap[$category] ?? $category;
+        $globalQueryMap = $scope === 'global' ? config('news-engine-global.sources.brave_search.queries', []) : [];
+        $query = $globalQueryMap[$category] ?? $queryMap[$category] ?? $category;
 
         $url = rtrim($baseUrl, '/') . '/llm/context';
 

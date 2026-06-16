@@ -19,5 +19,5 @@ interface NewsSource
      *   tokens: array<int, string>
      * }>
      */
-    public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit): array;
+    public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit, string $scope = 'india'): array;
 }

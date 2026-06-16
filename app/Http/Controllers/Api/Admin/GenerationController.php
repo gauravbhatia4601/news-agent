@@ -42,7 +42,9 @@ class GenerationController extends Controller
 
         $workerStatus = $this->detectWorkerStatus($pendingJobs, $totalFailedJobs, $pendingDetails);
 
-        $lastRun = Cache::get('news-engine:last-discovery-run');
+        $lastRunIndia = Cache::get('news-engine:last-discovery-run:india');
+        $lastRunGlobal = Cache::get('news-engine:last-discovery-run:global');
+        $lastRun = collect([$lastRunIndia, $lastRunGlobal])->filter()->sortDesc()->first();
         $nextRun = $this->calculateNextDiscoveryRun($lastRun);
 
         $articlesLastHour = NewsArticle::where('created_at', '>=', $now->clone()->subHour())->count();
@@ -67,10 +69,13 @@ class GenerationController extends Controller
                 ],
                 'discovery' => [
                     'last_run_at' => $lastRun?->toIso8601String(),
+                    'last_run_at_india' => $lastRunIndia?->toIso8601String(),
+                    'last_run_at_global' => $lastRunGlobal?->toIso8601String(),
                     'next_run_at' => $nextRun?->toIso8601String(),
                     'next_run_in_seconds' => $lastRun ? max(0, (int) $nextRun?->diffInSeconds($now, false)) : null,
                     'command' => 'news:discover --queue',
-                    'frequency' => 'hourly',
+                    'command_global' => 'news:discover --queue --scope=global',
+                    'frequency' => 'hourly (India at :00, Global at :30)',
                     'default_limit' => (int) config('news-engine.discovery.default_limit', 3),
                     'default_sources_per_topic' => (int) config('news-engine.discovery.default_sources_per_topic', 5),
                 ],

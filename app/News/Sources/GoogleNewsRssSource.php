@@ -31,17 +31,26 @@ class GoogleNewsRssSource implements NewsSource
         return 'google_rss';
     }
 
-    public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit): array
+    public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit, string $scope = 'india'): array
     {
         Cache::increment(self::HIT_CACHE_KEY);
 
         $baseFeedUrl = (string) ($this->config['base_feed_url'] ?? 'https://news.google.com/rss/search');
         $queryMap = $this->config['queries'] ?? [];
-        $query = urlencode(($queryMap[$category] ?? $category).' when:1d');
+        $globalQueryMap = $scope === 'global' ? config('news-engine-global.sources.google_rss.queries', []) : [];
+        $query = urlencode(($globalQueryMap[$category] ?? $queryMap[$category] ?? $category).' when:1d');
 
+        $isGlobal = $scope === 'global';
         $hl = (string) ($this->config['hl'] ?? 'en-US');
         $gl = (string) ($this->config['gl'] ?? 'US');
         $ceid = (string) ($this->config['ceid'] ?? 'US:en');
+
+        if (! $isGlobal) {
+            $hl = (string) ($this->config['india_hl'] ?? 'en-IN');
+            $gl = (string) ($this->config['india_gl'] ?? 'IN');
+            $ceid = (string) ($this->config['india_ceid'] ?? 'IN:en');
+        }
+
         $timeout = (int) ($this->config['timeout'] ?? 20);
 
         $url = "{$baseFeedUrl}?q={$query}&hl={$hl}&gl={$gl}&ceid={$ceid}";

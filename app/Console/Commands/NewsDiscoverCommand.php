@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 class NewsDiscoverCommand extends Command
 {
     protected $signature = 'news:discover
+                            {--scope=india : Discovery scope: india or global}
                             {--limit= : Topics per category (1-20)}
                             {--fresh-hours= : Freshness window in hours (1-48)}
                             {--sources-per-topic= : Max sources per topic (2-6)}
@@ -22,7 +23,7 @@ class NewsDiscoverCommand extends Command
         NewsDiscoveryService $service,
         NewsArticleGenerationService $generationService
     ): int {
-        Cache::put('news-engine:last-discovery-run', now(), now()->addDays(7));
+        Cache::put('news-engine:last-discovery-run:'.$scope, now(), now()->addDays(7));
 
         $defaultLimit = max(1, (int) config('news-engine.discovery.default_limit', 5));
         $defaultFreshHours = max(1, (int) config('news-engine.discovery.default_fresh_hours', 12));
@@ -39,33 +40,38 @@ class NewsDiscoverCommand extends Command
             : $defaultSourcesPerTopic;
         $useQueue = $this->option('queue');
 
-        $india = Category::where('slug', 'india')->first();
+        $scope = in_array($this->option('scope'), ['india', 'global'], true)
+            ? $this->option('scope')
+            : 'india';
 
-        if (! $india) {
-            $this->warn('India parent category not found.');
+        $parent = Category::where('slug', $scope === 'global' ? 'world' : 'india')->first();
+
+        if (! $parent) {
+            $this->warn(($scope === 'global' ? 'World' : 'India') . ' parent category not found.');
             return self::FAILURE;
         }
 
-        $stateCategories = $india->children()
+        $childCategories = $parent->children()
             ->orderBy('display_order')
             ->get(['id', 'slug', 'name']);
 
-        $locations = $stateCategories->map(fn (Category $cat) => [
+        $locations = $childCategories->map(fn (Category $cat) => [
             'slug' => $cat->slug,
             'name' => $cat->name,
             'category_id' => $cat->id,
         ])->all();
 
         if ($locations === []) {
-            $this->warn('No state subcategories found under India.');
+            $this->warn('No subcategories found under ' . ($scope === 'global' ? 'World' : 'India') . '.');
             return self::FAILURE;
         }
 
-        $this->info("Discovery: {$limit} topics/state, {$sourcesPerTopic} sources/topic, {$freshHours}h window, over " . count($locations) . " states/UTs.");
+        $scopeLabel = $scope === 'global' ? 'global regions' : 'states/UTs';
+        $this->info("Discovery [{$scope}]: {$limit} topics/category, {$sourcesPerTopic} sources/topic, {$freshHours}h window, over " . count($locations) . " {$scopeLabel}.");
         $this->newLine();
 
         try {
-            $topics = $service->discover($locations, $limit, $freshHours, $sourcesPerTopic);
+            $topics = $service->discover($locations, $limit, $freshHours, $sourcesPerTopic, $scope);
         } catch (\Throwable $e) {
             $this->error('Discovery failed: ' . $e->getMessage());
             return self::FAILURE;
@@ -75,7 +81,7 @@ class NewsDiscoverCommand extends Command
 
         foreach ($topics as $topic) {
             $signatures[] = $topic->signature;
-            $locationName = $stateCategories->firstWhere('id', $topic->locationCategoryId)?->name ?? 'Unknown';
+            $locationName = $childCategories->firstWhere('id', $topic->locationCategoryId)?->name ?? 'Unknown';
             $this->line("  [{$locationName}] [{$topic->category}] {$topic->name}");
         }
 

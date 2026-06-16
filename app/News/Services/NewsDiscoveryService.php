@@ -30,6 +30,7 @@ class NewsDiscoveryService
         int $limit,
         int $freshHours,
         int $sourcesPerTopic,
+        string $scope = 'india',
     ): array {
         $freshThreshold = now()->subHours($freshHours);
         $cacheKey = (string) config('news-engine.discovery.seen_cache_key', 'news-engine:rss:seen-signatures');
@@ -61,6 +62,7 @@ class NewsDiscoveryService
                 $freshThreshold,
                 $fetchLimit,
                 $seenSignatures,
+                $scope,
             );
 
             // Fall back to Brave only if Google RSS didn't return enough fresh candidates.
@@ -71,6 +73,7 @@ class NewsDiscoveryService
                     $freshThreshold,
                     $fetchLimit,
                     $seenSignatures,
+                    $scope,
                 );
 
                 $candidates = array_merge($candidates, $braveCandidates);
@@ -112,8 +115,9 @@ class NewsDiscoveryService
         Carbon $freshThreshold,
         int $fetchLimit,
         array $seenSignatures,
+        string $scope = 'india',
     ): array {
-        $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit);
+        $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit, $scope);
 
         $candidates = [];
         foreach ($rows as $row) {
