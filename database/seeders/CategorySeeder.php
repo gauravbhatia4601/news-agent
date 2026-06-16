@@ -23,6 +23,7 @@ class CategorySeeder extends Seeder
                     'States & Regions' => 'State governments, regional politics, development across states.',
                     'Law & Judiciary' => 'Supreme Court, High Courts, legal reforms, landmark judgments.',
                     'Social Justice' => 'Caste, gender equality, minority rights, affirmative action.',
+                    'Accidents & Disasters' => 'Road accidents, natural disasters, fires, industrial mishaps, animal attacks, casualties.',
                 ],
             ],
             'World' => [

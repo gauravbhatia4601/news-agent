@@ -4,6 +4,7 @@ namespace App\News\Sources;
 
 use App\News\Sources\Contracts\NewsSource;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -17,6 +18,8 @@ class BraveSearchSource implements NewsSource
         'search.brave.com',
     ];
 
+    public const HIT_CACHE_KEY = 'news-engine:source-hits:brave_search';
+
     public function __construct(private readonly array $config = [])
     {
     }
@@ -28,6 +31,8 @@ class BraveSearchSource implements NewsSource
 
     public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit): array
     {
+        Cache::increment(self::HIT_CACHE_KEY);
+
         $apiKey = (string) ($this->config['api_key'] ?? '');
         if ($apiKey === '') {
             throw new \RuntimeException('Brave Search API key is not configured.');

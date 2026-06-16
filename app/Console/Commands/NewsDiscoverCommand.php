@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\News\Services\NewsArticleGenerationService;
 use App\News\Services\NewsDiscoveryService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class NewsDiscoverCommand extends Command
 {
@@ -21,6 +22,8 @@ class NewsDiscoverCommand extends Command
         NewsDiscoveryService $service,
         NewsArticleGenerationService $generationService
     ): int {
+        Cache::put('news-engine:last-discovery-run', now(), now()->addDays(7));
+
         $defaultLimit = max(1, (int) config('news-engine.discovery.default_limit', 5));
         $defaultFreshHours = max(1, (int) config('news-engine.discovery.default_fresh_hours', 12));
         $defaultSourcesPerTopic = max(2, (int) config('news-engine.discovery.default_sources_per_topic', 3));

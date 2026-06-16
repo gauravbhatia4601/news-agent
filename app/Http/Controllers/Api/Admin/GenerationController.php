@@ -6,35 +6,271 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\NewsArticle;
 use App\Models\NewsTopic;
+use App\News\Sources\BraveSearchSource;
+use App\News\Sources\GoogleNewsRssSource;
 use App\Services\SitemapService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
 
 class GenerationController extends Controller
 {
     public function queueStatus(): JsonResponse
     {
-        $pending = DB::table('jobs')->count();
-        $failedJobs = DB::table('failed_jobs')->count();
+        $now = now();
+        $connection = config('queue.default', 'database');
+        $queueName = config("queue.connections.{$connection}.queue", 'default');
+
+        $pendingJobs = Queue::size($queueName);
+        $totalFailedJobs = DB::table('failed_jobs')->count();
+
+        $pendingDetails = $connection === 'redis'
+            ? $this->pendingJobsFromRedis($queueName)
+            : $this->pendingJobsFromDatabase($queueName);
 
         $recentFailed = DB::table('failed_jobs')
             ->orderByDesc('failed_at')
-            ->take(10)
+            ->take(20)
             ->get()
-            ->map(fn ($j) => [
-                'id' => $j->id,
-                'queue' => $j->queue,
-                'failed_at' => $j->failed_at,
-                'exception' => Str::limit($j->exception, 300),
-            ]);
+            ->map(fn ($j) => $this->serializeJob($j, 'failed'));
+
+        $workerStatus = $this->detectWorkerStatus($pendingJobs, $totalFailedJobs, $pendingDetails);
+
+        $lastRun = Cache::get('news-engine:last-discovery-run');
+        $nextRun = $this->calculateNextDiscoveryRun($lastRun);
+
+        $articlesLastHour = NewsArticle::where('created_at', '>=', $now->clone()->subHour())->count();
+        $articlesLast24h = NewsArticle::where('created_at', '>=', $now->clone()->subHours(24))->count();
 
         return response()->json([
             'data' => [
-                'pending_jobs' => $pending,
-                'total_failed_jobs' => $failedJobs,
-                'recent_failed' => $recentFailed,
+                'queue' => [
+                    'pending_jobs' => $pendingJobs,
+                    'total_failed_jobs' => $totalFailedJobs,
+                    'worker_status' => $workerStatus,
+                    'pending_jobs_list' => $pendingDetails,
+                    'recent_failed_jobs' => $recentFailed,
+                    'connection' => $connection,
+                    'queue_name' => $queueName,
+                    'help' => 'Queue failed jobs = jobs that crashed in the worker. Topic generation failures are shown separately under generation.failed_topics.',
+                ],
+                'sources' => [
+                    'google_rss_hits' => (int) Cache::get(GoogleNewsRssSource::HIT_CACHE_KEY, 0),
+                    'brave_search_hits' => (int) Cache::get(BraveSearchSource::HIT_CACHE_KEY, 0),
+                    'brave_search_enabled' => (bool) config('news-engine.sources.brave_search.enabled', true),
+                    'brave_fallback_threshold' => (int) config('news-engine.discovery.brave_fallback_threshold', 8),
+                ],
+                'discovery' => [
+                    'last_run_at' => $lastRun?->toIso8601String(),
+                    'next_run_at' => $nextRun?->toIso8601String(),
+                    'next_run_in_seconds' => $lastRun ? max(0, (int) $nextRun?->diffInSeconds($now, false)) : null,
+                    'command' => 'news:discover --queue',
+                    'frequency' => 'hourly',
+                    'default_limit' => (int) config('news-engine.discovery.default_limit', 3),
+                    'default_sources_per_topic' => (int) config('news-engine.discovery.default_sources_per_topic', 5),
+                ],
+                'generation' => [
+                    'model' => (string) config('news-engine.generation.model', 'gemma4:31b-cloud'),
+                    'provider' => (string) config('news-engine.generation.provider', 'ollama'),
+                    'enabled' => (bool) config('news-engine.generation.enabled', true),
+                    'articles_last_hour' => $articlesLastHour,
+                    'articles_last_24h' => $articlesLast24h,
+                    'avg_generation_seconds' => round(
+                        NewsArticle::where('created_at', '>=', $now->clone()->subHours(24))
+                            ->where('generation_duration_seconds', '>', 0)
+                            ->selectRaw('AVG(generation_duration_seconds) as avg_seconds')
+                            ->value('avg_seconds') ?? 0,
+                        1
+                    ),
+                    'pending_topics' => NewsTopic::where('generation_status', 'pending')->count(),
+                    'generated_topics' => NewsTopic::where('generation_status', 'generated')->count(),
+                    'failed_topics' => NewsTopic::where('generation_status', 'failed')->count(),
+                ],
+                'timestamp' => $now->toIso8601String(),
             ],
         ]);
+    }
+
+    private function pendingJobsFromDatabase(string $queueName): array
+    {
+        return DB::table('jobs')
+            ->where('queue', $queueName)
+            ->orderByDesc('available_at')
+            ->take(50)
+            ->get()
+            ->map(fn ($j) => $this->serializeJob($j, 'pending'))
+            ->all();
+    }
+
+    private function pendingJobsFromRedis(string $queueName): array
+    {
+        $redis = Redis::connection(config('queue.connections.redis.connection', 'default'));
+
+        $waitingKey = 'queues:' . $queueName;
+        $reservedKey = $waitingKey . ':reserved';
+        $delayedKey = $waitingKey . ':delayed';
+
+        $jobs = [];
+
+        // Waiting jobs
+        foreach ($redis->lrange($waitingKey, 0, 49) as $index => $payload) {
+            $job = $this->parseRedisPayload($payload, $queueName, 'waiting', $index);
+            if ($job) {
+                $jobs[] = $job;
+            }
+        }
+
+        // Jobs currently reserved/processing by a worker
+        $reserved = $redis->zrange($reservedKey, 0, 49, 'WITHSCORES');
+        foreach ($reserved as $payload => $score) {
+            $job = $this->parseRedisPayload($payload, $queueName, 'processing');
+            if ($job) {
+                $jobs[] = $job;
+            }
+        }
+
+        // Delayed jobs (scheduled for later)
+        $delayed = $redis->zrange($delayedKey, 0, 49, 'WITHSCORES');
+        foreach ($delayed as $payload => $score) {
+            $job = $this->parseRedisPayload($payload, $queueName, 'delayed');
+            if ($job) {
+                $jobs[] = $job;
+            }
+        }
+
+        return array_slice($jobs, 0, 50);
+    }
+
+    private function parseRedisPayload(string $payload, string $queueName, string $state, ?int $index = null): ?array
+    {
+        $job = json_decode($payload, true);
+        if (! is_array($job)) {
+            return null;
+        }
+
+        $commandName = $this->resolveCommandName($job);
+        $id = $job['uuid'] ?? ($job['id'] ?? 'redis-' . ($index ?? substr(sha1($payload), 0, 8)));
+
+        $stateLabels = [
+            'waiting' => 'Queued in Redis',
+            'processing' => 'Processing by worker',
+            'delayed' => 'Delayed / scheduled',
+        ];
+
+        return [
+            'id' => $id,
+            'queue' => $queueName,
+            'command' => $commandName,
+            'type' => 'pending',
+            'state' => $state,
+            'available_at' => null,
+            'available_at_label' => $stateLabels[$state] ?? 'Queued in Redis',
+            'attempts' => (int) ($job['attempts'] ?? 0),
+        ];
+    }
+
+    private function resolveCommandName(array $job): ?string
+    {
+        $displayName = $job['displayName'] ?? null;
+        $commandName = is_string($displayName) ? $displayName : null;
+
+        $command = $job['data']['command'] ?? null;
+        if (is_string($command)) {
+            $unserialized = @unserialize($command);
+            if ($unserialized instanceof \App\Jobs\GenerateArticle) {
+                $commandName = 'GenerateArticle: ' . $unserialized->topicSignature;
+            }
+        }
+
+        return $commandName;
+    }
+
+    private function serializeJob(object $job, string $type): array
+    {
+        $commandName = null;
+        $payload = json_decode($job->payload ?? '{}', true);
+
+        if (is_array($payload)) {
+            $commandName = $this->resolveCommandName($payload);
+        }
+
+        $base = [
+            'id' => $job->uuid ?? $job->id,
+            'queue' => $job->queue,
+            'command' => $commandName,
+            'type' => $type,
+        ];
+
+        if ($type === 'pending') {
+            $base['available_at'] = $this->formatDate($job->available_at);
+            $base['attempts'] = (int) $job->attempts;
+        } else {
+            $base['failed_at'] = $this->formatDate($job->failed_at);
+            $base['exception'] = $job->exception;
+            $base['exception_preview'] = Str::limit($job->exception, 300);
+        }
+
+        return $base;
+    }
+
+    private function detectWorkerStatus(int $pendingJobs, int $totalFailedJobs, $pendingDetails): array
+    {
+        $running = false;
+        $details = 'Unable to determine worker status from this container.';
+
+        if (function_exists('shell_exec')) {
+            $output = shell_exec("ps aux | grep -E '[q]ueue:work' | grep -v grep | head -5") ?? '';
+            $lines = array_filter(explode("\n", trim($output)));
+            $running = count($lines) > 0;
+            if ($running) {
+                $details = count($lines) . ' queue:work process(es) detected.';
+            } else {
+                $details = 'No queue:work process detected on this container.';
+            }
+        }
+
+        $oldestPending = collect($pendingDetails)->last();
+        $stalled = false;
+        if ($oldestPending && ! empty($oldestPending['available_at'])) {
+            $availableAt = Carbon::parse($oldestPending['available_at']);
+            $stalled = $availableAt->diffInMinutes(now(), false) > 15;
+        }
+
+        return [
+            'queue_work_running' => $running,
+            'stalled' => $stalled,
+            'details' => $details,
+            'pending_jobs' => $pendingJobs,
+            'failed_jobs' => $totalFailedJobs,
+        ];
+    }
+
+    private function calculateNextDiscoveryRun(?Carbon $lastRun): ?Carbon
+    {
+        if (! $lastRun instanceof Carbon) {
+            return null;
+        }
+
+        $next = $lastRun->clone()->addHour()->startOfHour();
+
+        return $next->isPast() ? $next->clone()->addHour() : $next;
+    }
+
+    private function formatDate(mixed $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toIso8601String();
+        } catch (\Throwable) {
+            return is_string($value) ? $value : null;
+        }
     }
 
     public function regenerateSitemap(): JsonResponse
@@ -158,7 +394,7 @@ class GenerationController extends Controller
                         ? round(($articles24h / ($articles24h + NewsTopic::where('generation_status', 'failed')->where('updated_at', '>=', $last24h)->count())) * 100, 1)
                         : 0,
                 ],
-                'queue' => DB::table('jobs')->count(),
+                'queue' => Queue::size(config("queue.connections." . config('queue.default', 'database') . ".queue", 'default')),
             ],
         ]);
     }

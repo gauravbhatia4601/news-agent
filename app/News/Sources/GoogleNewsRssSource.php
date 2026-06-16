@@ -4,6 +4,7 @@ namespace App\News\Sources;
 
 use App\News\Sources\Contracts\NewsSource;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -19,6 +20,8 @@ class GoogleNewsRssSource implements NewsSource
         'googleusercontent.com',
     ];
 
+    public const HIT_CACHE_KEY = 'news-engine:source-hits:google_rss';
+
     public function __construct(private readonly array $config = [])
     {
     }
@@ -30,6 +33,8 @@ class GoogleNewsRssSource implements NewsSource
 
     public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit): array
     {
+        Cache::increment(self::HIT_CACHE_KEY);
+
         $baseFeedUrl = (string) ($this->config['base_feed_url'] ?? 'https://news.google.com/rss/search');
         $queryMap = $this->config['queries'] ?? [];
         $query = urlencode(($queryMap[$category] ?? $category).' when:1d');

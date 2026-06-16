@@ -27,6 +27,7 @@ class TopicCategoryDetectionService
         'states-regions' => ['state government', 'state cabinet', 'district', 'collector', 'panchayat', 'municipal', 'regional', 'state assembly'],
         'law-judiciary' => ['supreme court', 'high court', 'judiciary', 'judge', 'verdict', 'ruling', 'plea', 'bail', ' FIR ', 'chargesheet', 'conviction', 'acquit', 'tribunal', 'cji'],
         'social-justice' => ['caste', 'reservation', 'equality', 'gender', 'women safety', 'minority', ' Dalit ', 'tribe', ' Scheduled ', 'poverty', 'social welfare', 'mid day meal', 'anganwadi'],
+        'accidents-disasters' => ['accident', 'crash', 'collision', 'killed', 'death toll', 'casualties', 'injured', 'fire broke out', 'building collapse', 'bridge collapse', 'flood', 'earthquake', 'landslide', 'cyclone', 'tsunami', 'drought', 'wildfire', 'explosion', 'derailment', 'train accident', 'road accident', 'lion attack', 'tiger attack', 'animal attack', 'mauled', '-electrocuted', 'drowned', 'swept away'],
 
         // World
         'south-asia' => ['pakistan', 'bangladesh', 'sri lanka', 'nepal', 'bhutan', 'maldives', 'afghanistan', 'saarc'],
@@ -65,14 +66,14 @@ class TopicCategoryDetectionService
 
         // Lifestyle
         'health-wellness' => ['health', 'healthcare', 'hospital', 'doctor', 'medical', 'ayush', 'fitness', 'mental health', 'disease', 'vaccine', 'covid', 'dengue', 'malaria', 'cancer', 'diabetes'],
-        'food-drink' => ['food', 'restaurant', 'cuisine', 'street food', 'chef', 'cooking', 'beverage', 'wine', 'coffee', 'tea', 'organic food', 'food safety'],
+        'food-drink' => ['food', 'cuisine', 'street food', 'chef', 'cooking', 'beverage', 'wine', 'coffee', 'tea', 'organic food', 'food safety', 'restaurant opening', 'new restaurant', 'food festival', 'culinary'],
         'travel-destinations' => ['travel', 'tourism', 'heritage', 'hotel', 'resort', 'airport', 'flight', 'visa', 'destination', 'pilgrimage', 'tourist'],
         'style-fashion' => ['fashion', 'designer', 'ethnic wear', 'sustainable fashion', 'beauty', 'makeup', 'skincare', 'luxury brand', 'textile'],
         'home-design' => ['architecture', 'interior design', 'real estate design', 'smart home', 'urban planning', 'furniture', 'home decor'],
 
         // Science & Education
         'space-isro' => ['isro', 'chandrayaan', 'gaganyaan', 'space', 'satellite', 'rocket', 'mars', 'moon mission', 'astronaut', 'nasa collaboration'],
-        'climate-environment' => ['climate change', 'global warming', 'renewable energy', 'solar', 'wind energy', 'pollution', 'air quality', 'environment', 'conservation', 'forest', 'wildlife', 'cop'],
+        'climate-environment' => ['climate change', 'global warming', 'renewable energy', 'solar', 'wind energy', 'pollution', 'air quality', 'environment', 'conservation', 'forest', 'wildlife sanctuary', 'wildlife protection', 'cop'],
         'scientific-research' => ['research', 'scientist', 'csir', 'iit research', 'discovery', 'breakthrough', 'patent', 'journal', 'stem', 'biotechnology', 'nanotechnology'],
         'higher-education' => ['iit ', 'iim ', 'university', 'college', 'education policy', 'nta ', 'jee ', 'neet ', 'ups', 'study abroad', 'edtech', 'scholarship'],
         'agriculture-rural' => ['agriculture', 'farmer', 'msp ', 'crop', 'monsoon', 'drought', 'flood', 'rural development', 'panchayat', 'agritech', 'fertilizer', 'pesticide', 'dairy'],

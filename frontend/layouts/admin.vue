@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { Menu, LayoutDashboard, FileText, FolderOpen, Tag, Users, ScrollText, Settings, Search, Zap, BarChart3, LogOut, ExternalLink } from 'lucide-vue-next'
+import { Menu, LayoutDashboard, FileText, FolderOpen, Tag, Users, ScrollText, Settings, Search, Zap, BarChart3, LogOut, ExternalLink, Activity } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,6 +105,7 @@ const navGroups = [
     items: [
       { to: '/admin/discovery', label: 'Discovery', icon: Search },
       { to: '/admin/generation', label: 'Generation', icon: Zap },
+      { to: '/admin/queue', label: 'Queue Monitor', icon: Activity, badge: undefined },
       { to: '/admin/audit', label: 'Audit Log', icon: ScrollText },
     ]
   },
@@ -124,6 +125,7 @@ const pageTitles: Record<string, string> = {
   '/admin/categories': 'Categories',
   '/admin/discovery': 'Discovery',
   '/admin/generation': 'Generation',
+  '/admin/queue': 'Queue Monitor',
   '/admin/audit': 'Audit Log',
   '/admin/users': 'Users',
   '/admin/settings': 'Settings',
