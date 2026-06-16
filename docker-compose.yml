@@ -15,7 +15,7 @@ services:
       APP_KEY: ${APP_KEY}
       APP_DEBUG: ${APP_DEBUG:-false}
       APP_URL: ${APP_URL:-http://localhost}
-      FRONTEND_URL: ${FRONTEND_URL:-${APP_URL:-http://localhost}}
+      FRONTEND_URL: ${FRONTEND_URL:-https://news.technioz.com}
 
       # Database (Coolify-managed Postgres)
       DB_CONNECTION: pgsql

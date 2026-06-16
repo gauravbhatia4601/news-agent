@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used by services that generate public-facing links, such as
+    | sitemaps, RSS feeds, and robots.txt. When running behind a reverse proxy
+    | or in a container, set this to the public domain.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

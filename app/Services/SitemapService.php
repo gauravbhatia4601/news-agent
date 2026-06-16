@@ -16,7 +16,10 @@ class SitemapService
     public function __construct()
     {
         $this->outputDir = public_path('sitemaps');
-        $this->baseUrl = rtrim(config('app.url', 'https://thetrustjournal.com'), '/');
+        $this->baseUrl = rtrim(
+            config('app.frontend_url') ?: config('app.url', 'https://thetrustjournal.com'),
+            '/'
+        );
     }
 
     public function generate(): array
