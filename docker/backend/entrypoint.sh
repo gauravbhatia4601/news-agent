@@ -34,8 +34,9 @@ php artisan migrate --force --no-interaction
 php artisan storage:link 2>/dev/null || true
 
 # Fix permissions: all artisan commands above ran as root, so files under storage
-# may be owned by root. Reset ownership so php-fpm/www-data can write logs/cache.
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
+# and generated directories may be owned by root. Reset ownership so php-fpm/www-data
+# can write logs, cache, and public sitemap files.
+chown -R www-data:www-data storage bootstrap/cache public/sitemaps
+chmod -R 775 storage bootstrap/cache public/sitemaps
 
 exec "$@"
