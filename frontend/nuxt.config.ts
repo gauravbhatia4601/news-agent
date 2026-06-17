@@ -16,7 +16,8 @@ export default defineNuxtConfig({
     families: {
       'Playfair Display': [400, 700],
       'Source Serif 4': [400, 600, 700],
-      Inter: [400, 500, 700],
+      Inter: [400, 500, 600, 700],
+      'JetBrains Mono': [400, 500, 600, 700],
     },
   },
 
