@@ -1,21 +1,33 @@
 <template>
-  <div class="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-    <div class="w-full max-w-[400px]">
+  <div class="min-h-screen bg-[#0f1115] flex items-center justify-center p-4 relative overflow-hidden">
+    <!-- Subtle background pattern -->
+    <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 40px 40px;" />
+
+    <div class="w-full max-w-[400px] relative z-10">
+      <!-- Brand -->
       <div class="text-center mb-10">
-        <div class="inline-flex items-center gap-2 mb-2">
-          <Shield class="w-6 h-6 text-blue-400" />
-          <span class="text-white font-display text-xl font-bold">The AI Journal</span>
-        </div>
-        <p class="text-slate-500 text-sm">Admin Panel</p>
+        <NuxtLink to="/" target="_blank" class="inline-flex flex-col items-center gap-3 group">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-transform duration-300 group-hover:scale-105">
+            <rect width="48" height="48" rx="14" fill="#1a2233" stroke="#2a3245" stroke-width="1"/>
+            <path d="M18 12L18 36M18 12L28 18.5M18 12L28 5.5" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M24 16C25.5 18.5 28 21 31 22.5M31 22.5L27 18.5M31 22.5L29 26.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="34" cy="32" r="3" stroke="white" stroke-width="1.5"/>
+          </svg>
+          <div>
+            <span class="text-white font-display text-xl font-bold tracking-tight block">The AI Journal</span>
+            <span class="text-[#6b7080] text-xs uppercase tracking-[0.2em] font-medium">Admin Console</span>
+          </div>
+        </NuxtLink>
       </div>
 
-      <div class="bg-slate-800 border border-slate-700 rounded-lg shadow-xl">
-        <div class="px-6 pt-6 pb-2">
-          <h2 class="text-white font-semibold">Sign in</h2>
-          <p class="text-slate-400 text-sm mt-1">Enter your credentials to continue</p>
+      <!-- Card -->
+      <div class="bg-[#161822] border border-white/[0.06] rounded-2xl shadow-2xl shadow-black/20 overflow-hidden">
+        <div class="px-8 pt-8 pb-2">
+          <h2 class="text-white font-medium text-lg">Welcome back</h2>
+          <p class="text-[#6b7080] text-sm mt-1">Enter your credentials to access the dashboard</p>
         </div>
 
-        <form @submit.prevent="handleLogin" class="p-6 space-y-4">
+        <form @submit.prevent="handleLogin" class="p-8 pt-4 space-y-5">
           <Transition
             enter-active-class="transition duration-200 ease-out"
             enter-from-class="opacity-0 -translate-y-1"
@@ -24,37 +36,38 @@
             leave-from-class="opacity-100 translate-y-0"
             leave-to-class="opacity-0 -translate-y-1"
           >
-            <div v-if="error" class="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
+            <div v-if="error" class="flex items-start gap-3 bg-red-500/[0.08] border border-red-500/20 rounded-xl px-4 py-3">
               <AlertCircle class="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <p class="text-xs text-red-300">{{ error }}</p>
+              <p class="text-sm text-red-300 leading-relaxed">{{ error }}</p>
             </div>
           </Transition>
 
-          <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
+          <div class="space-y-1.5">
+            <label class="block text-xs font-medium text-[#8b8f9e] tracking-wide">Email address</label>
             <input
               v-model="email"
               type="email"
               required
-              class="w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
-              placeholder="admin@thetrustjournal.com"
+              autofocus
+              class="w-full bg-[#0f1115] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4b4e5c] focus:outline-none focus:border-[#f5a623]/50 focus:ring-1 focus:ring-[#f5a623]/20 transition-all duration-200"
+              placeholder="admin@theaijournal.com"
             />
           </div>
 
-          <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1.5">Password</label>
+          <div class="space-y-1.5">
+            <label class="block text-xs font-medium text-[#8b8f9e] tracking-wide">Password</label>
             <div class="relative">
               <input
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 required
-                class="w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 pr-10"
-                placeholder="Enter password"
+                class="w-full bg-[#0f1115] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4b4e5c] focus:outline-none focus:border-[#f5a623]/50 focus:ring-1 focus:ring-[#f5a623]/20 transition-all duration-200 pr-11"
+                placeholder="Enter your password"
               />
               <button
                 type="button"
                 @click="showPassword = !showPassword"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300"
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#4b4e5c] hover:text-[#8b8f9e] transition-colors"
               >
                 <Eye v-if="!showPassword" class="w-4 h-4" />
                 <EyeOff v-else class="w-4 h-4" />
@@ -65,30 +78,31 @@
           <button
             type="submit"
             :disabled="loading"
-            class="w-full bg-blue-600 text-white font-medium py-2.5 rounded-md text-sm hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            class="w-full bg-[#1a2233] border border-[#f5a623]/20 text-white font-medium py-3 rounded-xl text-sm hover:bg-[#1a2233]/80 hover:border-[#f5a623]/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
           >
             <Loader2 v-if="loading" class="animate-spin w-4 h-4" />
-            <span>{{ loading ? 'Signing in...' : 'Sign In' }}</span>
+            <span v-else class="group-hover:translate-x-0.5 transition-transform">Sign in</span>
+            <ArrowRight v-if="!loading" class="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
           </button>
         </form>
       </div>
 
-      <p class="text-center mt-6 text-xs text-slate-600">
-        Default: admin@thetrustjournal.com / changeme123
+      <p class="text-center mt-8 text-[11px] text-[#4b4e5c]">
+        Default: admin@theaijournal.com / changeme123
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Shield, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+import { Shield, AlertCircle, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-vue-next'
 
 definePageMeta({ layout: false })
 
 const { login, isAuthenticated } = useAdminAuth()
 const router = useRouter()
 
-const email = ref('admin@thetrustjournal.com')
+const email = ref('admin@theaijournal.com')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')

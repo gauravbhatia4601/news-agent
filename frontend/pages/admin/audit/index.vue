@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-4">
-    <div class="bg-white rounded-lg border border-slate-200 p-3 flex flex-wrap items-center gap-3">
-      <select v-model="filters.action" class="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
-      >
+  <div class="space-y-5">
+    <!-- Toolbar -->
+    <div class="bg-white rounded-2xl border border-gray-200/60 p-4 flex flex-wrap items-center gap-3">
+      <select v-model="filters.action" class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors">
         <option value="">All Actions</option>
         <option value="login">Login</option>
         <option value="logout">Logout</option>
@@ -10,34 +10,35 @@
         <option value="update">Update</option>
         <option value="delete">Delete</option>
       </select>
-      <span class="text-xs text-slate-500">{{ logs.meta?.total || 0 }} entries</span>
+      <span class="text-xs text-gray-400 font-medium">{{ logs.meta?.total || 0 }} entries</span>
     </div>
 
-    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <!-- Table -->
+    <div class="bg-white rounded-2xl border border-gray-200/60 overflow-hidden">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 border-b border-slate-200">
-          <tr>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Time</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">User</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Action</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Resource</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">IP</th>
+        <thead>
+          <tr class="bg-gray-50/80 border-b border-gray-100">
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Time</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">User</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Resource</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">IP</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
-          <tr v-for="l in logs.data" :key="l.id" class="hover:bg-slate-50">
-            <td class="px-4 py-3 text-xs text-slate-400">{{ formatDate(l.created_at) }}</td>
-            <td class="px-4 py-3 text-xs">{{ l.user_name }}</td>
-            <td class="px-4 py-3">
-              <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="actionClass(l.action)"
-              >{{ l.action }}</span>
+        <tbody class="divide-y divide-gray-50">
+          <tr v-for="l in logs.data" :key="l.id" class="hover:bg-gray-50/50 transition-colors">
+            <td class="px-6 py-3 text-xs text-gray-400 whitespace-nowrap">{{ formatDate(l.created_at) }}</td>
+            <td class="px-6 py-3 text-sm font-medium text-gray-900">{{ l.user_name }}</td>
+            <td class="px-6 py-3">
+              <span class="text-[11px] font-medium px-2.5 py-1 rounded-full" :class="actionClass(l.action)">{{ l.action }}</span>
             </td>
-            <td class="px-4 py-3 text-slate-500">{{ l.resource_type }}{{ l.resource_id ? '#' + l.resource_id : '' }}</td>
-            <td class="px-4 py-3 text-xs text-slate-400">{{ l.ip_address }}</td>
+            <td class="px-6 py-3 text-gray-500">{{ l.resource_type }}{{ l.resource_id ? '#' + l.resource_id : '' }}</td>
+            <td class="px-6 py-3 text-xs text-gray-400 font-mono">{{ l.ip_address }}</td>
           </tr>
-          <tr v-if="!logs.data?.length">
-            <td colspan="5" class="px-4 py-8 text-center text-slate-400">No audit logs</td>
-          </tr>
+          <tr v-if="!logs.data?.length"><td colspan="5" class="px-6 py-12 text-center text-gray-400">
+            <ScrollText class="w-8 h-8 mx-auto mb-3 text-gray-200" />
+            No audit logs
+          </td></tr>
         </tbody>
       </table>
     </div>
@@ -45,6 +46,8 @@
 </template>
 
 <script setup lang="ts">
+import { ScrollText } from 'lucide-vue-next'
+
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const api = useAdminApi()
@@ -54,11 +57,12 @@ const filters = reactive({ action: '' })
 watch(() => filters.action, loadLogs)
 
 function actionClass(action: string) {
-  if (action === 'login') return 'bg-emerald-100 text-emerald-700'
-  if (action === 'delete') return 'bg-red-100 text-red-700'
-  if (action === 'create') return 'bg-blue-100 text-blue-700'
-  if (action === 'update') return 'bg-amber-100 text-amber-700'
-  return 'bg-slate-100 text-slate-600'
+  if (action === 'login') return 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+  if (action === 'delete') return 'bg-red-50 text-red-700 border border-red-100'
+  if (action === 'create') return 'bg-blue-50 text-blue-700 border border-blue-100'
+  if (action === 'update') return 'bg-amber-50 text-amber-700 border border-amber-100'
+  if (action === 'logout') return 'bg-gray-50 text-gray-600 border border-gray-100'
+  return 'bg-gray-50 text-gray-600 border border-gray-100'
 }
 
 function formatDate(d: string) {

@@ -1,120 +1,100 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- Toolbar -->
-    <div class="bg-white rounded-lg border border-slate-200 p-3 flex flex-wrap items-center gap-3">
-      <select v-model="filters.status" class="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+    <div class="bg-white rounded-2xl border border-gray-200/60 p-4 flex flex-wrap items-center gap-3">
+      <select v-model="filters.status" class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors">
         <option value="">All Statuses</option>
         <option value="pending">Pending</option>
         <option value="generated">Generated</option>
         <option value="failed">Failed</option>
       </select>
-      <select v-model="filters.category" class="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+      <select v-model="filters.category" class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors">
         <option value="">All Categories</option>
         <option v-for="cat in categories" :key="cat.slug" :value="cat.slug">{{ cat.name }}</option>
       </select>
       <input v-model="filters.search" type="search" placeholder="Search topics..."
-        class="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500 flex-1 min-w-[200px]" />
-      <select v-model="filters.perPage" class="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+        class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors flex-1 min-w-[200px]" />
+      <select v-model="filters.perPage" class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors">
         <option :value="20">20</option>
         <option :value="50">50</option>
         <option :value="100">100</option>
       </select>
-      <span class="text-xs text-slate-500">{{ topics.total || 0 }} topics</span>
+      <span class="text-xs text-gray-400 font-medium">{{ topics.total || 0 }} topics</span>
     </div>
 
     <!-- Batch action bar -->
-    <div v-if="selectedIds.length > 0" class="bg-blue-50 rounded-lg border border-blue-200 p-3 flex items-center gap-3">
-      <span class="text-sm font-medium text-blue-700">{{ selectedIds.length }} selected</span>
-      <button @click="batchAction('dispatch')" class="px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-md hover:bg-emerald-700">Dispatch to Queue</button>
-      <button @click="batchAction('retry')" class="px-3 py-1.5 text-xs bg-amber-600 text-white rounded-md hover:bg-amber-700">Retry Failed</button>
-      <button @click="batchAction('delete')" class="px-3 py-1.5 text-xs bg-red-600 text-white rounded-md hover:bg-red-700">Delete</button>
-      <button @click="clearSelection" class="ml-auto text-xs text-slate-500 hover:text-slate-700">Clear</button>
+    <div v-if="selectedIds.length > 0" class="bg-blue-50 rounded-2xl border border-blue-100 p-4 flex items-center gap-3">
+      <span class="text-sm font-semibold text-blue-700">{{ selectedIds.length }} selected</span>
+      <button @click="batchAction('dispatch')" class="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors">Dispatch to Queue</button>
+      <button @click="batchAction('retry')" class="px-3 py-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors">Retry Failed</button>
+      <button @click="batchAction('delete')" class="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">Delete</button>
+      <button @click="clearSelection" class="ml-auto text-xs text-gray-500 hover:text-gray-700 font-medium">Clear</button>
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div class="bg-white rounded-2xl border border-gray-200/60 overflow-hidden">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 border-b border-slate-200">
-          <tr>
-            <th class="px-4 py-2.5 w-10">
-              <input type="checkbox" :checked="allSelected" @change="toggleAll" class="rounded" />
-            </th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Topic</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Category</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Status</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Sources</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Retries</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Article</th>
-            <th class="px-4 py-2.5 text-left font-medium text-slate-500 text-xs uppercase">Updated</th>
-            <th class="px-4 py-2.5 text-right font-medium text-slate-500 text-xs uppercase">Actions</th>
+        <thead>
+          <tr class="bg-gray-50/80 border-b border-gray-100">
+            <th class="px-6 py-3 w-10"><input type="checkbox" :checked="allSelected" @change="toggleAll" class="rounded border-gray-300 text-[#1a2233] focus:ring-[#1a2233]" /></th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Topic</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Sources</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Retries</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Article</th>
+            <th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Updated</th>
+            <th class="px-6 py-3 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
-          <tr v-for="t in topics.data" :key="t.id" class="hover:bg-slate-50" :class="{ 'bg-blue-50/50': selectedIds.includes(t.id) }">
-            <td class="px-4 py-3">
-              <input type="checkbox" :checked="selectedIds.includes(t.id)" @change="toggleOne(t.id)" class="rounded" />
+        <tbody class="divide-y divide-gray-50">
+          <tr v-for="t in topics.data" :key="t.id" class="hover:bg-gray-50/50 transition-colors group" :class="{ 'bg-blue-50/40': selectedIds.includes(t.id) }">
+            <td class="px-6 py-3"><input type="checkbox" :checked="selectedIds.includes(t.id)" @change="toggleOne(t.id)" class="rounded border-gray-300 text-[#1a2233] focus:ring-[#1a2233]" /></td>
+            <td class="px-6 py-3">
+              <NuxtLink :to="`/admin/topics/${t.id}`" class="font-medium text-gray-900 hover:text-[#1a2233] transition-colors line-clamp-1">{{ t.topic_name }}</NuxtLink>
             </td>
-            <td class="px-4 py-3">
-              <NuxtLink :to="`/admin/topics/${t.id}`" class="font-medium hover:text-blue-600 transition-colors line-clamp-1">{{ t.topic_name }}</NuxtLink>
+            <td class="px-6 py-3 text-gray-500 whitespace-nowrap">{{ t.category || '—' }}</td>
+            <td class="px-6 py-3"><span class="text-[11px] font-medium px-2.5 py-1 rounded-full" :class="topicStatusClass(t.generation_status)">{{ t.generation_status }}</span></td>
+            <td class="px-6 py-3 text-gray-500 text-center">{{ t.source_count }}</td>
+            <td class="px-6 py-3 text-gray-500 text-center">{{ t.retry_count }}</td>
+            <td class="px-6 py-3">
+              <span v-if="t.has_article" class="text-[11px] font-medium px-2.5 py-1 rounded-full" :class="statusClass(t.article_status)">{{ t.article_status }}</span>
+              <span v-else class="text-xs text-gray-400">—</span>
             </td>
-            <td class="px-4 py-3 text-slate-500 whitespace-nowrap">{{ t.category || '—' }}</td>
-            <td class="px-4 py-3">
-              <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="topicStatusClass(t.generation_status)">{{ t.generation_status }}</span>
-            </td>
-            <td class="px-4 py-3 text-slate-500 text-center">{{ t.source_count }}</td>
-            <td class="px-4 py-3 text-slate-500 text-center">{{ t.retry_count }}</td>
-            <td class="px-4 py-3">
-              <span v-if="t.has_article" class="text-xs font-medium px-2 py-0.5 rounded-full" :class="statusClass(t.article_status)">{{ t.article_status }}</span>
-              <span v-else class="text-xs text-slate-400">—</span>
-            </td>
-            <td class="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{{ formatDate(t.updated_at) }}</td>
-            <td class="px-4 py-3 text-right">
-              <div class="flex items-center justify-end gap-2">
-                <button v-if="t.generation_status === 'pending'" @click="dispatchTopic(t.id)"
-                  class="text-slate-400 hover:text-emerald-600 transition-colors" title="Dispatch to queue">
-                  <Send class="w-3.5 h-3.5" />
-                </button>
-                <button v-if="t.generation_status === 'failed'" @click="retryTopic(t.id)"
-                  class="text-slate-400 hover:text-amber-600 transition-colors" title="Retry">
-                  <RefreshCw class="w-3.5 h-3.5" />
-                </button>
-                <button @click="deleteTopic(t.id)" class="text-slate-400 hover:text-red-600 transition-colors" title="Delete">
-                  <Trash2 class="w-3.5 h-3.5" />
-                </button>
+            <td class="px-6 py-3 text-xs text-gray-400 whitespace-nowrap">{{ formatDate(t.updated_at) }}</td>
+            <td class="px-6 py-3 text-right">
+              <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button v-if="t.generation_status === 'pending'" @click="dispatchTopic(t.id)" class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Dispatch to queue"><Send class="w-3.5 h-3.5" /></button>
+                <button v-if="t.generation_status === 'failed'" @click="retryTopic(t.id)" class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Retry"><RefreshCw class="w-3.5 h-3.5" /></button>
+                <button @click="deleteTopic(t.id)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
               </div>
             </td>
           </tr>
-          <tr v-if="!topics.data?.length">
-            <td colspan="9" class="px-4 py-8 text-center text-slate-400">No topics found</td>
-          </tr>
+          <tr v-if="!topics.data?.length"><td colspan="9" class="px-6 py-12 text-center text-gray-400">
+            <FolderOpen class="w-8 h-8 mx-auto mb-3 text-gray-200" />
+            No topics found
+          </td></tr>
         </tbody>
       </table>
     </div>
 
     <!-- Pagination -->
     <div v-if="topics.total > 0" class="flex items-center justify-between">
-      <span class="text-xs text-slate-500">Showing {{ topics.from || 0 }}-{{ topics.to || 0 }} of {{ topics.total }}</span>
+      <span class="text-xs text-gray-500">Showing {{ topics.from || 0 }}–{{ topics.to || 0 }} of {{ topics.total }}</span>
       <div class="flex gap-1">
-        <button v-if="topics.current_page > 1" @click="filters.page = topics.current_page - 1"
-          class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50"
-        >Previous</button>
+        <button v-if="topics.current_page > 1" @click="filters.page = topics.current_page - 1" class="px-3 py-1.5 text-xs border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 transition-colors">Previous</button>
         <template v-for="p in pageNumbers" :key="p">
-          <button v-if="p === '...'" class="px-3 py-1 text-sm text-slate-400" disabled>...</button>
-          <button v-else @click="filters.page = p"
-            class="px-3 py-1 text-sm border rounded-md"
-            :class="p === topics.current_page ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300 hover:bg-slate-50'"
-          >{{ p }}</button>
+          <button v-if="p === '...'" class="px-3 py-1.5 text-xs text-gray-400" disabled>...</button>
+          <button v-else @click="filters.page = p" class="px-3 py-1.5 text-xs border rounded-xl transition-colors" :class="p === topics.current_page ? 'bg-[#1a2233] text-white border-[#1a2233]' : 'border-gray-200 hover:bg-gray-50 text-gray-600'">{{ p }}</button>
         </template>
-        <button v-if="topics.current_page < topics.last_page" @click="filters.page = topics.current_page + 1"
-          class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50"
-        >Next</button>
+        <button v-if="topics.current_page < topics.last_page" @click="filters.page = topics.current_page + 1" class="px-3 py-1.5 text-xs border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 transition-colors">Next</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { RefreshCw, Send, Trash2 } from 'lucide-vue-next'
+import { RefreshCw, Send, Trash2, FolderOpen } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -160,16 +140,16 @@ watch(() => filters.page, () => {
 })
 
 function topicStatusClass(s: string) {
-  if (s === 'generated') return 'bg-emerald-100 text-emerald-700'
-  if (s === 'pending') return 'bg-blue-100 text-blue-700'
-  if (s === 'failed') return 'bg-red-100 text-red-700'
-  return 'bg-slate-100 text-slate-600'
+  if (s === 'generated') return 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+  if (s === 'pending') return 'bg-blue-50 text-blue-700 border border-blue-100'
+  if (s === 'failed') return 'bg-red-50 text-red-700 border border-red-100'
+  return 'bg-gray-50 text-gray-600 border border-gray-100'
 }
 
 function statusClass(s: string) {
-  if (s === 'published') return 'bg-emerald-100 text-emerald-700'
-  if (s === 'draft') return 'bg-amber-100 text-amber-700'
-  return 'bg-slate-100 text-slate-600'
+  if (s === 'published') return 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+  if (s === 'draft') return 'bg-amber-50 text-amber-700 border border-amber-100'
+  return 'bg-gray-50 text-gray-600 border border-gray-100'
 }
 
 function formatDate(d: string) {

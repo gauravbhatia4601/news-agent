@@ -1,63 +1,126 @@
 <template>
-  <div class="space-y-6">
-    <div class="border border-black p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-display font-bold text-lg">Category Tree</h2>
-        <button @click="showAddForm = !showAddForm"
-          class="font-label text-[10px] font-semibold uppercase tracking-[0.062em] px-3 py-1.5 border border-black hover:bg-black hover:text-white transition-colors"
+  <div class="space-y-5">
+    <!-- Header + Add -->
+    <div class="bg-white rounded-2xl border border-gray-200/60 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#1a2233]/10 flex items-center justify-center"><Tag class="w-5 h-5 text-[#1a2233]" /></div>
+          <div>
+            <h2 class="text-sm font-bold text-gray-900">Category Tree</h2>
+            <p class="text-xs text-gray-500">Manage news categories and subcategories</p>
+          </div>
+        </div>
+        <button @click="showAddForm = !showAddForm" class="px-4 py-2.5 bg-[#1a2233] hover:bg-[#2a3245] text-white rounded-xl text-sm font-medium transition-all flex items-center gap-2"
         >
+          <Plus v-if="!showAddForm" class="w-4 h-4" />
+          <X v-else class="w-4 h-4" />
           {{ showAddForm ? 'Cancel' : 'Add Category' }}
         </button>
       </div>
 
-      <div v-if="showAddForm" class="border border-zinc-300 p-4 mb-4 space-y-3 bg-zinc-50">
-        <input v-model="newCat.name" placeholder="Category name" class="w-full border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:border-black" />
-        <input v-model="newCat.slug" placeholder="Slug (auto-generated if empty)" class="w-full border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:border-black" />
-        <select v-model="newCat.parent_id" class="w-full border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:border-black"
-        >
-          <option value="">Top-level parent</option>
-          <option v-for="p in parentCategories" :key="p.id" :value="p.id">{{ p.name }}</option>
-        </select>
-        <textarea v-model="newCat.description" placeholder="Description (optional)" rows="2" class="w-full border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:border-black"></textarea>
-        <button @click="createCategory" :disabled="!newCat.name"
-          class="font-label text-[10px] font-semibold uppercase tracking-[0.062em] px-4 py-2 bg-black text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
-        >Create</button>
-      </div>
-
-      <div v-for="parent in categories" :key="parent.id" class="mb-3">
-        <div class="flex items-center justify-between py-2 px-3 bg-zinc-50 border border-black">
-          <div class="flex items-center gap-2">
-            <span class="font-display font-bold text-sm">{{ parent.name }}</span>
-            <span class="text-xs text-zinc-400">/{{ parent.slug }}</span>
+      <!-- Add Form -->
+      <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0">
+        <div v-if="showAddForm" class="bg-gray-50 rounded-2xl border border-gray-100 p-5 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-gray-500">Category Name</label>
+              <input v-model="newCat.name" placeholder="e.g. Politics" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-gray-500">Slug</label>
+              <input v-model="newCat.slug" placeholder="Auto-generated if empty" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors" />
+            </div>
           </div>
-          <div class="flex gap-2">
-            <button @click="editCat = parent" class="text-xs text-zinc-500 hover:text-black">Edit</button>
-            <button @click="deleteCategory(parent.id)" class="text-xs text-red-700 hover:text-red-900">Delete</button>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-gray-500">Parent</label>
+              <select v-model="newCat.parent_id" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors"
+              >
+                <option value="">Top-level parent</option>
+                <option v-for="p in parentCategories" :key="p.id" :value="p.id">{{ p.name }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-gray-500">Description</label>
+            <textarea v-model="newCat.description" placeholder="Optional description" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:border-[#1a2233] transition-colors"></textarea>
+          </div>
+          <div class="flex justify-end">
+            <button @click="createCategory" :disabled="!newCat.name" class="px-6 py-2.5 bg-[#1a2233] hover:bg-[#2a3245] text-white rounded-xl text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              <Check v-if="!creating" class="w-4 h-4" />
+              <Loader2 v-else class="w-4 h-4 animate-spin" />
+              Create Category
+            </button>
           </div>
         </div>
-        <div v-for="child in parent.children" :key="child.id" class="flex items-center justify-between py-2 px-3 pl-8 border border-t-0 border-zinc-200">
-          <div class="flex items-center gap-2">
-            <span class="text-sm">{{ child.name }}</span>
-            <span class="text-xs text-zinc-400">/{{ child.slug }}</span>
+      </Transition>
+
+      <!-- Tree -->
+      <div class="mt-6 space-y-3">
+        <div v-for="parent in categories" :key="parent.id">
+          <div class="flex items-center justify-between py-3 px-4 rounded-xl bg-gray-50 border border-gray-100">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-[#1a2233] text-white flex items-center justify-center text-xs font-bold">
+                {{ parent.name.charAt(0).toUpperCase() }}
+              </div>
+              <div>
+                <span class="text-sm font-bold text-gray-900">{{ parent.name }}</span>
+                <span class="text-xs text-gray-400 ml-2">/{{ parent.slug }}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              <button @click="editCat = parent" class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Edit"><Edit class="w-3.5 h-3.5" /></button>
+              <button @click="deleteCategory(parent.id)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
+            </div>
           </div>
-          <div class="flex gap-2">
-            <button @click="editCat = child" class="text-xs text-zinc-500 hover:text-black">Edit</button>
-            <button @click="deleteCategory(child.id)" class="text-xs text-red-700 hover:text-red-900">Delete</button>
+          <div v-for="child in parent.children" :key="child.id" class="flex items-center justify-between py-2.5 px-4 pl-12 rounded-xl mt-1 hover:bg-gray-50/50 transition-colors">
+            <div class="flex items-center gap-3">
+              <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+              <div>
+                <span class="text-sm text-gray-700">{{ child.name }}</span>
+                <span class="text-xs text-gray-400 ml-2">/{{ child.slug }}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              <button @click="editCat = child" class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Edit"><Edit class="w-3.5 h-3.5" /></button>
+              <button @click="deleteCategory(child.id)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
+            </div>
           </div>
+        </div>
+        <div v-if="!categories?.length" class="text-center py-12">
+          <Tag class="w-8 h-8 mx-auto mb-3 text-gray-200" />
+          <p class="text-sm text-gray-400">No categories yet</p>
         </div>
       </div>
     </div>
 
-    <div v-if="editCat" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50" @click.self="editCat = null"
+    <!-- Edit Modal -->
+    <div v-if="editCat" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" @click.self="editCat = null"
     >
-      <div class="bg-white border border-black p-6 w-full max-w-md space-y-3">
-        <h3 class="font-display font-bold">Edit Category</h3>
-        <input v-model="editCat.name" class="w-full border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:border-black" />
-        <input v-model="editCat.slug" class="w-full border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:border-black" />
-        <textarea v-model="editCat.description" rows="2" class="w-full border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:border-black" placeholder="Description"></textarea>
-        <div class="flex gap-2 justify-end">
-          <button @click="editCat = null" class="text-xs px-4 py-2 border border-zinc-300 hover:border-black transition-colors">Cancel</button>
-          <button @click="updateCategory" class="text-xs px-4 py-2 bg-black text-white hover:bg-zinc-800 transition-colors">Save</button>
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 rounded-xl bg-[#1a2233]/10 flex items-center justify-center"><Edit class="w-5 h-5 text-[#1a2233]" /></div>
+          <h2 class="text-lg font-bold text-gray-900">Edit Category</h2>
+        </div>
+
+        <div class="space-y-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-gray-500">Name</label>
+            <input v-model="editCat.name" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#1a2233] transition-colors" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-gray-500">Slug</label>
+            <input v-model="editCat.slug" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#1a2233] transition-colors" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-gray-500">Description</label>
+            <textarea v-model="editCat.description" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-[#1a2233] transition-colors" placeholder="Description"></textarea>
+          </div>
+          <div class="flex gap-2 justify-end pt-2">
+            <button @click="editCat = null" class="px-4 py-2.5 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>
+            <button @click="updateCategory" class="px-4 py-2.5 text-sm bg-[#1a2233] text-white rounded-xl font-medium hover:bg-[#2a3245] transition-colors">Save Changes</button>
+          </div>
         </div>
       </div>
     </div>
@@ -65,11 +128,14 @@
 </template>
 
 <script setup lang="ts">
+import { Tag, Plus, X, Check, Loader2, Edit, Trash2 } from 'lucide-vue-next'
+
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const api = useAdminApi()
 const categories = ref<any[]>([])
 const showAddForm = ref(false)
+const creating = ref(false)
 const editCat = ref<any>(null)
 const newCat = reactive({ name: '', slug: '', parent_id: '', description: '' })
 
@@ -83,6 +149,7 @@ async function loadCategories() {
 }
 
 async function createCategory() {
+  creating.value = true
   try {
     const payload: any = { name: newCat.name }
     if (newCat.slug) payload.slug = newCat.slug
@@ -93,6 +160,7 @@ async function createCategory() {
     showAddForm.value = false
     await loadCategories()
   } catch {}
+  creating.value = false
 }
 
 async function updateCategory() {
