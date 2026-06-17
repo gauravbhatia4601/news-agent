@@ -13,25 +13,23 @@
         <div>
           <h4 class="font-label text-xs font-bold uppercase tracking-[0.062em] mb-3">Company</h4>
           <ul class="space-y-1.5">
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">About</a></li>
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Careers</a></li>
+            <li><NuxtLink to="/about" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">About</NuxtLink></li>
+            <li><NuxtLink to="/contact" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Contact</NuxtLink></li>
           </ul>
         </div>
         <div>
           <h4 class="font-label text-xs font-bold uppercase tracking-[0.062em] mb-3">Legal</h4>
           <ul class="space-y-1.5">
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a></li>
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Terms of Use</a></li>
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Cookie Notice</a></li>
+            <li><NuxtLink to="/privacy" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</NuxtLink></li>
+            <li><NuxtLink to="/terms" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Terms of Use</NuxtLink></li>
+            <li><NuxtLink to="/cookies" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Cookie Notice</NuxtLink></li>
           </ul>
         </div>
         <div>
           <h4 class="font-label text-xs font-bold uppercase tracking-[0.062em] mb-3">Follow</h4>
           <ul class="space-y-1.5">
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Twitter / X</a></li>
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Facebook</a></li>
-            <li><a href="#" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">LinkedIn</a></li>
+            <li><a href="https://x.com/theaijournal" target="_blank" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">X / Twitter</a></li>
+            <li><a href="https://linkedin.com/company/theaijournal" target="_blank" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">LinkedIn</a></li>
           </ul>
         </div>
       </div>

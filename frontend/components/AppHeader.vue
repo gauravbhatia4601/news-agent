@@ -33,7 +33,7 @@ watch(showSearch, (val) => {
 
 <template>
   <!-- Nav-hat: dark bar -->
-  <div class="w-full bg-[#222] text-white text-xs">
+  <div class="w-full bg-primary text-primary-foreground text-xs">
     <div class="mx-auto flex h-8 max-w-[960px] items-center justify-between px-5 xl:max-w-[1280px]">
       <div class="flex items-center gap-5">
         <span class="font-label font-bold uppercase tracking-[0.062em]">The AI Journal</span>
@@ -47,7 +47,7 @@ watch(showSearch, (val) => {
   </div>
 
   <!-- Main masthead -->
-  <header class="w-full border-b border-[#ccc] bg-white dark:bg-[#111]">
+  <header class="w-full border-b border-border bg-background">
     <div class="mx-auto flex max-w-[960px] flex-col items-center px-5 py-2 xl:max-w-[1280px]">
       <NuxtLink to="/" class="block">
         <h1 class="font-display text-[2.25rem] font-bold tracking-tight sm:text-[2.75rem] md:text-[3.25rem]">
