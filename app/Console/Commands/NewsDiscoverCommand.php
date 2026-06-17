@@ -23,6 +23,10 @@ class NewsDiscoverCommand extends Command
         NewsDiscoveryService $service,
         NewsArticleGenerationService $generationService
     ): int {
+        $scope = in_array($this->option('scope'), ['india', 'global'], true)
+            ? $this->option('scope')
+            : 'india';
+
         Cache::put('news-engine:last-discovery-run:'.$scope, now(), now()->addDays(7));
 
         $defaultLimit = max(1, (int) config('news-engine.discovery.default_limit', 5));
@@ -39,10 +43,6 @@ class NewsDiscoverCommand extends Command
             ? max(2, min((int) $this->option('sources-per-topic'), 6))
             : $defaultSourcesPerTopic;
         $useQueue = $this->option('queue');
-
-        $scope = in_array($this->option('scope'), ['india', 'global'], true)
-            ? $this->option('scope')
-            : 'india';
 
         $parent = Category::where('slug', $scope === 'global' ? 'world' : 'india')->first();
 
