@@ -72,7 +72,7 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div class="h-screen flex overflow-hidden bg-[#F8FAFC] font-sans">
+  <div class="admin-root h-screen flex overflow-hidden bg-[#F8FAFC] font-sans">
     <!-- Sidebar -->
     <aside
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
@@ -169,4 +169,14 @@ aside::-webkit-scrollbar { width: 0px; }
 aside:hover::-webkit-scrollbar { width: 4px; }
 aside::-webkit-scrollbar-track { background: transparent; }
 aside::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 4px; }
+
+.admin-root h1,
+.admin-root h2,
+.admin-root h3,
+.admin-root h4,
+.admin-root h5,
+.admin-root h6 {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.025em;
+}
 </style>

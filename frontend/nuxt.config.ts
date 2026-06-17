@@ -26,8 +26,8 @@ export default defineNuxtConfig({
       theme: {
         extend: {
           fontFamily: {
-            display: ['"Playfair Display"', 'serif'],
-            serif: ['"Source Serif 4"', 'serif'],
+            display: ['"Playfair Display"', 'sans-serif'],
+            serif: ['"Source Serif 4"', 'sans-serif'],
             sans: ['Inter', 'sans-serif'],
             label: ['Inter', 'sans-serif'],
           },

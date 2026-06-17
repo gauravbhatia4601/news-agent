@@ -78,6 +78,13 @@
   </div>
 </template>
 
+<style scoped>
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.025em;
+}
+</style>
+
 <script setup lang="ts">
 import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 

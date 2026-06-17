@@ -72,6 +72,8 @@ class DashboardController extends Controller
             ? round(($topicsGenerated / $topicsTotal) * 100, 1)
             : 0;
 
+        $dailyTrend = $this->dailyTrend();
+
         return response()->json([
             'data' => [
                 'articles' => [
@@ -91,7 +93,34 @@ class DashboardController extends Controller
                 'recent_articles' => $recentArticles,
                 'recent_failed_topics' => $recentFailedTopics,
                 'category_article_counts' => $categoryCounts,
+                'daily_trend' => $dailyTrend,
             ],
         ]);
+    }
+
+    private function dailyTrend(): array
+    {
+        $days = collect(range(6, 0))->map(fn ($i) => now()->subDays($i)->startOfDay())->values();
+        $labels = $days->map(fn ($d) => $d->format('D'))->all();
+        $dates = $days->map(fn ($d) => $d->toDateString())->all();
+
+        $articlesByDay = NewsArticle::select(DB::raw('DATE(created_at) as date'), DB::raw('COUNT(*) as count'))
+            ->where('created_at', '>=', $days->first())
+            ->groupBy('date')
+            ->pluck('count', 'date')
+            ->all();
+
+        $topicsByDay = NewsTopic::select(DB::raw('DATE(created_at) as date'), DB::raw('COUNT(*) as count'))
+            ->where('created_at', '>=', $days->first())
+            ->groupBy('date')
+            ->pluck('count', 'date')
+            ->all();
+
+        return [
+            'labels' => $labels,
+            'dates' => $dates,
+            'articles' => array_map(fn ($date) => (int) ($articlesByDay[$date] ?? 0), $dates),
+            'topics' => array_map(fn ($date) => (int) ($topicsByDay[$date] ?? 0), $dates),
+        ];
     }
 }

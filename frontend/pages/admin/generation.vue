@@ -1,24 +1,24 @@
 <template>
   <div class="space-y-6">
     <!-- Quick Actions -->
-    <div class="bg-[#111827] rounded-[14px] border border-white/[0.06] p-6">
+    <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-[#1a2233]/40 flex items-center justify-center"><Zap class="w-5 h-5 text-[#f5a623]" /></div>
+          <div class="w-10 h-10 rounded-xl bg-slate-900/5 flex items-center justify-center"><Zap class="w-5 h-5 text-amber-600" /></div>
           <div>
-            <h2 class="text-[15px] font-semibold text-white">Quick Actions</h2>
-            <p class="text-xs text-[#64748B] font-mono">Manual operations and maintenance</p>
+            <h2 class="text-[15px] font-semibold text-slate-900">Quick Actions</h2>
+            <p class="text-xs text-slate-500">Manual operations and maintenance</p>
           </div>
         </div>
       </div>
       <div class="flex flex-wrap gap-3">
-        <button @click="regenerateSitemap" :disabled="regenerating" class="px-4 py-2.5 bg-[#1a2233] hover:bg-[#2a3245] text-white rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
+        <button @click="regenerateSitemap" :disabled="regenerating" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
         >
           <Loader2 v-if="regenerating" class="w-4 h-4 animate-spin" />
           <SitemapIcon v-else class="w-4 h-4" />
           {{ regenerating ? 'Generating...' : 'Regenerate Sitemap' }}
         </button>
-        <button @click="retryFailed" :disabled="retrying" class="px-4 py-2.5 border border-amber-400/20 text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
+        <button @click="retryFailed" :disabled="retrying" class="px-4 py-2.5 border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
         >
           <Loader2 v-if="retrying" class="w-4 h-4 animate-spin" />
           <RotateCcw v-else class="w-4 h-4" />
@@ -26,7 +26,7 @@
         </button>
       </div>
       <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0">
-        <div v-if="actionMessage" class="mt-4 p-4 rounded-[14px] text-sm flex items-start gap-2" :class="actionMessage.type === 'success' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-red-500/10 text-red-300 border border-red-500/20'"
+        <div v-if="actionMessage" class="mt-4 p-4 rounded-[14px] text-sm flex items-start gap-2" :class="actionMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'"
         >
           <CheckCircle v-if="actionMessage.type === 'success'" class="w-4 h-4 shrink-0 mt-0.5" />
           <AlertCircle v-else class="w-4 h-4 shrink-0 mt-0.5" />
@@ -37,118 +37,118 @@
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <div v-for="card in statCards" :key="card.key" class="bg-[#111827] rounded-[14px] border border-white/[0.06] p-5 hover:shadow-lg hover:shadow-black/20 transition-all duration-300">
+      <div v-for="card in statCards" :key="card.key" class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between mb-4">
           <div :class="`w-9 h-9 rounded-lg ${card.iconBg} ${card.iconColor} flex items-center justify-center`">
             <component :is="card.icon" class="w-4 h-4" stroke-width="1.75" />
           </div>
-          <div v-if="card.trend != null" class="flex items-center gap-1 text-xs font-medium" :class="card.trend >= 0 ? 'text-emerald-400' : 'text-red-400'">
+          <div v-if="card.trend != null" class="flex items-center gap-1 text-xs font-medium" :class="card.trend >= 0 ? 'text-emerald-600' : 'text-red-600'">
             <TrendingUp v-if="card.trend >= 0" class="w-3 h-3" />
             <TrendingDown v-else class="w-3 h-3" />
-            <span class="font-mono">{{ Math.abs(card.trend).toFixed(0) }}%</span>
+            <span>{{ Math.abs(card.trend).toFixed(0) }}%</span>
           </div>
         </div>
-        <p class="text-2xl font-bold text-white tracking-tight font-mono">{{ card.displayValue }}</p>
-        <p class="text-xs text-[#94A3B8] mt-1">{{ card.label }}</p>
-        <p v-if="card.sub" class="text-[11px] text-[#64748B] mt-1 font-mono">{{ card.sub }}</p>
+        <p class="text-2xl font-bold text-slate-900 tracking-tight">{{ card.displayValue }}</p>
+        <p class="text-xs text-slate-500 mt-1">{{ card.label }}</p>
+        <p v-if="card.sub" class="text-[11px] text-slate-400 mt-1">{{ card.sub }}</p>
       </div>
     </div>
 
     <!-- Two Column Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Model Usage -->
-      <div class="bg-[#111827] rounded-[14px] border border-white/[0.06] p-6">
+      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-[15px] font-semibold text-white">Model Usage</h2>
-          <span class="text-xs text-[#64748B] font-mono">Last 30 days</span>
+          <h2 class="text-[15px] font-semibold text-slate-900">Model Usage</h2>
+          <span class="text-xs text-slate-500">Last 30 days</span>
         </div>
         <div class="space-y-4">
           <div v-for="model in stats.models" :key="model.model">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-sm text-[#94A3B8]">{{ model.model || 'Unknown' }}</span>
-              <span class="text-xs font-medium text-white font-mono">{{ model.count }}</span>
+              <span class="text-sm text-slate-500">{{ model.model || 'Unknown' }}</span>
+              <span class="text-xs font-medium text-slate-900">{{ model.count }}</span>
             </div>
-            <div class="h-2 bg-white/[0.06] rounded-full overflow-hidden">
-              <div class="h-full rounded-full bg-[#f5a623] transition-all duration-700" :style="`width: ${modelPct(model.count)}%`"></div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full bg-amber-500 transition-all duration-700" :style="`width: ${modelPct(model.count)}%`"></div>
             </div>
           </div>
           <div v-if="!(stats.models?.length)" class="text-center py-8">
-            <Cpu class="w-8 h-8 text-[#475569] mx-auto mb-2" />
-            <p class="text-sm text-[#94A3B8]">No model data yet</p>
+            <Cpu class="w-8 h-8 text-slate-400 mx-auto mb-2" />
+            <p class="text-sm text-slate-500">No model data yet</p>
           </div>
         </div>
       </div>
 
       <!-- Top Categories -->
-      <div class="bg-[#111827] rounded-[14px] border border-white/[0.06] p-6">
+      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-[15px] font-semibold text-white">Top Categories</h2>
-          <span class="text-xs text-[#64748B] font-mono">Last 30 days</span>
+          <h2 class="text-[15px] font-semibold text-slate-900">Top Categories</h2>
+          <span class="text-xs text-slate-500">Last 30 days</span>
         </div>
         <div class="space-y-4">
           <div v-for="cat in stats.top_categories" :key="cat.slug">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-sm text-[#94A3B8]">{{ cat.name }}</span>
-              <span class="text-xs font-medium text-white font-mono">{{ cat.count }}</span>
+              <span class="text-sm text-slate-500">{{ cat.name }}</span>
+              <span class="text-xs font-medium text-slate-900">{{ cat.count }}</span>
             </div>
-            <div class="h-2 bg-white/[0.06] rounded-full overflow-hidden">
-              <div class="h-full rounded-full bg-[#f5a623] transition-all duration-700" :style="`width: ${catPct(cat.count)}%`"></div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full bg-amber-500 transition-all duration-700" :style="`width: ${catPct(cat.count)}%`"></div>
             </div>
           </div>
           <div v-if="!(stats.top_categories?.length)" class="text-center py-8">
-            <BarChart3 class="w-8 h-8 text-[#475569] mx-auto mb-2" />
-            <p class="text-sm text-[#94A3B8]">No category data yet</p>
+            <BarChart3 class="w-8 h-8 text-slate-400 mx-auto mb-2" />
+            <p class="text-sm text-slate-500">No category data yet</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Queue Health -->
-    <div class="bg-[#111827] rounded-[14px] border border-white/[0.06] p-6">
+    <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-[15px] font-semibold text-white">Queue Status</h2>
-        <NuxtLink to="/admin/queue" class="text-xs text-[#f5a623] font-medium hover:underline underline-offset-4 font-mono">View Details →</NuxtLink>
+        <h2 class="text-[15px] font-semibold text-slate-900">Queue Status</h2>
+        <NuxtLink to="/admin/queue" class="text-xs text-amber-600 font-medium hover:underline underline-offset-4">View Details →</NuxtLink>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="flex items-center gap-3 p-4 rounded-[14px] bg-white/[0.04] border border-white/[0.06]">
-          <div class="w-2.5 h-2.5 rounded-full" :class="queue.pending_jobs > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-[#475569]'" />
+        <div class="flex items-center gap-3 p-4 rounded-[14px] bg-slate-50 border border-slate-200">
+          <div class="w-2.5 h-2.5 rounded-full" :class="queue.pending_jobs > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'" />
           <div>
-            <p class="text-xs text-[#94A3B8] font-mono">Pending Jobs</p>
-            <p class="text-lg font-bold text-white font-mono">{{ queue.pending_jobs || 0 }}</p>
+            <p class="text-xs text-slate-500">Pending Jobs</p>
+            <p class="text-lg font-bold text-slate-900">{{ queue.pending_jobs || 0 }}</p>
           </div>
         </div>
-        <div class="flex items-center gap-3 p-4 rounded-[14px] bg-white/[0.04] border border-white/[0.06]">
+        <div class="flex items-center gap-3 p-4 rounded-[14px] bg-slate-50 border border-slate-200">
           <div class="w-2.5 h-2.5 rounded-full bg-red-500" />
           <div>
-            <p class="text-xs text-[#94A3B8] font-mono">Failed Jobs</p>
-            <p class="text-lg font-bold text-white font-mono">{{ queue.total_failed_jobs || 0 }}</p>
+            <p class="text-xs text-slate-500">Failed Jobs</p>
+            <p class="text-lg font-bold text-slate-900">{{ queue.total_failed_jobs || 0 }}</p>
           </div>
         </div>
-        <div class="flex items-center gap-3 p-4 rounded-[14px] bg-white/[0.04] border border-white/[0.06]">
+        <div class="flex items-center gap-3 p-4 rounded-[14px] bg-slate-50 border border-slate-200">
           <div class="w-2.5 h-2.5 rounded-full" :class="parseFloat(stats.last_24h?.success_rate || '0') > 80 ? 'bg-emerald-500' : 'bg-amber-400'" />
           <div>
-            <p class="text-xs text-[#94A3B8] font-mono">24h Success Rate</p>
-            <p class="text-lg font-bold text-white font-mono">{{ stats.last_24h?.success_rate || 0 }}%</p>
+            <p class="text-xs text-slate-500">24h Success Rate</p>
+            <p class="text-lg font-bold text-slate-900">{{ stats.last_24h?.success_rate || 0 }}%</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Recent Failures -->
-    <div v-if="queue.recent_failed?.length" class="bg-[#111827] rounded-[14px] border border-red-500/20 overflow-hidden">
-      <div class="px-6 py-4 border-b border-red-500/20 bg-red-500/10 flex items-center gap-2">
-        <AlertTriangle class="w-4 h-4 text-red-400" />
-        <h2 class="text-[15px] font-semibold text-red-300">Recent Failed Jobs</h2>
+    <div v-if="queue.recent_failed?.length" class="bg-white rounded-[14px] border border-red-200 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div class="px-6 py-4 border-b border-red-200 bg-red-50 flex items-center gap-2">
+        <AlertTriangle class="w-4 h-4 text-red-600" />
+        <h2 class="text-[15px] font-semibold text-red-700">Recent Failed Jobs</h2>
       </div>
-      <div class="divide-y divide-white/[0.04]">
+      <div class="divide-y divide-slate-100">
         <div v-for="f in queue.recent_failed" :key="f.id" class="px-6 py-4 flex items-start gap-4">
-          <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0"><XCircle class="w-4 h-4 text-red-400" /></div>
+          <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0"><XCircle class="w-4 h-4 text-red-600" /></div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-xs text-[#94A3B8] font-mono">Job #{{ f.id }} · {{ f.queue }}</span>
-              <span class="text-xs text-[#64748B] font-mono">{{ f.failed_at }}</span>
+              <span class="text-xs text-slate-500">Job #{{ f.id }} · {{ f.queue }}</span>
+              <span class="text-xs text-slate-400">{{ f.failed_at }}</span>
             </div>
-            <p class="text-xs text-red-400 mt-1 line-clamp-2 font-mono">{{ f.exception }}</p>
+            <p class="text-xs text-red-600 mt-1 line-clamp-2">{{ f.exception }}</p>
           </div>
         </div>
       </div>
@@ -180,16 +180,16 @@ const statCards = computed(() => {
   const s = stats.value
   const total = s?.articles?.published || 0
   return [
-    { key:'published', label:'Published Articles', displayValue:s?.articles?.published || '—', icon:FileText, iconBg:'bg-[#1a2233]/40', iconColor:'text-[#f5a623]', trend:12, sub:`+${s?.articles?.last_24h || 0} in 24h` },
-    { key:'pending', label:'Pending Topics', displayValue:s?.topics?.pending || '—', icon:FolderOpen, iconBg:'bg-blue-500/10', iconColor:'text-blue-400', trend:5, sub:`${s?.topics?.discovered_24h || 0} discovered today` },
-    { key:'failed', label:'Failed', displayValue:s?.topics?.failed || '—', icon:XCircle, iconBg:'bg-red-500/10', iconColor:'text-red-400', trend:-2, sub:`${s?.last_24h?.failed || 0} in 24h` },
-    { key:'words', label:'Avg Word Count', displayValue:s?.articles?.avg_word_count || '—', icon:AlignLeft, iconBg:'bg-white/[0.06]', iconColor:'text-[#94A3B8]', trend:null, sub:'Target: 700+' },
-    { key:'gentime', label:'Avg Gen Time', displayValue:fmtDuration(s?.articles?.avg_generation_seconds), icon:Clock, iconBg:'bg-purple-500/10', iconColor:'text-purple-400', trend:null, sub:'Last 24h' },
-    { key:'throughput', label:'Throughput', displayValue:s?.articles?.throughput_per_hour || '—', icon:TrendingUp, iconBg:'bg-emerald-500/10', iconColor:'text-emerald-400', trend:4, sub:'Articles/hour' },
-    { key:'depth', label:'Queue Depth', displayValue:s?.queue || '—', icon:Layers, iconBg:'bg-amber-400/10', iconColor:'text-amber-400', trend:null, sub:s?.queue > 0 ? 'Processing' : 'Idle' },
-    { key:'success', label:'Success Rate (24h)', displayValue:(s?.last_24h?.success_rate || 0)+'%', icon:CheckCircle, iconBg:'bg-emerald-500/10', iconColor:'text-emerald-400', trend:3, sub:'All time avg' },
-    { key:'quality', label:'Quality Passed', displayValue:s?.quality?.passed || '—', icon:ShieldCheck, iconBg:'bg-teal-500/10', iconColor:'text-teal-400', trend:null, sub:`${s?.quality?.failed || 0} failed checks` },
-    { key:'images', label:'Images', displayValue:s?.images?.total_with_images || '—', icon:Image, iconBg:'bg-indigo-500/10', iconColor:'text-indigo-400', trend:null, sub:`${s?.images?.ai_generated || 0} AI · ${s?.images?.from_sources || 0} Src` },
+    { key:'published', label:'Published Articles', displayValue:s?.articles?.published || '—', icon:FileText, iconBg:'bg-slate-900/5', iconColor:'text-amber-600', trend:12, sub:`+${s?.articles?.last_24h || 0} in 24h` },
+    { key:'pending', label:'Pending Topics', displayValue:s?.topics?.pending || '—', icon:FolderOpen, iconBg:'bg-blue-50', iconColor:'text-blue-600', trend:5, sub:`${s?.topics?.discovered_24h || 0} discovered today` },
+    { key:'failed', label:'Failed', displayValue:s?.topics?.failed || '—', icon:XCircle, iconBg:'bg-red-50', iconColor:'text-red-600', trend:-2, sub:`${s?.last_24h?.failed || 0} in 24h` },
+    { key:'words', label:'Avg Word Count', displayValue:s?.articles?.avg_word_count || '—', icon:AlignLeft, iconBg:'bg-slate-100', iconColor:'text-slate-500', trend:null, sub:'Target: 700+' },
+    { key:'gentime', label:'Avg Gen Time', displayValue:fmtDuration(s?.articles?.avg_generation_seconds), icon:Clock, iconBg:'bg-purple-50', iconColor:'text-purple-600', trend:null, sub:'Last 24h' },
+    { key:'throughput', label:'Throughput', displayValue:s?.articles?.throughput_per_hour || '—', icon:TrendingUp, iconBg:'bg-emerald-50', iconColor:'text-emerald-600', trend:4, sub:'Articles/hour' },
+    { key:'depth', label:'Queue Depth', displayValue:s?.queue || '—', icon:Layers, iconBg:'bg-amber-50', iconColor:'text-amber-600', trend:null, sub:s?.queue > 0 ? 'Processing' : 'Idle' },
+    { key:'success', label:'Success Rate (24h)', displayValue:(s?.last_24h?.success_rate || 0)+'%', icon:CheckCircle, iconBg:'bg-emerald-50', iconColor:'text-emerald-600', trend:3, sub:'All time avg' },
+    { key:'quality', label:'Quality Passed', displayValue:s?.quality?.passed || '—', icon:ShieldCheck, iconBg:'bg-teal-50', iconColor:'text-teal-600', trend:null, sub:`${s?.quality?.failed || 0} failed checks` },
+    { key:'images', label:'Images', displayValue:s?.images?.total_with_images || '—', icon:Image, iconBg:'bg-indigo-50', iconColor:'text-indigo-600', trend:null, sub:`${s?.images?.ai_generated || 0} AI · ${s?.images?.from_sources || 0} Src` },
   ]
 })
 
