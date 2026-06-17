@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-5">
     <!-- Trigger Discovery Card -->
     <div class="bg-white rounded-2xl border border-gray-200/60 p-6">
       <div class="flex items-start gap-4">

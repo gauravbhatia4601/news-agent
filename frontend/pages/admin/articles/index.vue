@@ -80,7 +80,7 @@
             <td class="px-6 py-3 text-gray-500 text-right">{{ a.views }}</td>
             <td class="px-6 py-3 text-xs text-gray-400 whitespace-nowrap">{{ formatDate(a.created_at) }}</td>
             <td class="px-6 py-3 text-right">
-              <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="flex items-center justify-end gap-1">
                 <button @click="regenerateArticle(a.id)" class="p-1.5 text-gray-400 hover:text-[#1a2233] hover:bg-gray-100 rounded-lg transition-colors" title="Regenerate"><RefreshCw class="w-3.5 h-3.5" /></button>
                 <button @click="deleteArticle(a.id)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
               </div>

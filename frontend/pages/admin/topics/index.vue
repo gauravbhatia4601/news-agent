@@ -63,7 +63,7 @@
             </td>
             <td class="px-6 py-3 text-xs text-gray-400 whitespace-nowrap">{{ formatDate(t.updated_at) }}</td>
             <td class="px-6 py-3 text-right">
-              <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="flex items-center justify-end gap-1">
                 <button v-if="t.generation_status === 'pending'" @click="dispatchTopic(t.id)" class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Dispatch to queue"><Send class="w-3.5 h-3.5" /></button>
                 <button v-if="t.generation_status === 'failed'" @click="retryTopic(t.id)" class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Retry"><RefreshCw class="w-3.5 h-3.5" /></button>
                 <button @click="deleteTopic(t.id)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>

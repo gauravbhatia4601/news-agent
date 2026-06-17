@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-8">
+  <div class="space-y-5">
     <!-- Quick Actions -->
     <div class="bg-white rounded-2xl border border-gray-200/60 p-6">
       <div class="flex items-center justify-between mb-6">

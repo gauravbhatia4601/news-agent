@@ -2,7 +2,7 @@
   <div class="space-y-5">
     <!-- Header + Add -->
     <div class="bg-white rounded-2xl border border-gray-200/60 p-6">
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-[#1a2233]/10 flex items-center justify-center"><Tag class="w-5 h-5 text-[#1a2233]" /></div>
           <div>
@@ -20,7 +20,7 @@
 
       <!-- Add Form -->
       <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0">
-        <div v-if="showAddForm" class="bg-gray-50 rounded-2xl border border-gray-100 p-5 space-y-4">
+        <div v-if="showAddForm" class="mt-5 bg-gray-50 rounded-2xl border border-gray-100 p-5 space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label class="text-xs font-medium text-gray-500">Category Name</label>
@@ -55,42 +55,66 @@
           </div>
         </div>
       </Transition>
+    </div>
 
-      <!-- Tree -->
-      <div class="mt-6 space-y-3">
-        <div v-for="parent in categories" :key="parent.id">
-          <div class="flex items-center justify-between py-3 px-4 rounded-xl bg-gray-50 border border-gray-100">
+    <!-- Tree -->
+    <div class="bg-white rounded-2xl border border-gray-200/60 p-6">
+      <div v-if="!categories?.length" class="text-center py-12">
+        <Tag class="w-8 h-8 mx-auto mb-3 text-gray-200" />
+        <p class="text-sm text-gray-400">No categories yet</p>
+      </div>
+
+      <div class="space-y-2">
+        <div v-for="parent in categories" :key="parent.id" class="">
+          <!-- Parent row -->
+          <div class="flex items-center justify-between py-3 px-4 rounded-xl bg-[#1a2233] text-white">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-[#1a2233] text-white flex items-center justify-center text-xs font-bold">
+              <div class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-xs font-bold">
                 {{ parent.name.charAt(0).toUpperCase() }}
               </div>
               <div>
-                <span class="text-sm font-bold text-gray-900">{{ parent.name }}</span>
-                <span class="text-xs text-gray-400 ml-2">/{{ parent.slug }}</span>
+                <span class="text-sm font-bold">{{ parent.name }}</span>
+                <span class="text-xs text-white/50 ml-2">/{{ parent.slug }}</span>
               </div>
             </div>
             <div class="flex items-center gap-1">
-              <button @click="editCat = parent" class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Edit"><Edit class="w-3.5 h-3.5" /></button>
-              <button @click="deleteCategory(parent.id)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
+              <button @click="editCat = parent" class="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Edit"><Edit class="w-3.5 h-3.5" /></button>
+              <button @click="deleteCategory(parent.id)" class="p-1.5 text-white/60 hover:text-red-300 hover:bg-white/10 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
             </div>
           </div>
-          <div v-for="child in parent.children" :key="child.id" class="flex items-center justify-between py-2.5 px-4 pl-12 rounded-xl mt-1 hover:bg-gray-50/50 transition-colors">
-            <div class="flex items-center gap-3">
-              <div class="w-2 h-2 rounded-full bg-gray-300"></div>
-              <div>
-                <span class="text-sm text-gray-700">{{ child.name }}</span>
-                <span class="text-xs text-gray-400 ml-2">/{{ child.slug }}</span>
+
+          <!-- Children container with connector line -->
+          <div v-if="parent.children?.length" class="relative ml-6 mt-1 space-y-1">
+            <!-- Vertical connector line -->
+            <div class="absolute left-3 top-0 bottom-0 w-px bg-gray-200"></div>
+
+            <div v-for="(child, idx) in parent.children" :key="child.id" class="relative flex items-center">
+              <!-- Horizontal connector -->
+              <div class="absolute -left-3 top-1/2 w-6 h-px bg-gray-200" />
+              <!-- Branch dot -->
+              <div class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-gray-300 ring-4 ring-white" />
+
+              <div class="flex-1 ml-5 flex items-center justify-between py-2.5 px-4 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors">
+                <div class="flex items-center gap-3">
+                  <span class="text-sm font-medium text-gray-700">{{ child.name }}</span>
+                  <span class="text-xs text-gray-400">/{{ child.slug }}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button @click="editCat = child" class="p-1.5 text-gray-400 hover:text-[#1a2233] hover:bg-gray-200 rounded-lg transition-colors" title="Edit"><Edit class="w-3.5 h-3.5" /></button>
+                  <button @click="deleteCategory(child.id)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
+                </div>
               </div>
             </div>
-            <div class="flex items-center gap-1">
-              <button @click="editCat = child" class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Edit"><Edit class="w-3.5 h-3.5" /></button>
-              <button @click="deleteCategory(child.id)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
+          </div>
+
+          <!-- Empty state for no children -->
+          <div v-else-if="!parent.children?.length" class="ml-6 mt-1">
+            <div class="flex items-center">
+              <div class="absolute -left-3 top-1/2 w-6 h-px bg-gray-200" />
+              <div class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-gray-200 ring-4 ring-white" />
+              <p class="ml-5 text-xs text-gray-400 py-2">No subcategories</p>
             </div>
           </div>
-        </div>
-        <div v-if="!categories?.length" class="text-center py-12">
-          <Tag class="w-8 h-8 mx-auto mb-3 text-gray-200" />
-          <p class="text-sm text-gray-400">No categories yet</p>
         </div>
       </div>
     </div>

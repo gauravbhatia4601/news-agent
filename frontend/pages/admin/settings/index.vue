@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-5">
     <!-- System Settings -->
     <div class="bg-white rounded-2xl border border-gray-200/60 p-6">
       <div class="flex items-center gap-3 mb-6">

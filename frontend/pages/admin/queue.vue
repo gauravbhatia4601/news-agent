@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-5">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
