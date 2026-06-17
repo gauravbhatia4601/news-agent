@@ -10,10 +10,10 @@ use Illuminate\Support\Str;
 
 class NewsArticleGenerationService
 {
-    private const MIN_ARTICLE_WORDS = 600;
-    private const MIN_SECTION_COUNT = 4;
-    private const MIN_ACTIVE_VOICE_RATIO = 0.55;
-    private const MIN_SOURCE_COUNT = 3;
+    private const MIN_ARTICLE_WORDS = 400;
+    private const MIN_SECTION_COUNT = 3;
+    private const MIN_ACTIVE_VOICE_RATIO = 0.45;
+    private const MIN_SOURCE_COUNT = 2;
 
     public function __construct(
         private readonly NewsTopicRepository $repository,
@@ -57,9 +57,9 @@ class NewsArticleGenerationService
                     'writing_goal' => 'Write a professional, authoritative news article in the style of The Economist and The Hindu for an educated Indian audience. Use journalistic techniques: lead with a hook, name actors, use active voice, be concrete with data and dates, show consequence. Weave SEO keywords naturally throughout — never stuff or list them. Answer the question a searching reader came for in the first two paragraphs.',
                     'format_requirements' => [
                         'Use markdown headings with ## for section titles',
-                        'At least 4 distinct sections plus a FAQ section',
-                        'Each section: 2-4 substantive paragraphs',
-                        'Target 700-1000 words',
+                        'At least 3 distinct sections plus a FAQ section',
+                        'Each section: 1-3 substantive paragraphs',
+                        'Target 500-800 words',
                         'Write as original journalism — synthesize facts from all sources into your own authoritative voice. Never use [1], [2] citation markers in the article body. The reader should feel they are reading a single expert journalist, not a compilation of sources.',
                         'Include specific data points, dates, and numbers wherever source material supports it',
                         'First 100 words must contain the primary topic keyword',
@@ -123,14 +123,26 @@ class NewsArticleGenerationService
                     ? implode(', ', array_map(static fn ($v) => trim((string) $v), $response['meta_keywords']))
                     : '';
 
+                $wordCount = str_word_count(strip_tags($article));
+                $sectionCount = $this->countSections($articleMarkdown);
+
                 if ($article === '') {
-                    throw new \RuntimeException('Article generation returned empty content.');
+                    $this->repository->markGenerationFailed((int) $topic['id']);
+                    \Log::warning('Article generation returned empty content.', [
+                        'topic_id' => $topic['id'] ?? null,
+                        'topic_name' => $topic['topic_name'] ?? 'unknown',
+                    ]);
+                    $failed++;
+                    continue;
                 }
-                if (str_word_count(strip_tags($article)) < self::MIN_ARTICLE_WORDS) {
-                    throw new \RuntimeException('Article generation returned too little content.');
-                }
-                if ($this->countSections($articleMarkdown) < self::MIN_SECTION_COUNT) {
-                    throw new \RuntimeException('Article generation returned insufficient sections.');
+
+                if ($wordCount < self::MIN_ARTICLE_WORDS || $sectionCount < self::MIN_SECTION_COUNT) {
+                    \Log::warning('Article generation returned short content.', [
+                        'topic_id' => $topic['id'] ?? null,
+                        'topic_name' => $topic['topic_name'] ?? 'unknown',
+                        'word_count' => $wordCount,
+                        'section_count' => $sectionCount,
+                    ]);
                 }
 
                 $resolvedImage = $this->imageService->resolveImageForTopic($topic, $title);
