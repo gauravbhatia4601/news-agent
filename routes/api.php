@@ -69,6 +69,8 @@ Route::prefix('v1/admin')->group(function () {
         Route::get('/generation/queue', [GenerationController::class, 'queueStatus']);
         Route::get('/generation/queue-history', [GenerationController::class, 'queueHistory']);
         Route::post('/generation/sitemap', [GenerationController::class, 'regenerateSitemap']);
+        Route::get('/generation/sitemaps', [GenerationController::class, 'listSitemaps']);
+        Route::get('/generation/sitemaps/{name}', [GenerationController::class, 'showSitemap']);
         Route::get('/generation/stats', [GenerationController::class, 'stats']);
 
         Route::get('/users/roles', [UserController::class, 'roles'])->name('admin.users.roles');

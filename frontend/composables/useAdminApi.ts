@@ -57,5 +57,8 @@ export const useAdminApi = () => {
     },
     regenerateSitemap: () => authFetch<{ data: any }>('/generation/sitemap', { method: 'POST' }),
     getGenerationStats: () => authFetch<{ data: any }>('/generation/stats'),
+
+    getSitemaps: () => authFetch<{ data: any[] }>('/generation/sitemaps'),
+    getSitemap: (name: string) => authFetch<{ data: any }>(`/generation/sitemaps/${encodeURIComponent(name)}`),
   }
 }

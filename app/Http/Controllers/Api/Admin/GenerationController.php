@@ -436,4 +436,50 @@ class GenerationController extends Controller
             ],
         ]);
     }
+
+    public function listSitemaps(): JsonResponse
+    {
+        $dir = public_path('sitemaps');
+        $files = [];
+
+        if (is_dir($dir)) {
+            foreach (glob($dir . '/*.xml') as $file) {
+                $name = basename($file);
+                $size = filesize($file);
+                $modified = filemtime($file);
+                $files[] = [
+                    'name' => $name,
+                    'size' => $size,
+                    'size_human' => $size > 1024 ? round($size / 1024, 1) . ' KB' : $size . ' B',
+                    'modified_at' => date('c', $modified),
+                    'url' => url('sitemaps/' . $name),
+                    'preview' => file_get_contents($file),
+                ];
+            }
+        }
+
+        usort($files, fn ($a, $b) => strcmp($a['name'], $b['name']));
+
+        return response()->json(['data' => $files]);
+    }
+
+    public function showSitemap(string $name): JsonResponse
+    {
+        $path = public_path('sitemaps/' . basename($name));
+
+        if (! file_exists($path) || ! str_ends_with($path, '.xml')) {
+            abort(404, 'Sitemap not found');
+        }
+
+        return response()->json([
+            'data' => [
+                'name' => basename($path),
+                'size' => filesize($path),
+                'size_human' => filesize($path) > 1024 ? round(filesize($path) / 1024, 1) . ' KB' : filesize($path) . ' B',
+                'modified_at' => date('c', filemtime($path)),
+                'url' => url('sitemaps/' . basename($path)),
+                'content' => file_get_contents($path),
+            ],
+        ]);
+    }
 }

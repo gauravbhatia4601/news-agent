@@ -15,7 +15,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureIsAdmin::class,
         ]);
-        $middleware->statefulApi();
 
         $middleware->redirectGuestsTo(function ($request) {
             if ($request->expectsJson()) {

@@ -12,12 +12,6 @@
         </div>
       </div>
       <div class="flex flex-wrap gap-3">
-        <button @click="regenerateSitemap" :disabled="regenerating" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
-        >
-          <Loader2 v-if="regenerating" class="w-4 h-4 animate-spin" />
-          <SitemapIcon v-else class="w-4 h-4" />
-          {{ regenerating ? 'Generating...' : 'Regenerate Sitemap' }}
-        </button>
         <button @click="retryFailed" :disabled="retrying" class="px-4 py-2.5 border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
         >
           <Loader2 v-if="retrying" class="w-4 h-4 animate-spin" />
@@ -157,22 +151,14 @@
 </template>
 
 <script setup lang="ts">
-import { Loader2, RefreshCw, RotateCcw, TrendingUp, TrendingDown, Cpu, BarChart3, Zap, CheckCircle, AlertCircle, AlertTriangle, XCircle } from 'lucide-vue-next'
+import { Loader2, RotateCcw, TrendingUp, TrendingDown, Cpu, BarChart3, Zap, CheckCircle, AlertCircle, AlertTriangle, XCircle } from 'lucide-vue-next'
 import { h } from 'vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
-const SitemapIcon = {
-  render: () => h('svg', { class: 'w-4 h-4', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-    h('path', { d: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' }),
-    h('polyline', { points: '9 22 9 12 15 12 15 22' }),
-  ]),
-}
-
 const api = useAdminApi()
 const stats = ref<any>({})
 const queue = ref<any>({})
-const regenerating = ref(false)
 const retrying = ref(false)
 const actionMessage = ref<{ type: string; text: string } | null>(null)
 
@@ -208,18 +194,6 @@ async function load() {
     stats.value = s.data
     queue.value = q.data
   } catch {}
-}
-
-async function regenerateSitemap() {
-  regenerating.value = true
-  actionMessage.value = null
-  try {
-    const res = await api.regenerateSitemap()
-    actionMessage.value = { type: 'success', text: 'Sitemaps regenerated: ' + res.data.files.join(', ') }
-  } catch (e: any) {
-    actionMessage.value = { type: 'error', text: e?.data?.message || 'Failed to regenerate sitemap' }
-  }
-  regenerating.value = false
 }
 
 async function retryFailed() {
