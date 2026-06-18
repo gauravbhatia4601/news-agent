@@ -61,8 +61,12 @@ export const useAdminApi = () => {
     getSitemaps: () => authFetch<{ data: any[] }>('/generation/sitemaps'),
     getSitemap: (name: string) => authFetch<{ data: any }>(`/generation/sitemaps/${encodeURIComponent(name)}`),
 
-    getSubscribers: (params: Record<string, string | number> = {}) => {
-      const query = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString()
+    getSubscribers: (params: Record<string, string | number | undefined> = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v != null && v !== '')
+          .map(([k, v]) => [k, String(v)])
+      ).toString()
       return authFetch<any>(`/newsletter/subscribers${query ? '?' + query : ''}`)
     },
     deleteSubscriber: (id: number) => authFetch<any>(`/newsletter/subscribers/${id}`, { method: 'DELETE' }),
