@@ -92,6 +92,7 @@ definePageMeta({ layout: false })
 
 const { login, isAuthenticated } = useAdminAuth()
 const router = useRouter()
+const route = useRoute()
 
 const email = ref('admin@theaijournal.com')
 const password = ref('')
@@ -100,9 +101,10 @@ const error = ref('')
 const showPassword = ref(false)
 
 onMounted(() => {
-  const { initFromStorage } = useAdminAuth()
-  initFromStorage()
-  if (isAuthenticated.value) router.push('/admin')
+  if (isAuthenticated.value) {
+    const redirect = (route.query.redirect as string) || '/admin'
+    router.push(redirect)
+  }
 })
 
 async function handleLogin() {
@@ -110,7 +112,8 @@ async function handleLogin() {
   error.value = ''
   try {
     await login(email.value, password.value)
-    router.push('/admin')
+    const redirect = (route.query.redirect as string) || '/admin'
+    router.push(redirect)
   } catch (e: any) {
     error.value = e?.data?.message || (e?.data?.errors ? Object.values(e.data.errors).flat().join(' ') : 'Invalid credentials')
   } finally {
