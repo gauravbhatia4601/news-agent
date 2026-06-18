@@ -7,10 +7,12 @@ use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\DiscoveryController;
 use App\Http\Controllers\Api\Admin\GenerationController;
+use App\Http\Controllers\Api\Admin\NewsletterSubscriberAdminController;
 use App\Http\Controllers\Api\Admin\TopicController as AdminTopicController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\NewsletterSubscriberController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -25,6 +27,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/articles/headlines', [ArticleController::class, 'headlines'])->name('articles.headlines');
     Route::get('/articles/{slug}', [ArticleController::class, 'show'])->name('articles.show');
     Route::get('/articles/{slug}/related', [ArticleController::class, 'related'])->name('articles.related');
+
+    Route::post('/newsletter/subscribe', [NewsletterSubscriberController::class, 'subscribe']);
+    Route::post('/newsletter/unsubscribe', [NewsletterSubscriberController::class, 'unsubscribe']);
 });
 
 Route::prefix('v1/admin')->group(function () {
@@ -83,5 +88,8 @@ Route::prefix('v1/admin')->group(function () {
         ]);
 
         Route::get('/audit', [AuditLogController::class, 'index']);
+
+        Route::get('/newsletter/subscribers', [NewsletterSubscriberAdminController::class, 'index']);
+        Route::delete('/newsletter/subscribers/{id}', [NewsletterSubscriberAdminController::class, 'destroy']);
     });
 });

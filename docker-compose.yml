@@ -70,8 +70,8 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@thetrustjournal.com}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"The Trust Journal"}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@theaijournal.com}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"The AI Journal"}
 
       # Supervisor tuning
       SCHEDULER_START_DELAY: ${SCHEDULER_START_DELAY:-60}

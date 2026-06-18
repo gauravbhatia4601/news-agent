@@ -1,4 +1,5 @@
 <template>
+  <NewsletterSignup variant="card" />
   <footer class="border-t-strong mt-16">
     <div class="mx-auto max-w-[960px] px-5 py-10 xl:max-w-[1280px]">
       <div class="grid grid-cols-2 gap-8 md:grid-cols-4">

@@ -1,5 +1,5 @@
 <script setup lang="ts">import {
-  Menu, LayoutDashboard, FileText, FolderOpen, Tag, Users, ScrollText, Settings, Search, Zap, LogOut, ExternalLink, Activity, ChevronRight, Map
+  Menu, LayoutDashboard, FileText, FolderOpen, Tag, Users, ScrollText, Settings, Search, Zap, LogOut, ExternalLink, Activity, ChevronRight, Map, Mail
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -36,6 +36,7 @@ const navGroups = [
     label: 'Administration',
     items: [
       { to: '/admin/users', label: 'Users', icon: Users },
+      { to: '/admin/newsletter', label: 'Newsletter', icon: Mail },
       { to: '/admin/settings', label: 'Settings', icon: Settings },
     ]
   },
@@ -52,6 +53,7 @@ const pageTitles: Record<string, string> = {
   '/admin/queue': 'Queue Monitor',
   '/admin/audit': 'Audit Log',
   '/admin/users': 'Users',
+  '/admin/newsletter': 'Newsletter',
   '/admin/settings': 'Settings',
 }
 

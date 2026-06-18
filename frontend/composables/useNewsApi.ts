@@ -136,5 +136,13 @@ export function useNewsApi() {
 
       return (response.data ?? []).map(normalizeArticleMedia)
     },
+
+    async subscribe(email: string, source: string = 'website'): Promise<{ message: string }> {
+      const response = await client<{ data: { message: string; email: string } }>('/newsletter/subscribe', {
+        method: 'POST',
+        body: { email, source },
+      })
+      return { message: response.data?.message ?? 'Subscribed' }
+    },
   }
 }

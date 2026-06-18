@@ -6,7 +6,7 @@ const api = useNewsApi()
 const { data: article } = await useAsyncData(`article-${articleSlug}`, () => api.getArticle(articleSlug))
 const { data: related } = await useAsyncData(`related-${articleSlug}`, () => api.getRelated(articleSlug), { default: () => [] as any[] })
 
-const siteUrl = 'https://thetrustjournal.com'
+const siteUrl = 'https://theaijournal.com'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {

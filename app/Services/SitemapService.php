@@ -17,7 +17,7 @@ class SitemapService
     {
         $this->outputDir = public_path('sitemaps');
         $this->baseUrl = rtrim(
-            config('app.frontend_url') ?: config('app.url', 'https://thetrustjournal.com'),
+            config('app.frontend_url') ?: config('app.url', 'https://theaijournal.com'),
             '/'
         );
     }
