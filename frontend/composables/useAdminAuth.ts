@@ -27,6 +27,8 @@ export const useAdminAuth = () => {
     if (import.meta.client) {
       localStorage.setItem('admin-token', res.data.token)
       localStorage.setItem('admin-user', JSON.stringify(res.data.user))
+      const cookie = useCookie('admin-token', { path: '/', sameSite: 'lax' })
+      cookie.value = res.data.token
     }
 
     return res.data
@@ -46,6 +48,8 @@ export const useAdminAuth = () => {
     if (import.meta.client) {
       localStorage.removeItem('admin-token')
       localStorage.removeItem('admin-user')
+      const cookie = useCookie('admin-token', { path: '/', sameSite: 'lax' })
+      cookie.value = null
     }
   }
 
@@ -63,6 +67,8 @@ export const useAdminAuth = () => {
       if (import.meta.client) {
         localStorage.removeItem('admin-token')
         localStorage.removeItem('admin-user')
+        const cookie = useCookie('admin-token', { path: '/', sameSite: 'lax' })
+        cookie.value = null
       }
       return null
     }
