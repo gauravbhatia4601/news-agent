@@ -3,9 +3,13 @@ set -e
 
 cd /var/www/html
 
-# Fix permissions first — storage, cache, and sitemaps must be writable by www-data
+# Fix permissions first — storage, cache, logs, and sitemaps must be writable by www-data
+mkdir -p storage/framework/{cache,sessions,testing,views} storage/logs bootstrap/cache public/sitemaps
 chown -R www-data:www-data storage bootstrap/cache public/sitemaps
 chmod -R 775 storage bootstrap/cache public/sitemaps
+
+# Remove any stale log files created by root in previous image layers
+rm -f storage/logs/laravel.log storage/logs/laravel-*.log 2>/dev/null || true
 
 # Generate key if missing
 if [ -z "$APP_KEY" ]; then
