@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -45,6 +46,8 @@ class CategoryController extends Controller
 
         $category = Category::create($validated);
 
+        AuditLogService::log('create', 'Category', $category->id);
+
         return response()->json(['data' => $category], 201);
     }
 
@@ -61,6 +64,8 @@ class CategoryController extends Controller
 
         $category->update($validated);
 
+        AuditLogService::log('update', 'Category', $id);
+
         return response()->json(['data' => $category->fresh()]);
     }
 
@@ -68,6 +73,8 @@ class CategoryController extends Controller
     {
         $category = Category::findOrFail($id);
         $category->delete();
+
+        AuditLogService::log('delete', 'Category', $id);
 
         return response()->json(['message' => 'Category deleted']);
     }
@@ -83,6 +90,8 @@ class CategoryController extends Controller
         foreach ($validated['orders'] as $item) {
             Category::where('id', $item['id'])->update(['display_order' => $item['display_order']]);
         }
+
+        AuditLogService::log('reorder', 'Category', null, ['count' => count($validated['orders'])]);
 
         return response()->json(['message' => 'Order updated']);
     }

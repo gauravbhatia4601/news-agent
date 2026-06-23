@@ -4,7 +4,7 @@ const api = useNewsApi()
 const { data: trending } = await useAsyncData('trending-page', () => api.getTrending(20), { default: () => [] as any[] })
 
 useHead({
-  title: 'Trending — The AI Journal',
+  title: 'Trending — The Neural Journal',
   meta: [
     { name: 'description', content: 'What\'s trending right now — the fastest-moving stories across India.' },
   ],

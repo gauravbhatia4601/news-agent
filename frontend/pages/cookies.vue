@@ -5,7 +5,7 @@
 
     <h2>Our Cookie Policy</h2>
     <p>
-      <strong>The AI Journal does not use tracking cookies, advertising cookies,
+      <strong>The Neural Journal does not use tracking cookies, advertising cookies,
       or third-party cookies.</strong> We believe in privacy by default.
     </p>
 
@@ -13,15 +13,16 @@
     <p>
       The only cookies that may be set are strictly necessary session cookies
       for our internal admin panel, used exclusively by authorized editorial
-      staff. Public visitors to theaijournal.com will not receive any cookies
+      staff. Public visitors to theneuraljournal.com will not receive any cookies
       from our domain.
     </p>
 
     <h2>Analytics</h2>
     <p>
-      We use Umami, a privacy-first analytics tool that does not use cookies,
-      fingerprinting, or personal data collection. It counts page views
-      anonymously without storing IP addresses or building user profiles.
+      We use Umami, a privacy-first analytics tool hosted at umami.technioz.com.
+      Umami uses cookieless tracking — it does not set cookies, perform fingerprinting,
+      or collect personal data. It counts page views anonymously without storing IP
+      addresses or building user profiles.
     </p>
 
     <h2>No Consent Required</h2>
@@ -34,11 +35,11 @@
     <h2>Questions</h2>
     <p>
       Contact us at
-      <a href="mailto:hello@theaijournal.com">hello@theaijournal.com</a>.
+      <a href="mailto:hello@theneuraljournal.com">hello@theneuraljournal.com</a>.
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'Cookie Notice — The AI Journal' })
+useHead({ title: 'Cookie Notice — The Neural Journal' })
 </script>

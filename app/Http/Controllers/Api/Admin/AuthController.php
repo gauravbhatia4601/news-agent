@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -21,18 +22,22 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
+            AuditLogService::log('login_failed', 'User', null, ['email' => $request->email]);
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
         if (! $user->is_admin) {
+            AuditLogService::log('login_failed', 'User', $user->id, ['reason' => 'not_admin']);
             throw ValidationException::withMessages([
                 'email' => ['You do not have admin access.'],
             ]);
         }
 
         $token = $user->createToken('admin-token', ['admin'])->plainTextToken;
+
+        AuditLogService::log('login', 'User', $user->id);
 
         return response()->json([
             'data' => [
@@ -49,6 +54,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
+        AuditLogService::log('logout', 'User', $request->user()->id);
 
         return response()->json(['message' => 'Logged out']);
     }

@@ -59,7 +59,9 @@ RUN composer dump-autoload --optimize --no-dev
 RUN mkdir -p storage/framework/{cache,sessions,testing,views} \
     storage/logs \
     bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
+    public/sitemaps \
+    && chown -R www-data:www-data storage bootstrap/cache public/sitemaps \
+    && chmod -R 775 storage bootstrap/cache public/sitemaps
 
 # Storage symlink
 RUN php artisan storage:link 2>/dev/null || true
@@ -80,6 +82,8 @@ COPY docker/backend/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
+
+USER www-data
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]

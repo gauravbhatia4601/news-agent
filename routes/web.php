@@ -42,16 +42,16 @@ Route::get('/feed.xml', function () {
         ->take(50)
         ->get();
 
-    $appUrl = config('app.url', 'https://theaijournal.com');
+    $appUrl = config('app.url', 'https://theneuraljournal.com');
 
     $xml = '<?xml version="1.0" encoding="UTF-8"?>';
     $xml .= '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">';
     $xml .= '<channel>';
-    $xml .= '<title>The AI Journal</title>';
+    $xml .= '<title>The Neural Journal</title>';
     $xml .= '<link>' . $appUrl . '</link>';
     $xml .= '<description>Latest news from India and around the world — AI-powered journalism</description>';
     $xml .= '<language>en-in</language>';
-    $xml .= '<copyright>' . date('Y') . ' The AI Journal</copyright>';
+    $xml .= '<copyright>' . date('Y') . ' The Neural Journal</copyright>';
     $xml .= '<atom:link href="' . $appUrl . '/feed.xml" rel="self" type="application/rss+xml"/>';
 
     foreach ($articles as $article) {
@@ -95,11 +95,20 @@ Route::get('/feed.xml', function () {
 });
 
 Route::get('/robots.txt', function () {
-    $appUrl = config('app.url', 'https://theaijournal.com');
+    $appUrl = config('app.url', 'https://theneuraljournal.com');
     $content = "User-agent: *\n";
     $content .= "Allow: /\n\n";
     $content .= "Sitemap: {$appUrl}/sitemaps/sitemap.xml\n";
     $content .= "Sitemap: {$appUrl}/sitemaps/sitemap-news.xml\n";
 
     return response($content, 200, ['Content-Type' => 'text/plain']);
+});
+
+Route::get('/ads.txt', function () {
+    $client = env('ADSENSE_CLIENT', '');
+    if (! $client) {
+        abort(404);
+    }
+    $line = "google.com, {$client}, DIRECT, f08c47fec0942fa0";
+    return response($line . "\n", 200, ['Content-Type' => 'text/plain']);
 });

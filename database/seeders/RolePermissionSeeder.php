@@ -63,7 +63,7 @@ class RolePermissionSeeder extends Seeder
         ])->pluck('id');
         $viewerRole->permissions()->sync($viewerPerms);
 
-        $adminUser = User::where('email', 'admin@theaijournal.com')->first();
+        $adminUser = User::where('email', 'admin@theneuraljournal.com')->first();
         if ($adminUser) {
             $adminUser->roles()->sync([$adminRole->id]);
         }

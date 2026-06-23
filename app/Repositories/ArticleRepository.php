@@ -95,7 +95,7 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function paginateLatest(int $perPage = 15, ?string $categorySlug = null)
     {
-        $query = NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->latest();
 
@@ -106,7 +106,7 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function paginatePopular(int $perPage = 15, ?string $categorySlug = null)
     {
-        $query = NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->orderByDesc('views')->latest();
 
@@ -117,7 +117,7 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function paginateHot(int $perPage = 15, ?string $categorySlug = null)
     {
-        $query = NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->orderByDesc('hot_score');
 
@@ -128,7 +128,7 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function getTrending(int $limit = 10, ?string $categorySlug = null)
     {
-        $query = NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->where('created_at', '>=', now()->subHours(48))
             ->where('view_velocity', '>', 0.3)
@@ -141,7 +141,7 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function getHeadlines(int $limit = 5, ?string $categorySlug = null)
     {
-        $query = NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->latest();
 
@@ -152,7 +152,7 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function findBySlug(string $slug)
     {
-        return NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        return NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->where('slug', $slug)
             ->firstOrFail();
@@ -173,7 +173,7 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function search(string $keyword, int $perPage = 15, ?string $categorySlug = null)
     {
-        $query = NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->where(function ($q) use ($keyword) {
                 $q->where('title', 'ilike', '%' . $keyword . '%')
@@ -192,7 +192,7 @@ class ArticleRepository implements ArticleRepositoryInterface
             ->orWhereHas('parent', fn ($q) => $q->where('slug', $categorySlug))
             ->pluck('id');
 
-        return NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        return NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->where('id', '!=', $articleId)
             ->when(
@@ -206,10 +206,10 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function getFeatured()
     {
-        return NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])
+        return NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->where('created_at', '>=', now()->subHours(48))
             ->orderByDesc('views')
-            ->first() ?? NewsArticle::with(['topic.categoryRelation', 'topic.locationCategory', 'topic.sources'])->latest()->first();
+            ->first() ?? NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])->latest()->first();
     }
 }

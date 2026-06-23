@@ -7,6 +7,7 @@ use App\Jobs\GenerateArticle;
 use App\Models\Category;
 use App\News\Services\NewsDiscoveryService;
 use App\News\Repositories\NewsTopicRepository;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,9 +25,16 @@ class DiscoveryController extends Controller
         $sourcesPerTopic = $request->integer('sources_per_topic', 3);
         $queue = $request->boolean('queue', true);
 
-        $limit = max(1, min($limit, 20));
-        $freshHours = max(1, min($freshHours, 48));
-        $sourcesPerTopic = max(2, min($sourcesPerTopic, 6));
+        $validated = [
+            'limit' => max(1, min($limit, 20)),
+            'fresh_hours' => max(1, min($freshHours, 48)),
+            'sources_per_topic' => max(2, min($sourcesPerTopic, 6)),
+            'queue' => $queue,
+        ];
+
+        $limit = $validated['limit'];
+        $freshHours = $validated['fresh_hours'];
+        $sourcesPerTopic = $validated['sources_per_topic'];
 
         $categories = Category::whereNotNull('parent_id')
             ->orderBy('display_order')
@@ -55,6 +63,8 @@ class DiscoveryController extends Controller
             }
         }
 
+        AuditLogService::log('trigger', 'Discovery', null, $validated);
+
         return response()->json([
             'data' => [
                 'discovered' => count($topics),
@@ -77,6 +87,8 @@ class DiscoveryController extends Controller
         foreach ($signatures as $sig) {
             GenerateArticle::dispatch($sig);
         }
+
+        AuditLogService::log('retry_failed', 'Discovery');
 
         return response()->json([
             'data' => [

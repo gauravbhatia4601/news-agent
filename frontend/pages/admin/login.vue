@@ -11,7 +11,7 @@
             <circle cx="34" cy="32" r="3" stroke="white" stroke-width="1.5"/>
           </svg>
           <div>
-            <span class="text-slate-900 font-semibold text-xl tracking-tight block">The AI Journal</span>
+            <span class="text-slate-900 font-semibold text-xl tracking-tight block">The Neural Journal</span>
             <span class="text-slate-400 text-xs uppercase tracking-[0.2em] font-medium">Admin Console</span>
           </div>
         </NuxtLink>
@@ -42,7 +42,7 @@
             <label class="block text-xs font-medium text-slate-500">Email address</label>
             <input v-model="email" type="email" required autofocus
               class="w-full bg-slate-50 border border-slate-200 rounded-[14px] px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-400 transition-all"
-              placeholder="admin@theaijournal.com"
+              placeholder="admin@theneuraljournal.com"
             />
           </div>
 
@@ -72,7 +72,7 @@
       </div>
 
       <p class="text-center mt-8 text-[11px] text-slate-400">
-        Default: admin@theaijournal.com / changeme123
+        Default: admin@theneuraljournal.com / changeme123
       </p>
     </div>
   </div>
@@ -94,7 +94,7 @@ const { login, isAuthenticated } = useAdminAuth()
 const router = useRouter()
 const route = useRoute()
 
-const email = ref('admin@theaijournal.com')
+const email = ref('admin@theneuraljournal.com')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')

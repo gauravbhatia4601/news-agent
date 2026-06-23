@@ -1,5 +1,5 @@
 <script setup lang="ts">import {
-  Menu, LayoutDashboard, FileText, FolderOpen, Tag, Users, ScrollText, Settings, Search, Zap, LogOut, ExternalLink, Activity, ChevronRight, Map, Mail
+  Menu, LayoutDashboard, FileText, FolderOpen, Tag, Users, ScrollText, Settings, Search, Zap, LogOut, ExternalLink, Activity, ChevronRight, Map, Mail, Cpu
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -27,6 +27,7 @@ const navGroups = [
     items: [
       { to: '/admin/discovery', label: 'Discovery', icon: Search },
       { to: '/admin/generation', label: 'Generation', icon: Zap },
+      { to: '/admin/ai-invocations', label: 'AI Tracking', icon: Cpu },
       { to: '/admin/sitemap', label: 'Sitemap', icon: Map },
       { to: '/admin/queue', label: 'Queue Monitor', icon: Activity },
       { to: '/admin/audit', label: 'Audit Log', icon: ScrollText },
@@ -49,6 +50,7 @@ const pageTitles: Record<string, string> = {
   '/admin/categories': 'Categories',
   '/admin/discovery': 'Discovery',
   '/admin/generation': 'Generation',
+  '/admin/ai-invocations': 'AI Tracking',
   '/admin/sitemap': 'Sitemap',
   '/admin/queue': 'Queue Monitor',
   '/admin/audit': 'Audit Log',
@@ -92,7 +94,7 @@ async function handleLogout() {
             <circle cx="19.5" cy="18.5" r="2" stroke="white" stroke-width="1" />
           </svg>
           <div>
-            <span class="text-slate-900 font-semibold text-[14px] tracking-tight leading-none">The AI Journal</span>
+            <span class="text-slate-900 font-semibold text-[14px] tracking-tight leading-none">The Neural Journal</span>
             <span class="block text-[10px] text-slate-400 uppercase tracking-[0.15em] font-medium leading-tight mt-0.5">Admin</span>
           </div>
         </NuxtLink>

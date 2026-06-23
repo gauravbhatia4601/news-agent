@@ -7,7 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NewsTopicSource extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'topic_id',
+        'source_name',
+        'source_url',
+        'source_url_hash',
+        'headline',
+        'summary',
+        'published_at',
+    ];
 
     protected $casts = [
         'published_at' => 'datetime',

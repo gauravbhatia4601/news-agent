@@ -17,7 +17,7 @@ class SitemapService
     {
         $this->outputDir = public_path('sitemaps');
         $this->baseUrl = rtrim(
-            config('app.frontend_url') ?: config('app.url', 'https://theaijournal.com'),
+            config('app.frontend_url') ?: config('app.url', 'https://theneuraljournal.com'),
             '/'
         );
     }
@@ -161,7 +161,7 @@ class SitemapService
         $urlsetOpen .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">';
         $urlsetClose = '</urlset>';
 
-        $publicationName = htmlspecialchars('The AI Journal');
+        $publicationName = htmlspecialchars('The Neural Journal');
         $publicationLang = 'en';
 
         $items = '';

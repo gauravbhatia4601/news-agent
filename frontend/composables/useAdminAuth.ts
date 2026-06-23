@@ -3,11 +3,19 @@ export const useAdminAuth = () => {
   const user = useState<{ id: number; name: string; email: string; is_admin: boolean } | null>('admin-user', () => null)
   const isAuthenticated = computed(() => !!token.value)
 
-  // Cookie refs — readable on SSR, writable on client
-  const tokenCookie = useCookie<string | null>('admin-token', { path: '/', sameSite: 'lax', maxAge: 604800 })
-  const userCookie = useCookie<string | null>('admin-user', { path: '/', sameSite: 'lax', maxAge: 604800 })
+  const tokenCookie = useCookie<string | null>('admin-token', {
+    path: '/',
+    sameSite: 'strict',
+    secure: true,
+    maxAge: 86400,
+  })
+  const userCookie = useCookie<string | null>('admin-user', {
+    path: '/',
+    sameSite: 'strict',
+    secure: true,
+    maxAge: 86400,
+  })
 
-  // Restore from cookie (SSR) or localStorage (client) into useState
   if (!token.value) {
     if (import.meta.server) {
       if (tokenCookie.value) {
@@ -19,7 +27,14 @@ export const useAdminAuth = () => {
     } else {
       const storedToken = localStorage.getItem('admin-token')
       const storedUser = localStorage.getItem('admin-user')
-      if (storedToken) token.value = storedToken
+      if (storedToken) {
+        token.value = storedToken
+        // Migrate to cookie if not already there
+        if (!tokenCookie.value) {
+          tokenCookie.value = storedToken
+          if (storedUser) tokenCookie.value = storedUser
+        }
+      }
       if (storedUser) { try { user.value = JSON.parse(storedUser) } catch {} }
     }
   }
@@ -34,8 +49,8 @@ export const useAdminAuth = () => {
     user.value = res.data.user
 
     if (import.meta.client) {
-      localStorage.setItem('admin-token', res.data.token)
-      localStorage.setItem('admin-user', JSON.stringify(res.data.user))
+      localStorage.removeItem('admin-token')
+      localStorage.removeItem('admin-user')
       tokenCookie.value = res.data.token
       userCookie.value = JSON.stringify(res.data.user)
     }

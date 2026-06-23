@@ -3,6 +3,7 @@ const router = useRouter()
 const route = useRoute()
 const searchQuery = ref('')
 const showSearch = ref(false)
+const showMobileMenu = ref(false)
 const searchInput = ref<HTMLInputElement>()
 
 const api = useNewsApi()
@@ -29,16 +30,20 @@ watch(showSearch, (val) => {
     nextTick(() => searchInput.value?.focus())
   }
 })
+
+watch(() => route.path, () => {
+  showMobileMenu.value = false
+})
 </script>
 
 <template>
   <!-- Nav-hat: dark bar -->
   <div class="w-full bg-primary text-primary-foreground text-xs">
     <div class="mx-auto flex h-8 max-w-[960px] items-center justify-between px-5 xl:max-w-[1280px]">
-      <div class="flex items-center gap-5">
-        <span class="font-label font-bold uppercase tracking-[0.062em]">The AI Journal</span>
-        <span class="h-3 w-px bg-white/20" />
-        <span class="font-label uppercase tracking-[0.062em] text-white/80">Edition: India</span>
+      <div class="flex items-center gap-3 sm:gap-5 min-w-0">
+        <span class="font-label font-bold uppercase tracking-[0.062em] truncate">The Neural Journal</span>
+        <span class="hidden sm:inline h-3 w-px bg-white/20 shrink-0" />
+        <span class="hidden sm:inline font-label uppercase tracking-[0.062em] text-white/80 shrink-0">Edition: India</span>
       </div>
       <div class="flex items-center gap-3">
         <span class="hidden lg:block font-label text-white/60">{{ todayDate() }}</span>
@@ -46,12 +51,15 @@ watch(showSearch, (val) => {
     </div>
   </div>
 
+  <!-- Market ticker -->
+  <MarketTicker />
+
   <!-- Main masthead -->
   <header class="w-full border-b border-border bg-background">
     <div class="mx-auto flex max-w-[960px] flex-col items-center px-5 py-2 xl:max-w-[1280px]">
       <NuxtLink to="/" class="block">
         <h1 class="font-display text-[2.25rem] font-bold tracking-tight sm:text-[2.75rem] md:text-[3.25rem]">
-          THE AI JOURNAL
+          THE NEURAL JOURNAL
         </h1>
       </NuxtLink>
     </div>
@@ -60,7 +68,8 @@ watch(showSearch, (val) => {
   <!-- Category navigation bar -->
   <nav class="sticky top-0 z-50 w-full border-b border-border bg-background">
     <div class="mx-auto flex max-w-[960px] items-center px-5 xl:max-w-[1280px]">
-      <div class="flex flex-1 items-center gap-px py-1.5">
+      <!-- Desktop: inline categories with horizontal scroll -->
+      <div class="flex flex-1 items-center gap-px py-1.5 overflow-x-auto scrollbar-none lg:overflow-visible">
         <NuxtLink
           to="/"
           class="shrink-0 px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
@@ -70,8 +79,9 @@ watch(showSearch, (val) => {
         </NuxtLink>
 
         <template v-for="cat in categories" :key="cat.id">
-          <span class="mx-1 h-3 w-px bg-border shrink-0" />
-          <div class="relative shrink-0 dropdown">
+          <span class="mx-1 h-3 w-px bg-border shrink-0 hidden lg:inline-block" />
+          <!-- Desktop: dropdown -->
+          <div class="relative shrink-0 dropdown hidden lg:block">
             <NuxtLink
               :to="`/category/${cat.slug}`"
               class="block px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
@@ -92,6 +102,14 @@ watch(showSearch, (val) => {
               </div>
             </div>
           </div>
+          <!-- Mobile: flat links, scrollable -->
+          <NuxtLink
+            :to="`/category/${cat.slug}`"
+            class="shrink-0 px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors lg:hidden"
+            :class="route.path === `/category/${cat.slug}` ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          >
+            {{ cat.name }}
+          </NuxtLink>
         </template>
 
         <span class="mx-1 h-3 w-px bg-border shrink-0" />
@@ -115,7 +133,7 @@ watch(showSearch, (val) => {
       </button>
     </div>
 
-    <!-- Search panel (WSJ-style overlay below nav) -->
+    <!-- Search panel -->
     <div v-if="showSearch" class="border-t border-border bg-muted/30 px-5 py-3">
       <div class="mx-auto max-w-[960px] xl:max-w-[1280px]">
         <form @submit.prevent="goSearch" class="relative">
@@ -137,5 +155,13 @@ watch(showSearch, (val) => {
 .dropdown:hover .dropdown-menu,
 .dropdown:focus-within .dropdown-menu {
   display: block;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 </style>

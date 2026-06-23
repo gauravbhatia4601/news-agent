@@ -1,8 +1,8 @@
-# The AI Journal — Brand Identity & Design System
+# The Neural Journal — Brand Identity & Design System
 
 ## Brand Overview
 
-**Name**: The AI Journal  
+**Name**: The Neural Journal  
 **Tagline**: *Curated, fact-driven journalism with an Indian perspective*  
 **Positioning**: An AI-powered news engine that combines machine intelligence with editorial rigor to deliver comprehensive, balanced, source-attributed journalism.
 
@@ -81,8 +81,8 @@
 ## Logo / Wordmark
 
 ### Current State
-- **Text-only wordmark**: "THE AI JOURNAL" in Playfair Display, uppercase, tracking-tight
-- **Nav-hat badge**: "The AI Journal" (mixed case) + "Edition: India"
+- **Text-only wordmark**: "THE NEURAL JOURNAL" in Playfair Display, uppercase, tracking-tight
+- **Nav-hat badge**: "The Neural Journal" (mixed case) + "Edition: India"
 - **No standalone mark/icon exists**
 
 ### Recommended Logo System
@@ -90,7 +90,7 @@
 ```
 Primary Lockup (Horizontal)
 ┌─────────────────────────────────────────┐
-│  ◆  THE AI JOURNAL                      │
+│  ◆  THE NEURAL JOURNAL                      │
 └─────────────────────────────────────────┘
          ↑
       Optional mark
@@ -144,7 +144,7 @@ Primary Lockup (Horizontal)
 
 | Feature | Location |
 |---------|----------|
-| Title template | `nuxt.config.ts:42` (`%s — The AI Journal`) |
+| Title template | `nuxt.config.ts:42` (`%s — The Neural Journal`) |
 | Meta description | `nuxt.config.ts:46` |
 | Theme color | `nuxt.config.ts:47` (`#1a2233`) |
 | Open Graph | `nuxt.config.ts:48-50` |
@@ -175,9 +175,9 @@ public/
 
 **Design Spec for OG Default**:
 - Background: Primary navy (`#1a2233`)
-- Centered: Mark (white) + "The AI Journal" (Playfair Display, white)
+- Centered: Mark (white) + "The Neural Journal" (Playfair Display, white)
 - Subtitle: "Curated, fact-driven journalism" (Inter, amber)
-- Bottom: "theaijournal.com" (Inter, muted)
+- Bottom: "theneuraljournal.com" (Inter, muted)
 
 ### 2. Email Templates (Newsletter)
 Create `frontend/emails/` with MJML templates:
@@ -212,7 +212,7 @@ Create `frontend/pages/styleguide.vue` documenting:
 - Loading skeletons matching card shapes
 
 ### 5. Admin Polish (Medium Priority)
-- **Login page**: Add mark above "The AI Journal", subtle background pattern
+- **Login page**: Add mark above "The Neural Journal", subtle background pattern
 - **Sidebar**: Replace "Admin" text with mark + wordmark
 - **Top bar**: Add favicon in browser tab (already in nuxt.config)
 - **Empty states**: Branded illustrations for "no articles", "no queue jobs"
@@ -320,7 +320,7 @@ Add to `tailwind.css`:
 
 If working with a designer, provide this brief:
 
-> **Project**: The AI Journal — AI-powered news engine
+> **Project**: The Neural Journal — AI-powered news engine
 > **Deliverables**:
 > 1. **Logo mark** (SVG): Quill nib + circuit node, single-weight line, works at 16px
 > 2. **Favicon suite** (ICO + PNG sizes above)

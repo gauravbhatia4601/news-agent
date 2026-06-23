@@ -38,6 +38,8 @@ return [
         'provider' => env('NEWS_GENERATION_PROVIDER', env('AI_DEFAULT_PROVIDER', 'openrouter')),
         'model' => env('NEWS_GENERATION_MODEL', 'gemma4:31b-cloud'),
         'timeout' => (int) env('NEWS_GENERATION_TIMEOUT', 120),
+        'fallback_provider' => env('NEWS_GENERATION_FALLBACK_PROVIDER'),
+        'fallback_model' => env('NEWS_GENERATION_FALLBACK_MODEL'),
     ],
 
     /*

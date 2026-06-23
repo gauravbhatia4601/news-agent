@@ -3,7 +3,7 @@ const api = useNewsApi()
 const { data: categories } = await useAsyncData('browse-categories', () => api.getCategoryTree(), { default: () => [] as any[] })
 
 useHead({
-  title: 'Browse Topics — The AI Journal',
+  title: 'Browse Topics — The Neural Journal',
 })
 </script>
 

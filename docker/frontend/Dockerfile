@@ -1,4 +1,5 @@
 FROM node:22-alpine AS base
+RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 
 # ---------- Dependencies ----------
@@ -32,5 +33,7 @@ ENV PORT=3000
 ENV NUXT_BACKEND_API_BASE=http://backend:8000
 
 EXPOSE 3000
+
+USER app
 
 CMD ["node", ".output/server/index.mjs"]

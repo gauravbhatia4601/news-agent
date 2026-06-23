@@ -37,7 +37,7 @@ async function handleSubmit() {
     <div class="mx-auto max-w-[960px] px-5 py-10 xl:max-w-[1280px]">
       <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div class="max-w-md">
-          <h3 class="font-display text-xl font-bold text-background tracking-tight mb-1">Stay ahead with The AI Journal</h3>
+          <h3 class="font-display text-xl font-bold text-background tracking-tight mb-1">Stay ahead with The Neural Journal</h3>
           <p class="font-serif text-sm text-background/70">AI-powered news from India and the world. Delivered to your inbox. No spam, ever.</p>
         </div>
         <form @submit.prevent="handleSubmit" class="flex gap-2 w-full md:w-auto md:min-w-[360px]">

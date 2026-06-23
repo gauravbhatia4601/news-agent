@@ -25,7 +25,7 @@ const { data: articles } = await useAsyncData(
 )
 
 useHead({
-  title: computed(() => `${categoryName.value} News — The AI Journal`),
+  title: computed(() => `${categoryName.value} News — The Neural Journal`),
 })
 </script>
 

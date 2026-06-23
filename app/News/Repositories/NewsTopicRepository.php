@@ -11,64 +11,66 @@ class NewsTopicRepository
 {
     public function saveTopicWithSources(DiscoveredTopic $topic): int
     {
-        $existingTopic = DB::table('news_topics')
-            ->where('topic_signature', $topic->signature)
-            ->first();
+        return DB::transaction(function () use ($topic): int {
+            $existingTopic = DB::table('news_topics')
+                ->where('topic_signature', $topic->signature)
+                ->first();
 
-        if ($existingTopic) {
-            DB::table('news_topics')
-                ->where('id', $existingTopic->id)
-                ->update([
-                    'category' => $topic->category,
-                    'category_id' => $topic->categoryId ?? $existingTopic->category_id,
-                    'location_category_id' => $topic->locationCategoryId ?? $existingTopic->location_category_id,
-                    'topic_name' => $topic->name,
-                    'source_count' => $topic->sourceCount(),
-                    'core_tokens' => json_encode($topic->coreTokens),
-                    'updated_at' => now(),
-                ]);
-
-            $topicId = (int) $existingTopic->id;
-        } else {
-            $fuzzyMatch = $this->findFuzzyDuplicate($topic);
-            if ($fuzzyMatch !== null) {
-                $existing = DB::table('news_topics')->where('id', $fuzzyMatch)->first();
-
+            if ($existingTopic) {
                 DB::table('news_topics')
-                    ->where('id', $fuzzyMatch)
+                    ->where('id', $existingTopic->id)
                     ->update([
-                        'category' => $topic->category ?? $existing->category ?? 'Uncategorized',
-                        'category_id' => $topic->categoryId ?? $existing->category_id ?? null,
+                        'category' => $topic->category,
+                        'category_id' => $topic->categoryId ?? $existingTopic->category_id,
+                        'location_category_id' => $topic->locationCategoryId ?? $existingTopic->location_category_id,
                         'topic_name' => $topic->name,
                         'source_count' => $topic->sourceCount(),
                         'core_tokens' => json_encode($topic->coreTokens),
-                        'location_category_id' => $topic->locationCategoryId ?? $existing->location_category_id ?? null,
                         'updated_at' => now(),
                     ]);
 
-                $topicId = $fuzzyMatch;
+                $topicId = (int) $existingTopic->id;
             } else {
-                $topicId = (int) DB::table('news_topics')->insertGetId([
-                    'category' => $topic->category,
-                    'category_id' => $topic->categoryId,
-                    'location_category_id' => $topic->locationCategoryId,
-                    'topic_name' => $topic->name,
-                    'topic_signature' => $topic->signature,
-                    'core_tokens' => json_encode($topic->coreTokens),
-                    'source_count' => $topic->sourceCount(),
-                    'generation_status' => 'pending',
-                    'llm_generated_at' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $fuzzyMatch = $this->findFuzzyDuplicate($topic);
+                if ($fuzzyMatch !== null) {
+                    $existing = DB::table('news_topics')->where('id', $fuzzyMatch)->first();
+
+                    DB::table('news_topics')
+                        ->where('id', $fuzzyMatch)
+                        ->update([
+                            'category' => $topic->category ?? $existing->category ?? 'Uncategorized',
+                            'category_id' => $topic->categoryId ?? $existing->category_id ?? null,
+                            'topic_name' => $topic->name,
+                            'source_count' => $topic->sourceCount(),
+                            'core_tokens' => json_encode($topic->coreTokens),
+                            'location_category_id' => $topic->locationCategoryId ?? $existing->location_category_id ?? null,
+                            'updated_at' => now(),
+                        ]);
+
+                    $topicId = $fuzzyMatch;
+                } else {
+                    $topicId = (int) DB::table('news_topics')->insertGetId([
+                        'category' => $topic->category,
+                        'category_id' => $topic->categoryId,
+                        'location_category_id' => $topic->locationCategoryId,
+                        'topic_name' => $topic->name,
+                        'topic_signature' => $topic->signature,
+                        'core_tokens' => json_encode($topic->coreTokens),
+                        'source_count' => $topic->sourceCount(),
+                        'generation_status' => 'pending',
+                        'llm_generated_at' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
-        }
 
-        foreach ($topic->sources as $source) {
-            $this->upsertSource($topicId, $source);
-        }
+            foreach ($topic->sources as $source) {
+                $this->upsertSource($topicId, $source);
+            }
 
-        return $topicId;
+            return $topicId;
+        });
     }
 
     private function findFuzzyDuplicate(DiscoveredTopic $topic): ?int
@@ -98,6 +100,19 @@ class NewsTopicRepository
         }
 
         return null;
+    }
+
+    public function claimTopicForGeneration(int $topicId): bool
+    {
+        $affected = DB::table('news_topics')
+            ->where('id', $topicId)
+            ->where('generation_status', 'pending')
+            ->update([
+                'generation_status' => 'generating',
+                'updated_at' => now(),
+            ]);
+
+        return $affected > 0;
     }
 
     public function markGenerated(int $topicId): void
@@ -167,39 +182,41 @@ class NewsTopicRepository
         ?string $qualityReport = null,
         int $generationDurationSeconds = 0,
     ): void {
-        $existing = DB::table('news_articles')->where('topic_id', $topicId)->first();
-        $slug = $this->generateUniqueArticleSlug($title, $existing?->id ?? null);
+        DB::transaction(function () use ($topicId, $title, $content, $provider, $model, $metaTitle, $metaDescription, $metaKeywords, $imageUrl, $thumbnailUrl, $metadata, $status, $qualityReport, $generationDurationSeconds): void {
+            $existing = DB::table('news_articles')->where('topic_id', $topicId)->first();
+            $slug = $this->generateUniqueArticleSlug($title, $existing?->id ?? null);
 
-        $payload = [
-            'title' => $title,
-            'content' => $content,
-            'provider' => $provider,
-            'model' => $model,
-            'slug' => $slug,
-            'meta_title' => $metaTitle,
-            'meta_description' => $metaDescription,
-            'meta_keywords' => $metaKeywords,
-            'image_url' => $imageUrl,
-            'thumbnail_url' => $thumbnailUrl,
-            'status' => $status,
-            'quality_report' => $qualityReport,
-            'generation_duration_seconds' => $generationDurationSeconds,
-            'metadata' => ! empty($metadata) ? json_encode($metadata) : null,
-            'updated_at' => now(),
-        ];
+            $payload = [
+                'title' => $title,
+                'content' => $content,
+                'provider' => $provider,
+                'model' => $model,
+                'slug' => $slug,
+                'meta_title' => $metaTitle,
+                'meta_description' => $metaDescription,
+                'meta_keywords' => $metaKeywords,
+                'image_url' => $imageUrl,
+                'thumbnail_url' => $thumbnailUrl,
+                'status' => $status,
+                'quality_report' => $qualityReport,
+                'generation_duration_seconds' => $generationDurationSeconds,
+                'metadata' => ! empty($metadata) ? json_encode($metadata) : null,
+                'updated_at' => now(),
+            ];
 
-        if ($existing) {
-            DB::table('news_articles')
-                ->where('topic_id', $topicId)
-                ->update($payload);
-        } else {
-            DB::table('news_articles')->insert($payload + [
-                'topic_id' => $topicId,
-                'created_at' => now(),
-            ]);
-        }
+            if ($existing) {
+                DB::table('news_articles')
+                    ->where('topic_id', $topicId)
+                    ->update($payload);
+            } else {
+                DB::table('news_articles')->insert($payload + [
+                    'topic_id' => $topicId,
+                    'created_at' => now(),
+                ]);
+            }
 
-        $this->markGenerated($topicId);
+            $this->markGenerated($topicId);
+        });
     }
 
     public function markGenerationFailed(int $topicId): void

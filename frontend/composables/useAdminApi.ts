@@ -70,5 +70,14 @@ export const useAdminApi = () => {
       return authFetch<any>(`/newsletter/subscribers${query ? '?' + query : ''}`)
     },
     deleteSubscriber: (id: number) => authFetch<any>(`/newsletter/subscribers/${id}`, { method: 'DELETE' }),
+
+    getAiInvocations: (params: Record<string, string | number | undefined> = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v != null && v !== '')
+          .map(([k, v]) => [k, String(v)])
+      ).toString()
+      return authFetch<any>(`/ai-invocations${query ? '?' + query : ''}`)
+    },
   }
 }

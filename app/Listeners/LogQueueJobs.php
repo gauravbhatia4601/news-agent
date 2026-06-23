@@ -9,6 +9,7 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Queue\Events\JobReleasedAfterException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 
 class LogQueueJobs
@@ -59,6 +60,8 @@ class LogQueueJobs
 
     private function logJobProcessing(JobProcessing $event): void
     {
+        Cache::put('news-engine:worker-heartbeat', now(), 300);
+
         $raw = $event->job?->payload();
         $decoded = is_string($raw) ? json_decode($raw, true) : [];
         $decoded = is_array($decoded) ? $decoded : [];

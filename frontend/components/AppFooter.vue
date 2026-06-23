@@ -29,14 +29,14 @@
         <div>
           <h4 class="font-label text-xs font-bold uppercase tracking-[0.062em] mb-3">Follow</h4>
           <ul class="space-y-1.5">
-            <li><a href="https://x.com/theaijournal" target="_blank" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">X / Twitter</a></li>
-            <li><a href="https://linkedin.com/company/theaijournal" target="_blank" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">LinkedIn</a></li>
+            <li><a href="https://x.com/theneuraljournal" target="_blank" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">X / Twitter</a></li>
+            <li><a href="https://linkedin.com/company/theneuraljournal" target="_blank" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">LinkedIn</a></li>
           </ul>
         </div>
       </div>
       <div class="mt-8 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2">
         <p class="font-label text-xs text-muted-foreground">
-          &copy; {{ new Date().getFullYear() }} The AI Journal. All rights reserved.
+          &copy; {{ new Date().getFullYear() }} The Neural Journal. All rights reserved.
         </p>
         <p class="font-label text-xs text-muted-foreground">
           Built by <a href="https://www.technioz.com" target="_blank" class="underline underline-offset-4 hover:text-foreground">Technioz</a>

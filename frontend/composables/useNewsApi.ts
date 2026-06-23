@@ -144,5 +144,10 @@ export function useNewsApi() {
       })
       return { message: response.data?.message ?? 'Subscribed' }
     },
+
+    async getMarketData(): Promise<any[]> {
+      const response = await client<{ data: any[] }>('/market')
+      return response.data ?? []
+    },
   }
 }

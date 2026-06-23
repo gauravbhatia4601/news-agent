@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\NewsArticle;
 use App\News\Repositories\NewsTopicRepository;
 use App\News\Services\NewsArticleGenerationService;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -147,6 +148,8 @@ class ArticleController extends Controller
 
         $article->update($validated);
 
+        AuditLogService::log('update', 'Article', $id);
+
         return response()->json([
             'data' => ['id' => $article->id, 'slug' => $article->slug, 'status' => $article->status],
         ]);
@@ -156,6 +159,8 @@ class ArticleController extends Controller
     {
         $article = NewsArticle::findOrFail($id);
         $article->delete();
+
+        AuditLogService::log('delete', 'Article', $id);
 
         return response()->json(['message' => 'Article deleted']);
     }
@@ -174,6 +179,8 @@ class ArticleController extends Controller
 
         \App\Jobs\GenerateArticle::dispatch($topic->topic_signature);
 
+        AuditLogService::log('regenerate', 'Article', $id);
+
         return response()->json(['message' => 'Regeneration dispatched', 'topic_signature' => $topic->topic_signature]);
     }
 
@@ -187,6 +194,8 @@ class ArticleController extends Controller
 
         $ids = $validated['ids'];
         $action = $validated['action'];
+
+        AuditLogService::log('batch', 'Article', null, ['ids' => $validated['ids'], 'action' => $validated['action']]);
 
         $articles = NewsArticle::whereIn('id', $ids)->get();
 

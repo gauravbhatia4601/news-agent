@@ -5,6 +5,10 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     backendApiBase: process.env.BACKEND_API_BASE || 'http://127.0.0.1:8001',
+    public: {
+      adsenseClient: process.env.ADSENSE_CLIENT || '',
+      adsenseSlot: process.env.ADSENSE_SLOT || '',
+    },
   },
 
   modules: [
@@ -40,17 +44,17 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      titleTemplate: '%s — The AI Journal',
+      titleTemplate: '%s — The Neural Journal',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'AI-powered news engine delivering curated, fact-driven journalism with an Indian perspective. Covering politics, business, technology, sports, and culture.' },
         { name: 'theme-color', content: '#1a2233' },
-        { property: 'og:site_name', content: 'The AI Journal' },
+        { property: 'og:site_name', content: 'The Neural Journal' },
         { property: 'og:type', content: 'website' },
         { property: 'og:locale', content: 'en_IN' },
         { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:site', content: '@theaijournal' },
+        { name: 'twitter:site', content: '@theneuraljournal' },
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },

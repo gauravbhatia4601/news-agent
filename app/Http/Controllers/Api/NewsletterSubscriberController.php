@@ -24,6 +24,10 @@ class NewsletterSubscriberController extends Controller
                     'unsubscribed_at' => null,
                     'subscribed_at' => now(),
                     'source' => $validated['source'] ?? $subscriber->source,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => mb_substr($request->userAgent() ?? '', 0, 255),
+                    'consent_text' => 'User re-subscribed via website form',
+                    'consent_at' => now(),
                 ]);
             }
 
@@ -35,6 +39,10 @@ class NewsletterSubscriberController extends Controller
         $subscriber = NewsletterSubscriber::create([
             'email' => $validated['email'],
             'source' => $validated['source'] ?? 'website',
+            'ip_address' => $request->ip(),
+            'user_agent' => mb_substr($request->userAgent() ?? '', 0, 255),
+            'consent_text' => 'User subscribed via website form',
+            'consent_at' => now(),
             'subscribed_at' => now(),
         ]);
 

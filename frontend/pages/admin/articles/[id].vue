@@ -27,7 +27,7 @@
       <div class="lg:col-span-2 space-y-6">
         <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
           <h2 class="text-[15px] font-bold text-slate-900 mb-4">Content</h2>
-          <div class="prose prose-sm max-w-none text-slate-700" v-html="article.content" />
+          <div class="prose prose-sm max-w-none text-slate-700" v-html="sanitizedContent" />
         </div>
 
         <div v-if="article.sources?.length" class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
@@ -98,6 +98,11 @@ const router = useRouter()
 const api = useAdminApi()
 const article = ref<any>(null)
 const regenerating = ref(false)
+
+const sanitizedContent = computed(() => {
+  if (!article.value?.content) return ''
+  return sanitizeHtml(article.value.content)
+})
 
 function statusClass(status: string) {
   if (status === 'published') return 'bg-emerald-50 text-emerald-700 border border-emerald-100'

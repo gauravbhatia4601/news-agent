@@ -5,54 +5,56 @@
 
     <h2>1. Information We Collect</h2>
     <p>
-      <strong>The AI Journal does not require user accounts, collect personal data,
-      or use tracking cookies for advertising.</strong> We use a privacy-first analytics
-      tool (Umami) that collects anonymized page-view counts without cookies, fingerprinting,
-      or personal identifiers. No IP addresses are stored; no user profiles are built.
+      <strong>The Neural Journal collects the following personal data:</strong>
+    </p>
+    <ul>
+      <li><strong>Email addresses</strong> — when you subscribe to our newsletter, we store your email address to deliver news updates.</li>
+      <li><strong>IP addresses</strong> — temporarily stored in server session logs for security and abuse prevention. Admin actions are logged with IP address for audit purposes.</li>
+      <li><strong>Page-view data</strong> — collected via Umami, a privacy-focused analytics tool. Umami uses cookieless tracking and does not store IP addresses or build user profiles.</li>
+    </ul>
+    <p>
+      We do <strong>not</strong> use advertising cookies, third-party ad networks, social media trackers, or external comment systems.
     </p>
 
     <h2>2. How We Use Information</h2>
     <p>
-      Anonymized analytics help us understand which topics and articles readers find
-      valuable, so we can improve our coverage. This data is never shared, sold, or
-      used for targeted advertising.
+      Email addresses are used solely to deliver our newsletter. Anonymized analytics help us understand which topics and articles readers find valuable. IP addresses are used for security monitoring and abuse prevention. This data is never shared, sold, or used for targeted advertising.
     </p>
 
     <h2>3. Cookies</h2>
     <p>
-      We do not set any cookies for tracking, advertising, or user identification.
-      The only cookies that may be set are strictly necessary session cookies for
-      our admin panel (used by authorized staff only).
+      We use cookieless analytics via Umami — no tracking cookies are set for public visitors. Admin panel sessions use strictly necessary cookies for authentication, used by authorized staff only.
     </p>
 
-    <h2>4. Third-Party Services</h2>
+    <h2>4. Newsletter Subscription</h2>
     <p>
-      Our analytics are self-hosted on Umami (umami.technioz.com). No data is sent
-      to third-party analytics providers. We do not embed third-party ad networks,
-      social media trackers, or external comment systems.
+      When you subscribe to our newsletter, we store your email address and the date of subscription. You can unsubscribe at any time by contacting us at
+      <a href="mailto:hello@theneuraljournal.com">hello@theneuraljournal.com</a>. Your email will be removed from our mailing list upon request.
     </p>
 
-    <h2>5. Data Retention</h2>
+    <h2>5. Third-Party Services</h2>
     <p>
-      Anonymized page-view counts are retained indefinitely for trend analysis.
-      No personally identifiable information is collected or stored.
+      Analytics are hosted on Umami (umami.technioz.com), operated by the same parent entity. No data is sent to third-party analytics providers like Google Analytics or Meta Pixel.
     </p>
 
-    <h2>6. Your Rights</h2>
+    <h2>6. Data Retention</h2>
     <p>
-      Since we do not collect personal data, there is no personal data to access,
-      correct, or delete. If you have questions about this policy, contact us at
-      <a href="mailto:hello@theaijournal.com">hello@theaijournal.com</a>.
+      Newsletter subscriber emails are retained until you unsubscribe or request deletion. Anonymized page-view counts are retained for trend analysis. Server logs are retained for 14 days. Audit logs containing admin actions and IP addresses are retained for security purposes.
     </p>
 
-    <h2>7. Changes to This Policy</h2>
+    <h2>7. Your Rights (GDPR / CCPA)</h2>
     <p>
-      We may update this policy to reflect changes in our practices. The latest
-      version will always be available at this URL.
+      You have the right to access, correct, or delete your personal data. To exercise these rights, contact us at
+      <a href="mailto:hello@theneuraljournal.com">hello@theneuraljournal.com</a>. We will respond within 30 days. If you are an EU resident, you also have the right to lodge a complaint with your local data protection authority.
+    </p>
+
+    <h2>8. Changes to This Policy</h2>
+    <p>
+      We may update this policy to reflect changes in our practices. The latest version will always be available at this URL.
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'Privacy Policy — The AI Journal' })
+useHead({ title: 'Privacy Policy — The Neural Journal' })
 </script>

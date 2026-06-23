@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -9,6 +10,7 @@ use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Queue\Events\JobReleasedAfterException;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -29,6 +31,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('login', fn ($request) => [
+            Limit::perMinute(5)->by($request->ip()),
+        ]);
+
+        RateLimiter::for('newsletter', fn ($request) => [
+            Limit::perMinute(5)->by($request->ip()),
+        ]);
+
+        RateLimiter::for('public-api', fn ($request) => [
+            Limit::perMinute(60)->by($request->ip()),
+        ]);
+
+        RateLimiter::for('admin-actions', fn ($request) => [
+            Limit::perMinute(30)->by($request->user()?->id ?: $request->ip()),
+        ]);
+
         Event::listen(JobQueued::class, \App\Listeners\LogQueueJobs::class);
         Event::listen(JobProcessing::class, \App\Listeners\LogQueueJobs::class);
         Event::listen(JobProcessed::class, \App\Listeners\LogQueueJobs::class);

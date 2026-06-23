@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AiInvocationController;
 use App\Http\Controllers\Api\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Api\Admin\AuditLogController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
@@ -13,9 +14,10 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\NewsletterSubscriberController;
+use App\Services\MarketDataService;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('throttle:public-api')->group(function () {
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 
     Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
@@ -28,12 +30,16 @@ Route::prefix('v1')->group(function () {
     Route::get('/articles/{slug}', [ArticleController::class, 'show'])->name('articles.show');
     Route::get('/articles/{slug}/related', [ArticleController::class, 'related'])->name('articles.related');
 
-    Route::post('/newsletter/subscribe', [NewsletterSubscriberController::class, 'subscribe']);
-    Route::post('/newsletter/unsubscribe', [NewsletterSubscriberController::class, 'unsubscribe']);
+    Route::post('/newsletter/subscribe', [NewsletterSubscriberController::class, 'subscribe'])->middleware('throttle:newsletter');
+    Route::post('/newsletter/unsubscribe', [NewsletterSubscriberController::class, 'unsubscribe'])->middleware('throttle:newsletter');
+
+    Route::get('/market', function () {
+        return response()->json(['data' => app(MarketDataService::class)->getMarketData()]);
+    });
 });
 
 Route::prefix('v1/admin')->group(function () {
-    Route::post('/auth/login', [AdminAuthController::class, 'login']);
+    Route::post('/auth/login', [AdminAuthController::class, 'login'])->middleware('throttle:login');
 
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::post('/auth/logout', [AdminAuthController::class, 'logout']);
@@ -47,17 +53,17 @@ Route::prefix('v1/admin')->group(function () {
             'update' => 'admin.articles.update',
             'destroy' => 'admin.articles.destroy',
         ]);
-        Route::post('/articles/batch', [AdminArticleController::class, 'batch'])->name('admin.articles.batch');
-        Route::post('/articles/{id}/regenerate', [AdminArticleController::class, 'regenerate'])->name('admin.articles.regenerate');
+        Route::post('/articles/batch', [AdminArticleController::class, 'batch'])->name('admin.articles.batch')->middleware('throttle:admin-actions');
+        Route::post('/articles/{id}/regenerate', [AdminArticleController::class, 'regenerate'])->name('admin.articles.regenerate')->middleware('throttle:admin-actions');
 
         Route::apiResource('topics', AdminTopicController::class)->except(['store', 'update'])->names([
             'index' => 'admin.topics.index',
             'show' => 'admin.topics.show',
             'destroy' => 'admin.topics.destroy',
         ]);
-        Route::post('/topics/batch', [AdminTopicController::class, 'batch'])->name('admin.topics.batch');
-        Route::post('/topics/{id}/retry', [AdminTopicController::class, 'retry'])->name('admin.topics.retry');
-        Route::post('/topics/{id}/dispatch', [AdminTopicController::class, 'dispatch'])->name('admin.topics.dispatch');
+        Route::post('/topics/batch', [AdminTopicController::class, 'batch'])->name('admin.topics.batch')->middleware('throttle:admin-actions');
+        Route::post('/topics/{id}/retry', [AdminTopicController::class, 'retry'])->name('admin.topics.retry')->middleware('throttle:admin-actions');
+        Route::post('/topics/{id}/dispatch', [AdminTopicController::class, 'dispatch'])->name('admin.topics.dispatch')->middleware('throttle:admin-actions');
 
         Route::apiResource('categories', AdminCategoryController::class)->names([
             'index' => 'admin.categories.index',
@@ -68,12 +74,12 @@ Route::prefix('v1/admin')->group(function () {
         ]);
         Route::post('/categories/reorder', [AdminCategoryController::class, 'reorder'])->name('admin.categories.reorder');
 
-        Route::post('/discovery/trigger', [DiscoveryController::class, 'trigger']);
-        Route::post('/discovery/retry-failed', [DiscoveryController::class, 'retryFailed']);
+        Route::post('/discovery/trigger', [DiscoveryController::class, 'trigger'])->middleware('throttle:admin-actions');
+        Route::post('/discovery/retry-failed', [DiscoveryController::class, 'retryFailed'])->middleware('throttle:admin-actions');
 
         Route::get('/generation/queue', [GenerationController::class, 'queueStatus']);
         Route::get('/generation/queue-history', [GenerationController::class, 'queueHistory']);
-        Route::post('/generation/sitemap', [GenerationController::class, 'regenerateSitemap']);
+        Route::post('/generation/sitemap', [GenerationController::class, 'regenerateSitemap'])->middleware('throttle:admin-actions');
         Route::get('/generation/sitemaps', [GenerationController::class, 'listSitemaps']);
         Route::get('/generation/sitemaps/{name}', [GenerationController::class, 'showSitemap']);
         Route::get('/generation/stats', [GenerationController::class, 'stats']);
@@ -88,6 +94,43 @@ Route::prefix('v1/admin')->group(function () {
         ]);
 
         Route::get('/audit', [AuditLogController::class, 'index']);
+
+        Route::get('/ai-invocations', [AiInvocationController::class, 'index']);
+
+        Route::get('/health', function (): \Illuminate\Http\JsonResponse {
+            $checks = [];
+            $allOk = true;
+
+            try {
+                \DB::select('SELECT 1');
+                $checks['database'] = 'ok';
+            } catch (\Throwable $e) {
+                $checks['database'] = 'error: ' . $e->getMessage();
+                $allOk = false;
+            }
+
+            try {
+                \Cache::store('redis')->put('health-check', 1, 10);
+                \Cache::store('redis')->get('health-check');
+                $checks['redis'] = 'ok';
+            } catch (\Throwable $e) {
+                $checks['redis'] = 'error: ' . $e->getMessage();
+                $allOk = false;
+            }
+
+            $queueSize = \Queue::size(config('queue.default', 'default'));
+            $checks['queue_size'] = $queueSize;
+            $checks['queue'] = $queueSize > 500 ? 'backlogged' : 'ok';
+
+            $heartbeat = \Cache::get('news-engine:worker-heartbeat');
+            $checks['worker_heartbeat'] = $heartbeat ? 'ok' : 'no heartbeat';
+
+            return response()->json([
+                'status' => $allOk ? 'healthy' : 'degraded',
+                'checks' => $checks,
+                'timestamp' => now()->toIso8601String(),
+            ], $allOk ? 200 : 503);
+        });
 
         Route::get('/newsletter/subscribers', [NewsletterSubscriberAdminController::class, 'index']);
         Route::delete('/newsletter/subscribers/{id}', [NewsletterSubscriberAdminController::class, 'destroy']);

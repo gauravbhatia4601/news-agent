@@ -7,10 +7,30 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NewsArticle extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'topic_id',
+        'title',
+        'content',
+        'provider',
+        'model',
+        'metadata',
+        'slug',
+        'meta_title',
+        'meta_description',
+        'meta_keywords',
+        'image_url',
+        'thumbnail_url',
+        'status',
+        'quality_report',
+        'generation_duration_seconds',
+        'views',
+        'hot_score',
+        'view_velocity',
+    ];
 
     protected $casts = [
         'metadata' => 'array',
+        'quality_report' => 'array',
     ];
 
     /**

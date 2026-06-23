@@ -10,7 +10,7 @@ services:
       - storage-data:/var/www/html/storage/app/public
     environment:
       # App
-      APP_NAME: ${APP_NAME:-The AI Journal}
+      APP_NAME: ${APP_NAME:-The Neural Journal}
       APP_ENV: ${APP_ENV:-production}
       APP_KEY: ${APP_KEY}
       APP_DEBUG: ${APP_DEBUG:-false}
@@ -37,6 +37,9 @@ services:
       SESSION_DRIVER: ${SESSION_DRIVER:-redis}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
 
+      # Set to false to skip auto-migrate on container boot
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+
       # AI / LLM providers
       AI_DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-ollama_cloud}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
@@ -59,9 +62,13 @@ services:
       BRAVE_SEARCH_BASE_URL: ${BRAVE_SEARCH_BASE_URL:-https://api.search.brave.com/res/v1}
 
       # Images
-      NEWS_IMAGES_ENABLED: ${NEWS_IMAGES_ENABLED:-false}
-      NEWS_SOURCE_IMAGES_ENABLED: ${NEWS_SOURCE_IMAGES_ENABLED:-false}
+      NEWS_IMAGES_ENABLED: ${NEWS_IMAGES_ENABLED:-true}
+      NEWS_SOURCE_IMAGES_ENABLED: ${NEWS_SOURCE_IMAGES_ENABLED:-true}
       NEWS_AI_IMAGE_ENABLED: ${NEWS_AI_IMAGE_ENABLED:-false}
+
+      # Google AdSense (empty = no ads shown)
+      ADSENSE_CLIENT: ${ADSENSE_CLIENT:-}
+      ADSENSE_SLOT: ${ADSENSE_SLOT:-}
 
       # Mail (optional, for admin notifications)
       MAIL_MAILER: ${MAIL_MAILER:-log}
@@ -70,8 +77,8 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@theaijournal.com}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"The AI Journal"}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@theneuraljournal.com}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"The Neural Journal"}
 
       # Supervisor tuning
       SCHEDULER_START_DELAY: ${SCHEDULER_START_DELAY:-60}
@@ -84,6 +91,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+    mem_limit: 512m
+    cpus: 2
 
   # ── Frontend (Nuxt) ── public facing, gets the domain in Coolify
   frontend:
@@ -94,6 +103,8 @@ services:
     environment:
       # Nuxt server-side proxy connects to backend via compose-internal network
       NUXT_BACKEND_API_BASE: http://backend:8000
+      ADSENSE_CLIENT: ${ADSENSE_CLIENT:-}
+      ADSENSE_SLOT: ${ADSENSE_SLOT:-}
     expose:
       - "3000"
     networks:
@@ -102,6 +113,14 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: 256m
+    cpus: 1
 
 volumes:
   storage-data:

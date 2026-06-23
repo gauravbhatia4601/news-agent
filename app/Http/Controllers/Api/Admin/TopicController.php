@@ -7,6 +7,7 @@ use App\Jobs\GenerateArticle;
 use App\Models\Category;
 use App\Models\NewsTopic;
 use App\News\Repositories\NewsTopicRepository;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -116,9 +117,15 @@ class TopicController extends Controller
             return response()->json(['message' => 'Can only retry failed topics'], 422);
         }
 
-        $topic->update(['generation_status' => 'pending', 'retry_count' => 0]);
+        if ($topic->retry_count >= 5) {
+            return response()->json(['message' => 'Maximum retry limit (5) reached for this topic'], 422);
+        }
+
+        $topic->update(['generation_status' => 'pending']);
 
         GenerateArticle::dispatch($topic->topic_signature);
+
+        AuditLogService::log('retry', 'Topic', $id);
 
         return response()->json(['message' => 'Retry dispatched', 'topic_signature' => $topic->topic_signature]);
     }
@@ -132,6 +139,8 @@ class TopicController extends Controller
         }
 
         GenerateArticle::dispatch($topic->topic_signature);
+
+        AuditLogService::log('dispatch', 'Topic', $id);
 
         return response()->json(['message' => 'Dispatched to queue', 'topic_signature' => $topic->topic_signature]);
     }
@@ -156,6 +165,7 @@ class TopicController extends Controller
                 $topic->sources()->delete();
                 $topic->delete();
             }
+            AuditLogService::log('batch_delete', 'Topic', null, ['ids' => $ids]);
             return response()->json(['message' => count($ids) . ' topics deleted']);
         }
 
@@ -166,17 +176,19 @@ class TopicController extends Controller
                 GenerateArticle::dispatch($topic->topic_signature);
                 $count++;
             }
+            AuditLogService::log('batch_dispatch', 'Topic', null, ['ids' => $ids]);
             return response()->json(['message' => $count . ' topics dispatched to queue']);
         }
 
         if ($action === 'retry') {
             $count = 0;
-            $topics = NewsTopic::whereIn('id', $ids)->where('generation_status', 'failed')->get();
+            $topics = NewsTopic::whereIn('id', $ids)->where('generation_status', 'failed')->where('retry_count', '<', 5)->get();
             foreach ($topics as $topic) {
-                $topic->update(['generation_status' => 'pending', 'retry_count' => 0]);
+                $topic->update(['generation_status' => 'pending']);
                 GenerateArticle::dispatch($topic->topic_signature);
                 $count++;
             }
+            AuditLogService::log('batch_retry', 'Topic', null, ['ids' => $ids]);
             return response()->json(['message' => $count . ' failed topics retried']);
         }
 
@@ -193,6 +205,8 @@ class TopicController extends Controller
 
         $topic->sources()->delete();
         $topic->delete();
+
+        AuditLogService::log('delete', 'Topic', $id);
 
         return response()->json(['message' => 'Topic and associated data deleted']);
     }

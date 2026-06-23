@@ -9,10 +9,22 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class NewsTopic extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'category',
+        'category_id',
+        'location_category_id',
+        'topic_name',
+        'topic_signature',
+        'source_count',
+        'generation_status',
+        'llm_generated_at',
+        'core_tokens',
+        'retry_count',
+    ];
 
     protected $casts = [
         'llm_generated_at' => 'datetime',
+        'core_tokens' => 'array',
     ];
 
     public function categoryRelation(): BelongsTo

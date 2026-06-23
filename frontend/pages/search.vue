@@ -10,7 +10,7 @@ const { data: results } = await useAsyncData(
 )
 
 useHead({
-  title: () => query.value ? `Search: ${query.value} — The AI Journal` : 'Search — The AI Journal',
+  title: () => query.value ? `Search: ${query.value} — The Neural Journal` : 'Search — The Neural Journal',
 })
 </script>
 

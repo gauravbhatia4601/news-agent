@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -46,16 +47,19 @@ class UserController extends Controller
             'role_ids.*' => 'exists:roles,id',
         ]);
 
-        $user = User::create([
+        $user = new User([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'is_admin' => false,
         ]);
+        $user->is_admin = false;
+        $user->save();
 
         if (! empty($validated['role_ids'])) {
             $user->roles()->sync($validated['role_ids']);
         }
+
+        AuditLogService::log('create', 'User', $user->id);
 
         return response()->json(['data' => $user->fresh()], 201);
     }
@@ -77,13 +81,26 @@ class UserController extends Controller
             $user->roles()->sync($validated['role_ids']);
         }
 
+        AuditLogService::log('update', 'User', $id);
+
         return response()->json(['data' => $user->fresh()]);
     }
 
     public function destroy(int $id): JsonResponse
     {
+        if ($id === auth()->id()) {
+            return response()->json(['message' => 'You cannot delete your own account'], 422);
+        }
+
         $user = User::findOrFail($id);
+
+        if ($user->is_admin && User::where('is_admin', true)->count() <= 1) {
+            return response()->json(['message' => 'Cannot delete the last admin user'], 422);
+        }
+
         $user->delete();
+
+        AuditLogService::log('delete', 'User', $id);
 
         return response()->json(['message' => 'User deleted']);
     }

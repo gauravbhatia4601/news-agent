@@ -27,7 +27,17 @@ class NewsArticleImageService
         'default-image',
         'news.google.com',
         'gstatic.com',
+        'googleusercontent.com',
+        'gravatar.com',
+        '1x1',
+        'pixel.gif',
+        'blank.gif',
+        'transparent.gif',
+        'tracking-pixel',
+        'ad-banner',
     ];
+
+    private string $userAgent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
 
     /**
      * @param  array{id:int,category:string,topic_name:string,sources:array<int,array<string,mixed>>}  $topic
@@ -48,17 +58,7 @@ class NewsArticleImageService
             ];
         }
 
-        $aiImage = $this->generateAiFallbackImage(
-            articleTitle: $articleTitle,
-            topicName: (string) ($topic['topic_name'] ?? $articleTitle),
-            category: (string) ($topic['category'] ?? 'general'),
-        );
-
-        return [
-            'image_url' => $aiImage,
-            'thumbnail_url' => $aiImage,
-            'image_origin' => $aiImage ? 'ai' : null,
-        ];
+        return ['image_url' => null, 'thumbnail_url' => null, 'image_origin' => null];
     }
 
     /**
@@ -88,7 +88,7 @@ class NewsArticleImageService
 
             try {
                 $response = Http::timeout($htmlTimeout)
-                    ->withHeaders(['User-Agent' => 'NewsEngineBot/1.0 (+https://example.local)'])
+                    ->withHeaders(['User-Agent' => $this->userAgent])
                     ->get($sourceUrl);
 
                 if (! $response->ok()) {
@@ -181,7 +181,7 @@ class NewsArticleImageService
 
         try {
             $response = Http::timeout($timeout)
-                ->withHeaders(['User-Agent' => 'NewsEngineBot/1.0 (+https://example.local)'])
+                ->withHeaders(['User-Agent' => $this->userAgent])
                 ->get($url);
 
             if (! $response->ok()) {

@@ -25,7 +25,7 @@ watchEffect(async () => {
 })
 
 useHead({
-  title: 'The AI Journal — Latest News from India',
+  title: 'The Neural Journal — Latest News from India',
   meta: [
     { name: 'description', content: 'Stay informed with the latest news across India — politics, business, technology, sports, entertainment and more.' },
   ],
@@ -80,6 +80,8 @@ useHead({
       </div>
     </div>
 
+    <AdSlot variant="horizontal" label="Advertisement" />
+
     <template v-if="categorySections.length > 0">
       <div class="h-px bg-border" />
       <div class="space-y-10">
@@ -92,5 +94,7 @@ useHead({
         />
       </div>
     </template>
+
+    <AdSlot variant="horizontal" label="Advertisement" />
   </div>
 </template>

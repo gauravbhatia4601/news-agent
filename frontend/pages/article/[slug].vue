@@ -6,7 +6,12 @@ const api = useNewsApi()
 const { data: article } = await useAsyncData(`article-${articleSlug}`, () => api.getArticle(articleSlug))
 const { data: related } = await useAsyncData(`related-${articleSlug}`, () => api.getRelated(articleSlug), { default: () => [] as any[] })
 
-const siteUrl = 'https://theaijournal.com'
+const siteUrl = 'https://theneuraljournal.com'
+
+const sanitizedContent = computed(() => {
+  if (!article.value?.content) return ''
+  return sanitizeHtml(article.value.content)
+})
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -53,7 +58,7 @@ useHead({
         },
         publisher: {
           '@type': 'Organization',
-          name: 'The AI Journal',
+          name: 'The Neural Journal',
           url: siteUrl,
           logo: {
             '@type': 'ImageObject',
@@ -170,8 +175,10 @@ useHead({
         </div>
       </header>
 
+      <AdSlot variant="horizontal" label="Advertisement" />
+
       <div class="article-body">
-        <div v-html="article.content" />
+        <div v-html="sanitizedContent" />
       </div>
 
       <!-- FAQ Section -->
@@ -245,6 +252,8 @@ useHead({
             <NewsCompactArticleCard :article="rel" variant="minimal" />
           </div>
         </div>
+
+        <AdSlot variant="vertical" label="Advertisement" />
       </div>
     </aside>
   </div>

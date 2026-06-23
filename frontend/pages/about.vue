@@ -1,9 +1,9 @@
 <template>
   <div class="prose prose-slate max-w-none">
-    <h1>About The AI Journal</h1>
+    <h1>About The Neural Journal</h1>
 
     <p class="lead">
-      The AI Journal is an AI-powered news engine delivering curated, fact-driven journalism
+      The Neural Journal is an AI-powered news engine delivering curated, fact-driven journalism
       with an Indian perspective. We combine machine intelligence with editorial rigor to
       cover the stories that matter — from politics and business to science and culture.
     </p>
@@ -49,11 +49,11 @@
     <h2>Contact</h2>
     <p>
       For inquiries, corrections, or partnership opportunities, reach us at
-      <a href="mailto:hello@theaijournal.com">hello@theaijournal.com</a>.
+      <a href="mailto:hello@theneuraljournal.com">hello@theneuraljournal.com</a>.
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'About — The AI Journal' })
+useHead({ title: 'About — The Neural Journal' })
 </script>

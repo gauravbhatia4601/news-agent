@@ -27,16 +27,16 @@ until php artisan db:monitor --databases=pgsql > /dev/null 2>&1; do
   sleep 2
 done
 
-# Run migrations
-php artisan migrate --force --no-interaction
+# Run migrations only if explicitly requested via RUN_MIGRATIONS env var
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+  echo "Running database migrations..."
+  php artisan migrate --force --no-interaction
+fi
 
 # Ensure storage link
 php artisan storage:link 2>/dev/null || true
 
-# Fix permissions: all artisan commands above ran as root, so files under storage
-# and generated directories may be owned by root. Reset ownership so php-fpm/www-data
-# can write logs, cache, and public sitemap files.
-chown -R www-data:www-data storage bootstrap/cache public/sitemaps
-chmod -R 775 storage bootstrap/cache public/sitemaps
+# Fix permissions for storage and cache dirs
+chmod -R 775 storage bootstrap/cache public/sitemaps 2>/dev/null || true
 
 exec "$@"

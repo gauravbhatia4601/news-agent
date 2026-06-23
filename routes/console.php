@@ -40,8 +40,12 @@ Artisan::command('news:retry {--max-retries=3}', function (
     $this->info('Done.');
 })->purpose('Retry generation for failed topics within retry limit');
 
-Schedule::command('news:discover --queue')->hourly();
-Schedule::command('news:discover --queue --scope=global')->hourlyAt(30);
+Schedule::command('news:discover --queue')->hourly()
+    ->withoutOverlapping(3600)
+    ->runInBackground();
+Schedule::command('news:discover --queue --scope=global')->hourlyAt(30)
+    ->withoutOverlapping(3600)
+    ->runInBackground();
 Schedule::command('news:sitemap-generate')->everyThirtyMinutes()
     ->withoutOverlapping(600)
     ->runInBackground();
@@ -53,3 +57,20 @@ Schedule::call(function () {
     QueueJobLog::where('created_at', '<', now()->subHours(48))->delete();
 })->daily()
 ->name('prune-queue-job-logs')->withoutOverlapping();
+
+Schedule::command('news:backup-db --retention=7')->dailyAt('02:00')
+    ->withoutOverlapping(600)
+    ->runInBackground();
+
+Schedule::command('queue:prune-failed --hours=168')->daily();
+Schedule::command('auth:prune-tokens --hours=24')->daily();
+
+Schedule::call(function () {
+    \App\Models\NewsletterSubscriber::whereNotNull('unsubscribed_at')
+        ->where('unsubscribed_at', '<', now()->subDays(90))
+        ->delete();
+})->daily()->name('prune-unsubscribed-subscribers')->withoutOverlapping();
+
+Schedule::call(function () {
+    \DB::table('article_views')->where('viewed_at', '<', now()->subDays(90))->delete();
+})->daily()->name('prune-article-views')->withoutOverlapping();

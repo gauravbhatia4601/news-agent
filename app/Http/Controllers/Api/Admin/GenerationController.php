@@ -9,6 +9,7 @@ use App\Models\NewsTopic;
 use App\Models\QueueJobLog;
 use App\News\Sources\BraveSearchSource;
 use App\News\Sources\GoogleNewsRssSource;
+use App\Services\AuditLogService;
 use App\Services\SitemapService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -225,19 +226,12 @@ class GenerationController extends Controller
 
     private function detectWorkerStatus(int $pendingJobs, int $totalFailedJobs, $pendingDetails): array
     {
-        $running = false;
-        $details = 'Unable to determine worker status from this container.';
+        $heartbeat = Cache::get('news-engine:worker-heartbeat');
+        $running = $heartbeat && $heartbeat->diffInMinutes(now(), false) < 5;
 
-        if (function_exists('shell_exec')) {
-            $output = shell_exec("ps aux | grep -E '[q]ueue:work' | grep -v grep | head -5") ?? '';
-            $lines = array_filter(explode("\n", trim($output)));
-            $running = count($lines) > 0;
-            if ($running) {
-                $details = count($lines) . ' queue:work process(es) detected.';
-            } else {
-                $details = 'No queue:work process detected on this container.';
-            }
-        }
+        $details = $running
+            ? 'Queue worker active (heartbeat within last 5 minutes).'
+            : 'No recent worker heartbeat detected. Worker may be idle or stopped.';
 
         $oldestPending = collect($pendingDetails)->last();
         $stalled = false;
@@ -315,6 +309,8 @@ class GenerationController extends Controller
     {
         $service = new SitemapService();
         $files = $service->generate();
+
+        AuditLogService::log('regenerate_sitemap', 'Sitemap');
 
         return response()->json([
             'data' => [

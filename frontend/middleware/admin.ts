@@ -1,11 +1,22 @@
 export default defineNuxtRouteMiddleware((to) => {
-  if (to.path.startsWith('/admin') && to.path !== '/admin/login') {
-    let token: string | null = null
+  const tokenCookie = useCookie<string | null>('admin-token', {
+    path: '/',
+    sameSite: 'strict',
+    secure: true,
+    maxAge: 86400,
+  })
 
-    if (import.meta.server) {
-      token = useCookie<string | null>('admin-token', { path: '/', sameSite: 'lax' }).value || null
-    } else {
+  // Unauthenticated: redirect to login
+  if (to.path.startsWith('/admin') && to.path !== '/admin/login') {
+    let token = tokenCookie.value
+
+    // Fall back to localStorage on client (for migration from old sessions)
+    if (!token && import.meta.client) {
       token = localStorage.getItem('admin-token')
+      if (token) {
+        // Migrate to cookie
+        tokenCookie.value = token
+      }
     }
 
     if (!token) {
@@ -13,12 +24,10 @@ export default defineNuxtRouteMiddleware((to) => {
     }
   }
 
-  // If already authenticated and visiting login, go to dashboard
+  // Already authenticated and visiting login: go to dashboard
   if (to.path === '/admin/login') {
-    let token: string | null = null
-    if (import.meta.server) {
-      token = useCookie<string | null>('admin-token', { path: '/', sameSite: 'lax' }).value || null
-    } else {
+    let token = tokenCookie.value
+    if (!token && import.meta.client) {
       token = localStorage.getItem('admin-token')
     }
     if (token) {

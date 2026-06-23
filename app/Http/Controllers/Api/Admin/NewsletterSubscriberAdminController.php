@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NewsletterSubscriber;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -64,6 +65,8 @@ class NewsletterSubscriberAdminController extends Controller
         }
 
         $subscriber->delete();
+
+        AuditLogService::log('delete', 'NewsletterSubscriber', $id);
 
         return response()->json(['data' => ['message' => 'Subscriber removed.']]);
     }
