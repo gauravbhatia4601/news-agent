@@ -3,15 +3,19 @@ set -e
 
 cd /var/www/html
 
+# Fix permissions first — storage, cache, and sitemaps must be writable by www-data
+chown -R www-data:www-data storage bootstrap/cache public/sitemaps
+chmod -R 775 storage bootstrap/cache public/sitemaps
+
 # Generate key if missing
 if [ -z "$APP_KEY" ]; then
-  php artisan key:generate --force --no-interaction
+  su -s /bin/sh www-data -c "php artisan key:generate --force --no-interaction"
 fi
 
-# Cache config, routes, views for production
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+# Cache config, routes, views for production (run as www-data so files are owned correctly)
+su -s /bin/sh www-data -c "php artisan config:cache"
+su -s /bin/sh www-data -c "php artisan route:cache"
+su -s /bin/sh www-data -c "php artisan view:cache"
 
 # Wait for database to be reachable before running migrations
 echo "Waiting for database at ${DB_HOST}:${DB_PORT:-5432}..."
@@ -30,13 +34,10 @@ done
 # Run migrations only if explicitly requested via RUN_MIGRATIONS env var
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
   echo "Running database migrations..."
-  php artisan migrate --force --no-interaction
+  su -s /bin/sh www-data -c "php artisan migrate --force --no-interaction"
 fi
 
 # Ensure storage link
-php artisan storage:link 2>/dev/null || true
-
-# Fix permissions for storage and cache dirs
-chmod -R 775 storage bootstrap/cache public/sitemaps 2>/dev/null || true
+su -s /bin/sh www-data -c "php artisan storage:link 2>/dev/null || true"
 
 exec "$@"

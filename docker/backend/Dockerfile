@@ -83,7 +83,5 @@ RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
-USER www-data
-
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]

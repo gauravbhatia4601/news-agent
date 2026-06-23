@@ -23,7 +23,7 @@ RUN npx nuxt prepare && npm run build
 FROM base AS production
 
 # Copy only the built Nitro output
-COPY --from=build /app/.output ./.output
+COPY --from=build --chown=app:app /app/.output ./.output
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
