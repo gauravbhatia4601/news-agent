@@ -92,7 +92,7 @@ class ArticleController extends Controller
             'model' => $a->model,
             'generation_duration_seconds' => $a->generation_duration_seconds,
             'meta_title' => $a->meta_title,
-            'quality_report' => $a->quality_report ? json_decode($a->quality_report, true) : null,
+            'quality_report' => $a->quality_report,
             'created_at' => $a->created_at->toIso8601String(),
             'updated_at' => $a->updated_at->toIso8601String(),
         ]));

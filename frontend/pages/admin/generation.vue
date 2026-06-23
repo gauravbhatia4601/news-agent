@@ -1,33 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Quick Actions -->
-    <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-slate-900/5 flex items-center justify-center"><Zap class="w-5 h-5 text-amber-600" /></div>
-          <div>
-            <h2 class="text-[15px] font-semibold text-slate-900">Quick Actions</h2>
-            <p class="text-xs text-slate-500">Manual operations and maintenance</p>
-          </div>
-        </div>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <button @click="retryFailed" :disabled="retrying" class="px-4 py-2.5 border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
-        >
-          <Loader2 v-if="retrying" class="w-4 h-4 animate-spin" />
-          <RotateCcw v-else class="w-4 h-4" />
-          {{ retrying ? 'Retrying...' : 'Retry Failed Topics' }}
-        </button>
-      </div>
-      <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0">
-        <div v-if="actionMessage" class="mt-4 p-4 rounded-[14px] text-sm flex items-start gap-2" :class="actionMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'"
-        >
-          <CheckCircle v-if="actionMessage.type === 'success'" class="w-4 h-4 shrink-0 mt-0.5" />
-          <AlertCircle v-else class="w-4 h-4 shrink-0 mt-0.5" />
-          {{ actionMessage.text }}
-        </div>
-      </Transition>
-    </div>
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -194,19 +166,6 @@ async function load() {
     stats.value = s.data
     queue.value = q.data
   } catch {}
-}
-
-async function retryFailed() {
-  retrying.value = true
-  actionMessage.value = null
-  try {
-    const res = await api.retryFailed()
-    actionMessage.value = { type: 'success', text: `Retried ${res.data.retried} failed topics` }
-    await load()
-  } catch (e: any) {
-    actionMessage.value = { type: 'error', text: e?.data?.message || 'Failed to retry' }
-  }
-  retrying.value = false
 }
 
 function modelPct(count: number) {
