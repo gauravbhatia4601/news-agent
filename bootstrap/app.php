@@ -17,10 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo(function ($request) {
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() || $request->is('api/*')) {
                 return null;
             }
-            return route('login');
+            return '/admin/login';
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
