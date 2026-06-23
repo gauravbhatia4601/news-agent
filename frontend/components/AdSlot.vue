@@ -7,14 +7,16 @@ const props = withDefaults(defineProps<{
   label: 'Advertisement',
 })
 
-const adClient = useRuntimeConfig().public.adsenseClient as string || ''
-const adSlotId = useRuntimeConfig().public.adsenseSlot as string || ''
+const config = useRuntimeConfig()
+const adClient = String(config.public.adsenseClient || '')
+const adSlotId = String(config.public.adsenseSlot || '')
+const enabled = computed(() => !!adClient && !!adSlotId)
 const loaded = ref(false)
 const observer = ref<IntersectionObserver | null>(null)
 const container = ref<HTMLElement | null>(null)
 
 onMounted(() => {
-  if (!adClient || !adSlotId) return
+  if (!enabled.value) return
   if (props.variant === 'inline') return
 
   observer.value = new IntersectionObserver(
@@ -52,17 +54,9 @@ const sizeClass = computed(() => {
 </script>
 
 <template>
-  <div
-    ref="container"
-    class="ad-slot flex items-center justify-center my-6"
-    :class="[
-      sizeClass,
-      variant === 'vertical' ? 'mx-auto w-full' : 'mx-auto w-full',
-    ]"
-  >
-    <!-- AdSense ad (only when configured) -->
+  <div v-if="enabled" ref="container" class="ad-slot flex items-center justify-center my-6 mx-auto w-full" :class="sizeClass">
     <ins
-      v-if="adClient && adSlotId && loaded"
+      v-if="loaded"
       class="adsbygoogle"
       style="display:block"
       :data-ad-client="adClient"
@@ -70,14 +64,5 @@ const sizeClass = computed(() => {
       :data-ad-format="variant === 'vertical' ? 'vertical' : 'auto'"
       data-full-width-responsive="true"
     />
-
-    <!-- Placeholder (shown when AdSense not yet configured or not loaded) -->
-    <div
-      v-if="!adClient || !adSlotId || !loaded"
-      class="flex items-center justify-center w-full h-full border border-dashed border-border bg-muted/30"
-      :class="sizeClass"
-    >
-      <span class="font-label text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50">{{ label }}</span>
-    </div>
   </div>
 </template>
