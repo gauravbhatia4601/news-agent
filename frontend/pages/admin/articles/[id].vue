@@ -7,7 +7,7 @@
         <div class="min-w-0 flex-1">
           <h1 class="text-2xl font-bold text-slate-900">{{ article.title }}</h1>
           <div class="flex items-center gap-3 mt-2 text-sm text-slate-500">
-            <span>By {{ article.author }}</span>
+            <span>By {{ article.metadata.author }}</span>
             <span>&middot;</span>
             <span>{{ article.category || 'Uncategorized' }}</span>
             <span>&middot;</span>

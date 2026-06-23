@@ -116,7 +116,7 @@ class ArticleController extends Controller
                 'meta_keywords' => $article->meta_keywords,
                 'image_url' => $article->image_url,
                 'thumbnail_url' => $article->thumbnail_url,
-                'quality_report' => $article->quality_report ? json_decode($article->quality_report, true) : null,
+                'quality_report' => $article->quality_report,
                 'metadata' => $article->metadata,
                 'views' => $article->views,
                 'category' => $article->topic?->categoryRelation?->name,
