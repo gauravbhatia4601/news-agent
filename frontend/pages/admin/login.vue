@@ -70,10 +70,6 @@
           </button>
         </form>
       </div>
-
-      <p class="text-center mt-8 text-[11px] text-slate-400">
-        Default: admin@theneuraljournal.com / changeme123
-      </p>
     </div>
   </div>
 </template>

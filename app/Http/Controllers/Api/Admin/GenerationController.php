@@ -448,7 +448,7 @@ class GenerationController extends Controller
                     'size' => $size,
                     'size_human' => $size > 1024 ? round($size / 1024, 1) . ' KB' : $size . ' B',
                     'modified_at' => date('c', $modified),
-                    'url' => url('sitemaps/' . $name),
+                    'url' => rtrim(config('app.frontend_url') ?: config('app.url'), '/') . '/sitemaps/' . $name,
                     'preview' => file_get_contents($file),
                 ];
             }
@@ -473,7 +473,7 @@ class GenerationController extends Controller
                 'size' => filesize($path),
                 'size_human' => filesize($path) > 1024 ? round(filesize($path) / 1024, 1) . ' KB' : filesize($path) . ' B',
                 'modified_at' => date('c', filemtime($path)),
-                'url' => url('sitemaps/' . basename($path)),
+                'url' => rtrim(config('app.frontend_url') ?: config('app.url'), '/') . '/sitemaps/' . basename($path),
                 'content' => file_get_contents($path),
             ],
         ]);
