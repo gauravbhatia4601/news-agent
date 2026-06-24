@@ -47,11 +47,10 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 FROM base AS app
 
 # Copy vendor from deps stage
-COPY --from=deps --chown=www-data:www-data /var/www/html/vendor ./vendor
+COPY --from=deps /var/www/html/vendor ./vendor
 
 # Copy app source (excludes items in .dockerignore)
-COPY --chown=www-data:www-data . .
-
+COPY . .
 
 # Finish composer autoload
 RUN composer dump-autoload --optimize --no-dev
@@ -86,4 +85,3 @@ EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]
-USER www-data
