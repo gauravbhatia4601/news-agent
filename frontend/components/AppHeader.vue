@@ -11,6 +11,10 @@ const { data: categories } = await useAsyncData('nav-categories-tree', () => api
   default: () => [] as any[],
 })
 
+const filteredCategories = computed(() => {
+  return (categories.value ?? []).filter((cat: any) => cat.slug !== 'artificial-intelligence')
+})
+
 const goSearch = () => {
   const q = searchQuery.value.trim()
   if (!q) return
@@ -87,7 +91,7 @@ watch(() => route.path, () => {
           AI
         </NuxtLink>
 
-        <template v-for="cat in categories" :key="cat.id">
+        <template v-for="cat in filteredCategories" :key="cat.id">
           <span class="mx-1 h-3 w-px bg-border shrink-0 hidden lg:inline-block" />
           <!-- Desktop: dropdown -->
           <div class="relative shrink-0 dropdown hidden lg:block">
