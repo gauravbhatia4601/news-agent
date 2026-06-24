@@ -78,6 +78,15 @@ watch(() => route.path, () => {
           Home
         </NuxtLink>
 
+        <span class="mx-1 h-3 w-px bg-border shrink-0" />
+        <NuxtLink
+          to="/category/artificial-intelligence"
+          class="shrink-0 px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
+          :class="route.path === '/category/artificial-intelligence' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
+        >
+          AI
+        </NuxtLink>
+
         <template v-for="cat in categories" :key="cat.id">
           <span class="mx-1 h-3 w-px bg-border shrink-0 hidden lg:inline-block" />
           <!-- Desktop: dropdown -->

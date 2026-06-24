@@ -42,7 +42,7 @@ class NewsArticleGenerationService
 
         $isOllamaCloud = str_starts_with($provider, 'ollama');
 
-        $aiCategories = ['artificial-intelligence', 'ai-global', 'ai-us', 'ai-china', 'ai-europe', 'ai-japan'];
+        $aiCategories = ['artificial-intelligence'];
 
         foreach ($topics as $topic) {
             if (! $this->repository->claimTopicForGeneration((int) $topic['id'])) {
@@ -250,7 +250,7 @@ class NewsArticleGenerationService
 
     private function generateWithFallback(array $topic, array $sourceRows, $entities, string $fallbackProvider, string $fallbackModel, int $timeout): void
     {
-        $aiCategories = ['artificial-intelligence', 'ai-global', 'ai-us', 'ai-china', 'ai-europe', 'ai-japan'];
+        $aiCategories = ['artificial-intelligence'];
         $isAiTopic = in_array($topic['category'] ?? '', $aiCategories, true);
         $isOllamaCloud = str_starts_with($fallbackProvider, 'ollama');
         $agent = $isAiTopic

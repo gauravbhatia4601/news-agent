@@ -55,6 +55,14 @@ class NewsDiscoverCommand extends Command
             ->orderBy('display_order')
             ->get(['id', 'slug', 'name']);
 
+        // For global scope, also include AI category for deep dive coverage
+        if ($scope === 'global') {
+            $aiCat = Category::where('slug', 'artificial-intelligence')->first();
+            if ($aiCat) {
+                $childCategories->push($aiCat);
+            }
+        }
+
         $locations = $childCategories->map(fn (Category $cat) => [
             'slug' => $cat->slug,
             'name' => $cat->name,
