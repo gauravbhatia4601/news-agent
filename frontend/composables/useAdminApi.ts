@@ -79,5 +79,8 @@ export const useAdminApi = () => {
       ).toString()
       return authFetch<any>(`/ai-invocations${query ? '?' + query : ''}`)
     },
+
+    getSettings: () => authFetch<{ data: any }>('/settings'),
+    updateSettings: (data: any) => authFetch<{ data: any }>('/settings', { method: 'PUT', body: data }),
   }
 }

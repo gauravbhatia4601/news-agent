@@ -11,8 +11,8 @@ use App\News\Sources\BraveSearchSource;
 use App\News\Sources\GoogleNewsRssSource;
 use App\Services\AuditLogService;
 use App\Services\SitemapService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -81,9 +81,11 @@ class GenerationController extends Controller
                     'default_sources_per_topic' => (int) config('news-engine.discovery.default_sources_per_topic', 5),
                 ],
                 'generation' => [
-                    'model' => (string) config('news-engine.generation.model', 'gemma4:31b-cloud'),
-                    'provider' => (string) config('news-engine.generation.provider', 'ollama'),
-                    'enabled' => (bool) config('news-engine.generation.enabled', true),
+                    'model' => \App\Models\Setting::get('generation.model') ?? (string) config('news-engine.generation.model', 'gemma4:31b-cloud'),
+                    'provider' => \App\Models\Setting::get('generation.provider') ?? (string) config('news-engine.generation.provider', 'ollama'),
+                    'enabled' => \App\Models\Setting::get('generation.enabled') !== null
+                        ? (bool) \App\Models\Setting::get('generation.enabled')
+                        : (bool) config('news-engine.generation.enabled', true),
                     'articles_last_hour' => $articlesLastHour,
                     'articles_last_24h' => $articlesLast24h,
                     'avg_generation_seconds' => round(
@@ -117,9 +119,9 @@ class GenerationController extends Controller
     {
         $redis = Redis::connection(config('queue.connections.redis.connection', 'default'));
 
-        $waitingKey = 'queues:' . $queueName;
-        $reservedKey = $waitingKey . ':reserved';
-        $delayedKey = $waitingKey . ':delayed';
+        $waitingKey = 'queues:'.$queueName;
+        $reservedKey = $waitingKey.':reserved';
+        $delayedKey = $waitingKey.':delayed';
 
         $jobs = [];
 
@@ -160,7 +162,7 @@ class GenerationController extends Controller
         }
 
         $commandName = $this->resolveCommandName($job);
-        $id = $job['uuid'] ?? ($job['id'] ?? 'redis-' . ($index ?? substr(sha1($payload), 0, 8)));
+        $id = $job['uuid'] ?? ($job['id'] ?? 'redis-'.($index ?? substr(sha1($payload), 0, 8)));
 
         $stateLabels = [
             'waiting' => 'Queued in Redis',
@@ -189,7 +191,7 @@ class GenerationController extends Controller
         if (is_string($command)) {
             $unserialized = @unserialize($command);
             if ($unserialized instanceof \App\Jobs\GenerateArticle) {
-                $commandName = 'GenerateArticle: ' . $unserialized->topicSignature;
+                $commandName = 'GenerateArticle: '.$unserialized->topicSignature;
             }
         }
 
@@ -307,7 +309,7 @@ class GenerationController extends Controller
 
     public function regenerateSitemap(): JsonResponse
     {
-        $service = new SitemapService();
+        $service = new SitemapService;
         $files = $service->generate();
 
         AuditLogService::log('regenerate_sitemap', 'Sitemap');
@@ -428,7 +430,7 @@ class GenerationController extends Controller
                         ? round(($articles24h / ($articles24h + NewsTopic::where('generation_status', 'failed')->where('updated_at', '>=', $last24h)->count())) * 100, 1)
                         : 0,
                 ],
-                'queue' => Queue::size(config("queue.connections." . config('queue.default', 'database') . ".queue", 'default')),
+                'queue' => Queue::size(config('queue.connections.'.config('queue.default', 'database').'.queue', 'default')),
             ],
         ]);
     }
@@ -439,16 +441,16 @@ class GenerationController extends Controller
         $files = [];
 
         if (is_dir($dir)) {
-            foreach (glob($dir . '/*.xml') as $file) {
+            foreach (glob($dir.'/*.xml') as $file) {
                 $name = basename($file);
                 $size = filesize($file);
                 $modified = filemtime($file);
                 $files[] = [
                     'name' => $name,
                     'size' => $size,
-                    'size_human' => $size > 1024 ? round($size / 1024, 1) . ' KB' : $size . ' B',
+                    'size_human' => $size > 1024 ? round($size / 1024, 1).' KB' : $size.' B',
                     'modified_at' => date('c', $modified),
-                    'url' => rtrim(config('app.frontend_url') ?: config('app.url'), '/') . '/sitemaps/' . $name,
+                    'url' => rtrim(config('app.frontend_url') ?: config('app.url'), '/').'/sitemaps/'.$name,
                     'preview' => file_get_contents($file),
                 ];
             }
@@ -461,7 +463,7 @@ class GenerationController extends Controller
 
     public function showSitemap(string $name): JsonResponse
     {
-        $path = public_path('sitemaps/' . basename($name));
+        $path = public_path('sitemaps/'.basename($name));
 
         if (! file_exists($path) || ! str_ends_with($path, '.xml')) {
             abort(404, 'Sitemap not found');
@@ -471,9 +473,9 @@ class GenerationController extends Controller
             'data' => [
                 'name' => basename($path),
                 'size' => filesize($path),
-                'size_human' => filesize($path) > 1024 ? round(filesize($path) / 1024, 1) . ' KB' : filesize($path) . ' B',
+                'size_human' => filesize($path) > 1024 ? round(filesize($path) / 1024, 1).' KB' : filesize($path).' B',
                 'modified_at' => date('c', filemtime($path)),
-                'url' => rtrim(config('app.frontend_url') ?: config('app.url'), '/') . '/sitemaps/' . basename($path),
+                'url' => rtrim(config('app.frontend_url') ?: config('app.url'), '/').'/sitemaps/'.basename($path),
                 'content' => file_get_contents($path),
             ],
         ]);

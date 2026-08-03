@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\DiscoveryController;
 use App\Http\Controllers\Api\Admin\GenerationController;
 use App\Http\Controllers\Api\Admin\NewsletterSubscriberAdminController;
+use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\Admin\TopicController as AdminTopicController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\ArticleController;
@@ -105,7 +106,7 @@ Route::prefix('v1/admin')->group(function () {
                 \DB::select('SELECT 1');
                 $checks['database'] = 'ok';
             } catch (\Throwable $e) {
-                $checks['database'] = 'error: ' . $e->getMessage();
+                $checks['database'] = 'error: '.$e->getMessage();
                 $allOk = false;
             }
 
@@ -114,7 +115,7 @@ Route::prefix('v1/admin')->group(function () {
                 \Cache::store('redis')->get('health-check');
                 $checks['redis'] = 'ok';
             } catch (\Throwable $e) {
-                $checks['redis'] = 'error: ' . $e->getMessage();
+                $checks['redis'] = 'error: '.$e->getMessage();
                 $allOk = false;
             }
 
@@ -131,6 +132,9 @@ Route::prefix('v1/admin')->group(function () {
                 'timestamp' => now()->toIso8601String(),
             ], $allOk ? 200 : 503);
         });
+
+        Route::get('/settings', [SettingsController::class, 'index']);
+        Route::put('/settings', [SettingsController::class, 'update'])->middleware('throttle:admin-actions');
 
         Route::get('/newsletter/subscribers', [NewsletterSubscriberAdminController::class, 'index']);
         Route::delete('/newsletter/subscribers/{id}', [NewsletterSubscriberAdminController::class, 'destroy']);
