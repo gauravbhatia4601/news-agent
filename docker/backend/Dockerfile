@@ -27,7 +27,7 @@ RUN apk add --no-cache --virtual .build-deps \
         intl \
         opcache \
         pcntl \
-    && pecl install redis \
+    && pecl install redis-6.3.0 \
     && docker-php-ext-enable redis \
     && apk del --purge .build-deps \
     && rm -rf /tmp/pear
