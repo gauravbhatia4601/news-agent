@@ -8,6 +8,7 @@ use App\Ai\Agents\PlainTextAiDeepDiveAgent;
 use App\Ai\Agents\PlainTextNewsArticleAgent;
 use App\Ai\Services\EntityExtractionService;
 use App\Models\AiInvocation;
+use App\Models\Setting;
 use App\News\Repositories\NewsTopicRepository;
 use Illuminate\Support\Str;
 
