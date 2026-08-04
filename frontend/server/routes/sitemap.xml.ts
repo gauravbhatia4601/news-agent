@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig(event)
-  const backendBase = String(runtimeConfig.backendApiBase || 'http://127.0.0.1:8001').replace(/\/$/, '')
+  const backendBase = String(runtimeConfig.backendApiBase || '').replace(/\/$/, '')
 
   const query = getQuery(event)
   const file = query.file as string | undefined

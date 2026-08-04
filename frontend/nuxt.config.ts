@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   runtimeConfig: {
-    backendApiBase: process.env.BACKEND_API_BASE || 'http://127.0.0.1:8001',
+    backendApiBase: process.env.NUXT_BACKEND_API_BASE || process.env.BACKEND_API_BASE || '',
     public: {
       adsenseClient: process.env.ADSENSE_CLIENT || '',
       adsenseSlot: process.env.ADSENSE_SLOT || '',
