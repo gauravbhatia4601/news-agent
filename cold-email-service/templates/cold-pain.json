@@ -1,0 +1,5 @@
+{
+  "name": "cold-pain",
+  "subject": "The content cost problem for {{outlet}}",
+  "textbody": "Dear {{name}},\n\nPublishers like {{outlet}} pay ₹800–1,500 per article to freelancers — or ₹15,000–45,000 per month per writer — and still can't cover the full news cycle.\n\nI built an automated news engine that publishes sourced, SEO-ready articles in your brand 24/7, for a flat monthly fee. Every article is human-approved before going live.\n\nWorth a look? I can show you the live site in 15 minutes. If it's not up to your standard, I'll take the feedback.{{unsubscribe}}"
+}

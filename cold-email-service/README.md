@@ -46,6 +46,28 @@ npm start              # port 4100 by default
 name,email,website,city,category,notes,source_url
 ```
 
+## A/B testing templates
+
+Five templates ship by default — run each against a different lead segment and compare reply rates in the ZeptoMail dashboard:
+
+| Template | Angle | File |
+|----------|-------|------|
+| `cold` | Baseline: quality + pain + solution | `templates/cold.json` |
+| `cold-pain` | Cost-focused (₹/article, ₹/writer math) | `templates/cold-pain.json` |
+| `cold-proof` | "It's live, not a pitch deck" | `templates/cold-proof.json` |
+| `cold-direct` | Shortest: quality + solution + CTA | `templates/cold-direct.json` |
+| `cold-radar` | Editorial angle: coverage-gap radar | `templates/cold-radar.json` |
+
+Run a specific template:
+
+```bash
+curl -X POST http://localhost:4100/campaign \
+  -H 'Content-Type: application/json' \
+  -d '{"campaign":"batch1-pain","template":"cold-pain","limit":10}'
+```
+
+Each campaign tag (`campaign` field) is passed to ZeptoMail as a tag — filter by tag in the ZeptoMail dashboard to compare results.
+
 ## Integration
 
 From any project:
