@@ -1,0 +1,5 @@
+{
+  "name": "cold",
+  "subject": "A private wire service for {{outlet}}",
+  "textbody": "Hi {{name}},\n\nI run an automated news engine that publishes sourced, SEO-optimized articles on trending topics around the clock — the commodity coverage layer every news site needs but small teams can't staff.\n\nThree things it does for a publisher:\n1. Covers the full news cycle (national, world, business, tech, sports) in your brand, 24/7 — so your site builds Google News / Discover ranking without hiring writers.\n2. Every article is sourced, original text, quality-gated, and approved by a human editor before publishing.\n3. A daily coverage radar — what's trending across thousands of sources — so your editors see where the gaps are for underreported stories.\n\nIt's live and publishing right now. Would you give me 15 minutes to show it working on your own site's topics?\n\nIf it's not good enough for your standard, I'll take the feedback and go.{{unsubscribe}}"
+}
