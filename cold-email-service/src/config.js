@@ -10,7 +10,10 @@ export const config = {
   zeptoApiBase: process.env.ZEPTO_API_BASE || 'https://api.zeptomail.com',
   senderEmail: process.env.SENDER_EMAIL || '',
   senderName: process.env.SENDER_NAME || '',
+  signature: process.env.SIGNATURE || process.env.SENDER_NAME || '',
   dailyLimit: parseInt(process.env.DAILY_LIMIT || '25', 10),
+  interSendDelay: parseInt(process.env.INTER_SEND_DELAY || '0', 10),
+  followupDays: parseInt(process.env.FOLLOWUP_DAYS || '6', 10),
   warmupSchedule: (process.env.WARMUP_SCHEDULE || '')
     .split(',')
     .map((s) => parseInt(s.trim(), 10))

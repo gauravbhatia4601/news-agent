@@ -1,0 +1,5 @@
+{
+  "name": "followup",
+  "subject": "Re: A content engine for {{outlet}}",
+  "textbody": "Dear {{name}},\n\nJust bumping this up your inbox \u2014 you may have missed my note from last week.\n\nQuick recap: I run an automated news engine that publishes sourced, SEO-ready articles in your brand around the clock, with every article human-approved before going live. It's live and running now.\n\nWorth a 15-minute look? If it's not up to your standard, no hard feelings \u2014 just say so.{{unsubscribe}}\n\n{{signature}}"
+}

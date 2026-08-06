@@ -17,7 +17,7 @@ function render(text, lead, campaign) {
     .replaceAll('{{category}}', lead.category)
     .replaceAll('{{notes}}', lead.notes)
     .replaceAll('{{campaign}}', campaign)
-    .replaceAll('{{signature}}', config.senderName)
+    .replaceAll('{{signature}}', config.signature)
     .replaceAll('{{unsubscribe}}', config.unsubscribeUrl ? `\n\nUnsubscribe: ${config.unsubscribeUrl}` : '')
 }
 

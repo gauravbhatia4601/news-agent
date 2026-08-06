@@ -2,10 +2,23 @@ import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
 import { config } from './config.js'
-import { sendMail } from './zepto.js'
+import { sendMail, isPermanentError } from './zepto.js'
 import { loadLeads, buildReplyTo } from './leads.js'
 import { renderTemplate } from './templates.js'
-import { quota, alreadySent, markSent, markSkipped, currentDailyLimit, todayKey } from './limiter.js'
+import {
+  quota,
+  alreadySent,
+  sentStats,
+  sentMeta,
+  followupDue,
+  markSent,
+  markSkipped,
+  markBounced,
+  markReplied,
+  markFollowupSent,
+  currentDailyLimit,
+  todayKey,
+} from './limiter.js'
 
 const app = express()
 app.use(express.json())
@@ -19,15 +32,88 @@ function recordEvent(event) {
   try { events = JSON.parse(fs.readFileSync(eventsFile, 'utf8')) } catch {}
   events.push({ at: new Date().toISOString(), ...event })
   fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2))
-  if (event.event === 'bounced' || event.event === 'spam_complaint') {
-    // stop re-sending to this address
-    if (event.email) markSkipped(event.email)
+  if (event.event === 'bounced') {
+    if (event.email) markBounced(event.email)
+  } else if (event.event === 'spam_complaint') {
+    if (event.email) markSkipped(event.email, 'spam complaint')
   }
 }
 
 function loadTemplate(name) {
   const resolved = path.resolve(process.cwd(), `templates/${name}.json`)
+  if (!fs.existsSync(resolved)) throw new Error(`Template not found: ${name}`)
   return JSON.parse(fs.readFileSync(resolved, 'utf8'))
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+async function sendOne({ lead, template, campaign, dryRun }) {
+  const tpl = loadTemplate(template)
+  const rendered = renderTemplate(tpl, lead, campaign)
+  return sendMail({
+    to: lead.email,
+    subject: rendered.subject,
+    textbody: rendered.textbody,
+    htmlbody: rendered.htmlbody,
+    replyTo: buildReplyTo(),
+    tags: [campaign, template],
+  })
+}
+
+/**
+ * Normalize A/B template list.
+ * Accepts either `template` (single) or `templates` (array) with optional
+ * `weights` (array of numbers). Leads are assigned round-robin across the
+ * weighted list.
+ */
+function resolveTemplates({ template, templates, weights }) {
+  const list = templates?.length
+    ? templates.map((t) => ({ name: t, weight: 1 }))
+    : [{ name: template || 'cold', weight: 1 }]
+  if (weights?.length) {
+    list.forEach((t, i) => { t.weight = weights[i] || 1 })
+  }
+  for (const t of list) loadTemplate(t.name) // validate early
+  const expanded = list.flatMap((t) => Array(Math.max(1, t.weight)).fill(t.name))
+  return { names: list.map((t) => t.name), expanded }
+}
+
+async function runCampaign({ campaign, templates, template, weights, limit, dryRun }) {
+  const leads = loadLeads()
+  const { names, expanded } = resolveTemplates({ template, templates, weights })
+
+  const cap = typeof limit === 'number' ? Math.min(limit, leads.length) : quota().remaining
+  const results = { sent: 0, skipped: 0, failed: 0, permanentSkipped: 0, errors: [], dryRun: Boolean(dryRun), templates: names }
+
+  let sentCount = 0
+  for (const lead of leads) {
+    if (sentCount >= cap) {
+      results.errors.push('Daily quota reached — run again tomorrow')
+      break
+    }
+    if (alreadySent(lead.email)) {
+      results.skipped++
+      continue
+    }
+
+    const tplName = expanded[sentCount % expanded.length]
+    try {
+      await sendOne({ lead, template: tplName, campaign, dryRun })
+      markSent(lead.email, { campaign, template: tplName })
+      sentCount++
+      results.sent++
+      if (config.interSendDelay > 0 && !dryRun) await sleep(config.interSendDelay)
+    } catch (e) {
+      results.failed++
+      if (isPermanentError(e)) {
+        results.permanentSkipped++
+        markSkipped(lead.email, e.message)
+      }
+      results.errors.push(`${lead.email}: ${e.message}`)
+    }
+  }
+
+  return { ...results, quota: quota() }
 }
 
 // ---------- Routes ----------
@@ -53,7 +139,7 @@ app.get('/leads', (req, res) => {
 // body: { email, name?, website?, city?, category?, notes?, template?, campaign? }
 app.post('/send', async (req, res) => {
   try {
-    const { email, name = '', website = '', city = '', category = '', notes = '', template = 'cold', campaign = 'batch1' } = req.body || {}
+    const { email, name = '', website = '', city = '', category = '', notes = '', template = 'cold', campaign = 'batch1', dryRun = config.dryRun } = req.body || {}
 
     if (!email) return res.status(400).json({ error: 'email is required' })
 
@@ -67,70 +153,72 @@ app.post('/send', async (req, res) => {
     }
 
     const lead = { name, email, website, city, category, notes }
-    const tpl = loadTemplate(template)
-    const rendered = renderTemplate(tpl, lead, campaign)
-    const replyTo = buildReplyTo()
+    const result = await sendOne({ lead, template, campaign, dryRun })
+    markSent(email, { campaign, template })
 
-    const result = await sendMail({
-      to: email,
-      subject: rendered.subject,
-      textbody: rendered.textbody,
-      htmlbody: rendered.htmlbody,
-      replyTo,
-      tags: [campaign],
-    })
-
-    markSent(email)
     res.json({ sent: true, email, result, quota: quota() })
+  } catch (e) {
+    res.status(500).json({ error: e.message, permanent: isPermanentError(e) })
+  }
+})
+
+// Run a wave over the whole CSV with A/B template split
+// body: {
+//   template: 'cold' | templates: ['cold','cold-pain'], weights: [1,1],
+//   campaign: 'batch1', limit?: number, dryRun?: bool
+// }
+app.post('/campaign', async (req, res) => {
+  try {
+    const { template, templates, weights, campaign = 'batch1', limit, dryRun } = req.body || {}
+    const results = await runCampaign({ template, templates, weights, campaign, limit, dryRun })
+    res.json({ data: results })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
 })
 
-// Run a campaign over the whole CSV
-// body: { template?, campaign?, limit? } — limit overrides daily quota for this run
-app.post('/campaign', async (req, res) => {
+// Send follow-ups to everyone sent ≥ FOLLOWUP_DAYS days ago who hasn't replied
+// body: { campaign?: 'followup', template?: 'followup', limit?, dryRun? }
+app.post('/campaign/followup', async (req, res) => {
   try {
-    const { template = 'cold', campaign = 'batch1', limit } = req.body || {}
+    const { campaign = 'followup', template = 'followup', limit, dryRun } = req.body || {}
     const leads = loadLeads()
-
     const cap = typeof limit === 'number' ? limit : quota().remaining
-    const results = { sent: 0, skipped: 0, failed: 0, errors: [], dryRun: config.dryRun }
+    const results = { sent: 0, skipped: 0, failed: 0, notDue: 0, errors: [], dryRun: Boolean(dryRun), template }
 
+    let sentCount = 0
     for (const lead of leads) {
-      if (results.sent >= cap) {
+      if (sentCount >= cap) {
         results.errors.push('Daily quota reached — run again tomorrow')
         break
       }
-      if (alreadySent(lead.email)) {
-        results.skipped++
+      if (!followupDue(lead.email)) {
+        results.notDue++
         continue
       }
 
       try {
-        const tpl = loadTemplate(template)
-        const rendered = renderTemplate(tpl, lead, campaign)
-        await sendMail({
-          to: lead.email,
-          subject: rendered.subject,
-          textbody: rendered.textbody,
-          htmlbody: rendered.htmlbody,
-          replyTo: buildReplyTo(),
-          tags: [campaign],
-        })
-        markSent(lead.email)
+        await sendOne({ lead, template, campaign, dryRun })
+        markFollowupSent(lead.email, template)
+        sentCount++
         results.sent++
+        if (config.interSendDelay > 0 && !dryRun) await sleep(config.interSendDelay)
       } catch (e) {
         results.failed++
-        markSkipped(lead.email) // don't retry failing addresses in this wave
         results.errors.push(`${lead.email}: ${e.message}`)
       }
     }
 
-    res.json({ data: results, quota: quota() })
+    res.json({ data: { ...results, quota: quota() } })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
+})
+
+// Preview who is due for a follow-up right now
+app.get('/followup/due', (req, res) => {
+  const leads = loadLeads().filter((l) => followupDue(l.email))
+  res.json({ data: leads.map((l) => ({ email: l.email, name: l.name, meta: sentMeta(l.email) })), count: leads.length })
 })
 
 // ZeptoMail webhook receiver — configure in ZeptoMail dashboard → Webhooks
@@ -138,7 +226,9 @@ app.post('/campaign', async (req, res) => {
 app.post('/webhook/zeptomail', (req, res) => {
   try {
     const body = req.body
-    const event = body?.event || body?.type || 'unknown'
+    const rawEvent = body?.event || body?.type || 'unknown'
+    const eventMap = { open: 'opened', click: 'clicked', bounce: 'bounced', spam_complaint: 'spam_complaint', delivered: 'delivered' }
+    const event = eventMap[rawEvent] || rawEvent
     const email = body?.email || body?.to?.address || body?.recipient || body?.address || ''
     recordEvent({ event, email, payload: body })
     res.json({ ok: true })
@@ -147,7 +237,7 @@ app.post('/webhook/zeptomail', (req, res) => {
   }
 })
 
-// Stats for reporting — delivered/opened/clicked/bounced/complained totals
+// Stats for reporting — sent/replied/followups + delivery events
 app.get('/stats', (req, res) => {
   let events = []
   try { events = JSON.parse(fs.readFileSync(eventsFile, 'utf8')) } catch {}
@@ -155,20 +245,15 @@ app.get('/stats', (req, res) => {
     acc[e.event] = (acc[e.event] || 0) + 1
     return acc
   }, {})
-  res.json({
-    data: {
-      totals: { sent: quota().sentToday + events.length, ...byEvent },
-      events: events.slice(-100),
-    },
-  })
+  res.json({ data: { ...sentStats(), events: byEvent, recentEvents: events.slice(-100) } })
 })
 
-// Mark an email as replied (so it can be moved to a "warm" list / follow-up campaign)
+// Mark an email as replied (via webhook/manual/IMAP — removes from follow-up queue)
 // body: { email }
 app.post('/replied', (req, res) => {
   const { email } = req.body || {}
   if (!email) return res.status(400).json({ error: 'email is required' })
-  markSent(email) // dedupe against future cold waves
+  markReplied(email)
   res.json({ ok: true, email })
 })
 

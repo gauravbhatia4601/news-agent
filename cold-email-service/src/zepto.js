@@ -1,5 +1,11 @@
 import { config } from './config.js'
 
+/** True for ZeptoMail 4xx responses (bad address, auth, etc.) — retrying won't help */
+export function isPermanentError(err) {
+  const m = /^ZeptoMail error (\d+)/.exec(err?.message || '')
+  return Boolean(m && Number(m[1]) < 500)
+}
+
 /**
  * ZeptoMail API client (transactional email API by Zoho).
  * Docs: https://www.zoho.com/zeptomail/help/api/email-sending.html

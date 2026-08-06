@@ -5,15 +5,44 @@ import { config } from './config.js'
 /**
  * Daily quota + dedupe tracker.
  * Persists to data/sent.json so state survives restarts.
+ *
+ * State shape:
+ * {
+ *   byDate: { "2026-08-06": 5 },
+ *   sent: {
+ *     "email@x.com": {
+ *       at: ISO timestamp,        // when first sent
+ *       campaign: "batch1",
+ *       template: "cold",
+ *       replied: false,
+ *       followupAt: ISO|null,     // when follow-up was sent
+ *       followupTemplate: null,
+ *       bounced: false,
+ *       skipped: false            // marked skipped (no email / hard failure)
+ *     }
+ *   }
+ * }
  */
 const sentFile = path.join(config.dataDir, 'sent.json')
 
+function emptyState() {
+  return { byDate: {}, sent: {} }
+}
+
 function load() {
+  let state
   try {
-    return JSON.parse(fs.readFileSync(sentFile, 'utf8'))
+    state = JSON.parse(fs.readFileSync(sentFile, 'utf8'))
   } catch {
-    return { byDate: {}, sent: [] }
+    return emptyState()
   }
+  // migrate old format { byDate: {}, sent: ["a@b.com", ...] } → map
+  if (Array.isArray(state.sent)) {
+    const map = {}
+    for (const email of state.sent) map[email] = { at: new Date().toISOString(), campaign: 'unknown' }
+    state.sent = map
+  }
+  return state
 }
 
 function save(state) {
@@ -46,20 +75,72 @@ export function quota() {
 
 export function alreadySent(email) {
   const state = load()
-  return state.sent.includes(email.toLowerCase())
+  return Boolean(state.sent[email.toLowerCase()])
 }
 
-export function markSent(email) {
+export function sentMeta(email) {
+  const state = load()
+  return state.sent[email.toLowerCase()] || null
+}
+
+export function markSent(email, meta = {}) {
   const state = load()
   const key = email.toLowerCase()
   state.byDate[todayKey()] = (state.byDate[todayKey()] || 0) + 1
-  if (!state.sent.includes(key)) state.sent.push(key)
+  state.sent[key] = { at: new Date().toISOString(), replied: false, followupAt: null, followupTemplate: null, bounced: false, skipped: false, ...meta, ...state.sent[key] }
   save(state)
 }
 
-export function markSkipped(email) {
+export function markSkipped(email, reason = '') {
   const state = load()
   const key = email.toLowerCase()
-  if (!state.sent.includes(key)) state.sent.push(key)
+  state.sent[key] = { ...state.sent[key], skipped: true, skipReason: reason }
   save(state)
+}
+
+export function markBounced(email) {
+  const state = load()
+  const key = email.toLowerCase()
+  state.sent[key] = { ...state.sent[key], bounced: true }
+  save(state)
+}
+
+export function markReplied(email) {
+  const state = load()
+  const key = email.toLowerCase()
+  state.sent[key] = { ...state.sent[key], replied: true }
+  save(state)
+}
+
+export function markFollowupSent(email, template) {
+  const state = load()
+  const key = email.toLowerCase()
+  state.byDate[todayKey()] = (state.byDate[todayKey()] || 0) + 1
+  state.sent[key] = { ...state.sent[key], followupAt: new Date().toISOString(), followupTemplate: template }
+  save(state)
+}
+
+/**
+ * Eligible for follow-up: sent, not replied, not bounced/skipped,
+ * no follow-up yet, and at least FOLLOWUP_DAYS old.
+ */
+export function followupDue(email) {
+  const meta = sentMeta(email)
+  if (!meta || !meta.at || meta.replied || meta.bounced || meta.skipped || meta.followupAt) return false
+  const ageDays = (Date.now() - new Date(meta.at).getTime()) / 86400000
+  return ageDays >= config.followupDays
+}
+
+export function sentStats() {
+  const state = load()
+  const entries = Object.values(state.sent)
+  return {
+    sent: entries.filter((e) => e.at).length,
+    replied: entries.filter((e) => e.replied).length,
+    followups: entries.filter((e) => e.followupAt).length,
+    skipped: entries.filter((e) => e.skipped).length,
+    bounced: entries.filter((e) => e.bounced).length,
+    sentToday: state.byDate[todayKey()] || 0,
+    byDate: state.byDate,
+  }
 }
