@@ -5,6 +5,7 @@ import { config } from './config.js'
 import { sendMail, isPermanentError } from './zepto.js'
 import { loadLeads, buildReplyTo } from './leads.js'
 import { renderTemplate } from './templates.js'
+import { dashboardHtml } from './dashboard.js'
 import {
   quota,
   alreadySent,
@@ -120,6 +121,15 @@ async function runCampaign({ campaign, templates, template, weights, limit, dryR
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: appName, time: new Date().toISOString() })
+})
+
+// Human-readable dashboard
+app.get('/', (req, res) => {
+  try {
+    res.type('html').send(dashboardHtml())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
 })
 
 app.get('/quota', (req, res) => {
