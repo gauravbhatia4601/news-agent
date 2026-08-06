@@ -1,5 +1,5 @@
 {
   "name": "cold-radar",
   "subject": "A coverage radar for {{outlet}}",
-  "textbody": "Dear {{name}},\n\nYour team reports stories others miss — that's the hard part of journalism.\n\nThe easy part — covering the daily news cycle — can be automated.\n\nMy engine scans thousands of sources daily, finds what's trending, and publishes sourced, SEO-ready articles in your brand, 24/7. Your reporters get a daily coverage-gap report and stay focused on the stories only they can do.\n\nHuman approval before anything publishes. 15 minutes to see it live?{{unsubscribe}}"
+  "textbody": "Dear {{name}},\n\nYour team reports stories others miss \u2014 that's the hard part of journalism.\n\nThe easy part \u2014 covering the daily news cycle \u2014 can be automated.\n\nMy engine scans thousands of sources daily, finds what's trending, and publishes sourced, SEO-ready articles in your brand, 24/7. Your reporters get a daily coverage-gap report and stay focused on the stories only they can do.\n\nHuman approval before anything publishes. 15 minutes to see it live?{{unsubscribe}}\n\n{{signature}}"
 }

@@ -11,6 +11,19 @@ const app = express()
 app.use(express.json())
 
 const appName = 'cold-email-service'
+const eventsFile = path.join(config.dataDir, 'events.json')
+
+function recordEvent(event) {
+  fs.mkdirSync(config.dataDir, { recursive: true })
+  let events = []
+  try { events = JSON.parse(fs.readFileSync(eventsFile, 'utf8')) } catch {}
+  events.push({ at: new Date().toISOString(), ...event })
+  fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2))
+  if (event.event === 'bounced' || event.event === 'spam_complaint') {
+    // stop re-sending to this address
+    if (event.email) markSkipped(event.email)
+  }
+}
 
 function loadTemplate(name) {
   const resolved = path.resolve(process.cwd(), `templates/${name}.json`)
@@ -118,6 +131,36 @@ app.post('/campaign', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
+})
+
+// ZeptoMail webhook receiver — configure in ZeptoMail dashboard → Webhooks
+// POSTs events (delivered, opened, clicked, bounced, spam_complaint) here.
+app.post('/webhook/zeptomail', (req, res) => {
+  try {
+    const body = req.body
+    const event = body?.event || body?.type || 'unknown'
+    const email = body?.email || body?.to?.address || body?.recipient || body?.address || ''
+    recordEvent({ event, email, payload: body })
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Stats for reporting — delivered/opened/clicked/bounced/complained totals
+app.get('/stats', (req, res) => {
+  let events = []
+  try { events = JSON.parse(fs.readFileSync(eventsFile, 'utf8')) } catch {}
+  const byEvent = events.reduce((acc, e) => {
+    acc[e.event] = (acc[e.event] || 0) + 1
+    return acc
+  }, {})
+  res.json({
+    data: {
+      totals: { sent: quota().sentToday + events.length, ...byEvent },
+      events: events.slice(-100),
+    },
+  })
 })
 
 // Mark an email as replied (so it can be moved to a "warm" list / follow-up campaign)

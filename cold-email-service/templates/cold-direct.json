@@ -1,5 +1,5 @@
 {
   "name": "cold-direct",
   "subject": "Quick ask for {{outlet}}",
-  "textbody": "Dear {{name}},\n\nI follow {{outlet}}'s work — the quality is consistent.\n\nI built a news engine that publishes sourced, SEO-ready articles 24/7, in your brand, human-approved before publishing.\n\nIt's live and running now. Open to a 15-minute call this week?{{unsubscribe}}"
+  "textbody": "Dear {{name}},\n\nI follow {{outlet}}'s work \u2014 the quality is consistent.\n\nI built a news engine that publishes sourced, SEO-ready articles 24/7, in your brand, human-approved before publishing.\n\nIt's live and running now. Open to a 15-minute call this week?{{unsubscribe}}\n\n{{signature}}"
 }

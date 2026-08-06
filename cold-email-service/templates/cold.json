@@ -1,5 +1,5 @@
 {
   "name": "cold",
   "subject": "A content engine for {{outlet}}",
-  "textbody": "Dear {{name}},\n\nI follow {{outlet}}'s work and your editorial quality is clear.\n\nA small team can't keep up with the daily content volume Google News ranking needs.\n\nI run an automated news engine that publishes sourced, SEO-ready articles in your brand, 24/7 — every article human-approved before it goes live. It's live and running now.\n\nOpen to a 15-minute call to see it on {{outlet}}'s topics? If it's not up to your standard, I'll take the feedback.{{unsubscribe}}"
+  "textbody": "Dear {{name}},\n\nI follow {{outlet}}'s work and your editorial quality is clear.\n\nA small team can't keep up with the daily content volume Google News ranking needs.\n\nI run an automated news engine that publishes sourced, SEO-ready articles in your brand, 24/7 \u2014 every article human-approved before it goes live. It's live and running now.\n\nOpen to a 15-minute call to see it on {{outlet}}'s topics? If it's not up to your standard, I'll take the feedback.{{unsubscribe}}\n\n{{signature}}"
 }

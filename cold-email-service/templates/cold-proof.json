@@ -1,5 +1,5 @@
 {
   "name": "cold-proof",
   "subject": "{{outlet}} + a working news engine",
-  "textbody": "Dear {{name}},\n\nYour editorial standard is clear from your coverage.\n\nI run an automated news engine — it's live right now, publishing sourced, SEO-ready articles around the clock on a real news site. Not a demo, not a pitch deck: a working product.\n\nIt covers the full news cycle in any brand, with human approval before anything publishes.\n\nCould {{outlet}} use that? I'll show you in 15 minutes — if it's not up to your standard, I'll take the feedback.{{unsubscribe}}"
+  "textbody": "Dear {{name}},\n\nYour editorial standard is clear from your coverage.\n\nI run an automated news engine \u2014 it's live right now, publishing sourced, SEO-ready articles around the clock on a real news site. Not a demo, not a pitch deck: a working product.\n\nIt covers the full news cycle in any brand, with human approval before anything publishes.\n\nCould {{outlet}} use that? I'll show you in 15 minutes \u2014 if it's not up to your standard, I'll take the feedback.{{unsubscribe}}\n\n{{signature}}"
 }
