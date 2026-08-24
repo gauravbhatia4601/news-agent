@@ -1,59 +1,93 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# The Neural Journal
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+AI-powered news engine that discovers, synthesizes, and publishes news articles automatically. Built with Laravel 12 + Nuxt 4.
 
-## About Laravel
+## Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+The Neural Journal continuously discovers news topics from Google News RSS and Brave Search, synthesizes multi-source articles using LLMs (Ollama Cloud / OpenRouter), and auto-publishes them with heuristic quality gates. It covers India (all states/UTs) and global regions, with a dedicated AI deep-dive vertical producing 1200-2000 word analytical articles.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Architecture
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Component | Stack |
+|-----------|-------|
+| Backend API | Laravel 12, PHP 8.4 |
+| Frontend | Nuxt 4 (SSR), Vue 3, Tailwind CSS |
+| Database | PostgreSQL |
+| Cache / Queue / Sessions | Redis |
+| AI Providers | Ollama Cloud, OpenRouter (Laravel AI SDK) |
+| Deployment | Docker Compose + Coolify |
 
-## Learning Laravel
+## Pipeline
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+1. **Discovery** — hourly `news:discover` scans Google News RSS + Brave Search across 20+ Indian states and 5 global regions, dedupes via fuzzy signature matching
+2. **Generation** — `GenerateArticle` queue jobs synthesize articles from 2+ corroborating sources via LLM agents (standard 500-800 words, AI deep-dive 1200-2000 words)
+3. **Quality Gate** — automated checks: word count, section count, source diversity, active voice ratio, SEO keyword coverage
+4. **Publishing** — auto-publish with source image extraction (og:image scraping), sitemap regeneration, and ranking recompute
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Features
 
-## Laravel Sponsors
+- **Public site**: home feed, trending, category pages, search, article pages with JSON-LD (NewsArticle/BreadcrumbList/FAQPage), RSS feed, Google News sitemaps, market ticker (8 global indices)
+- **Admin panel**: dashboard with real-time charts, article/topic/category management, queue monitor, sitemap manager, newsletter subscribers, AI invocation tracking (token usage + cost), audit logs
+- **Newsletter**: GDPR-compliant capture with consent records (IP, UA, consent text)
+- **Monetization-ready**: cookie consent banner, AdSense-ready ad slots, ads.txt
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Security
 
-### Premium Partners
+- Rate limiting on all endpoints (login, public API, newsletter, admin actions)
+- Sanctum token expiration (24h)
+- DOMPurify XSS sanitization on article content
+- Prompt-injection guards on scraped source content
+- Atomic topic claiming (prevents duplicate generation race conditions)
+- Audit logging on all admin actions
+- Non-root Docker containers
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Getting Started
 
-## Contributing
+```bash
+# Backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
 
-## Code of Conduct
+## Scheduled Tasks
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Task | Frequency |
+|------|-----------|
+| `news:discover --queue` (India) | Hourly |
+| `news:discover --queue --scope=global` | Hourly at :30 |
+| `news:sitemap-generate` | Every 30 min |
+| `news:recompute-rankings` | Every 15 min |
+| `news:backup-db` | Daily 2:00 AM |
+| Queue log / token / subscriber pruning | Daily |
 
-## Security Vulnerabilities
+## Testing
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan test
+```
+
+14 feature tests covering auth and newsletter flows. CI pipeline (GitHub Actions) runs PHP lint, tests, and Docker builds.
+
+## Environment Variables
+
+Key configuration in `.env.example`:
+
+- `NEWS_GENERATION_PROVIDER` / `NEWS_GENERATION_MODEL` — LLM provider and model
+- `NEWS_GENERATION_FALLBACK_PROVIDER` / `NEWS_GENERATION_FALLBACK_MODEL` — failover
+- `NEWS_DISCOVERY_LIMIT` / `NEWS_DISCOVERY_FRESH_HOURS` — discovery tuning
+- `NEWS_SOURCE_IMAGES_ENABLED` — source image extraction
+- `ADSENSE_CLIENT` / `ADSENSE_SLOT` — AdSense (empty = ads hidden)
+- `SANCTUM_TOKEN_EXPIRATION` — admin token lifetime in minutes
+- `RUN_MIGRATIONS` — auto-migrate on container boot
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Proprietary. All rights reserved.
