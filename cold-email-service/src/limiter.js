@@ -55,7 +55,19 @@ export function todayKey() {
 }
 
 export function daysSinceStart() {
-  const start = new Date(process.env.START_DATE || new Date().toISOString())
+  // Explicit ramp anchor wins when set. An unparseable value falls through to
+  // the data-anchored path — never fail open to the max schedule limit.
+  if (process.env.START_DATE) {
+    const start = new Date(process.env.START_DATE)
+    if (!Number.isNaN(start.getTime())) {
+      return Math.max(1, Math.floor((Date.now() - start.getTime()) / 86400000) + 1)
+    }
+  }
+  // Otherwise anchor to the first recorded send day (earliest byDate key),
+  // so the ramp progresses naturally from first real use. No dated state → day 1.
+  const dates = Object.keys(load().byDate).sort()
+  if (dates.length === 0) return 1
+  const start = new Date(dates[0] + 'T00:00:00Z')
   return Math.max(1, Math.floor((Date.now() - start.getTime()) / 86400000) + 1)
 }
 
