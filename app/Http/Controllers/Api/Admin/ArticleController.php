@@ -21,11 +21,14 @@ class ArticleController extends Controller
     private function applyLocationCategoryFilter($query, string $slug): void
     {
         $india = Category::where('slug', 'india')->whereNull('parent_id')->first();
-        if (! $india) return;
+        if (! $india) {
+            return;
+        }
 
         if ($slug === 'india') {
             $stateIds = Category::where('parent_id', $india->id)->pluck('id');
             $query->whereHas('topic', fn ($q) => $q->whereIn('location_category_id', $stateIds));
+
             return;
         }
 
@@ -57,7 +60,7 @@ class ArticleController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('title', 'ilike', '%' . $request->search . '%');
+            $query->where('title', 'ilike', '%'.$request->search.'%');
         }
 
         $sortBy = $request->get('sort_by', 'created_at');
@@ -175,8 +178,11 @@ class ArticleController extends Controller
         }
 
         $topic->update(['generation_status' => 'pending', 'retry_count' => 0]);
-        $article->delete();
 
+        // Keep the existing article until the new generation succeeds.
+        // saveGeneratedArticle() replaces the article in place by topic_id
+        // when generation completes, so deletion at dispatch time would risk
+        // losing the published article permanently if generation fails.
         \App\Jobs\GenerateArticle::dispatch($topic->topic_signature);
 
         AuditLogService::log('regenerate', 'Article', $id);
@@ -201,26 +207,29 @@ class ArticleController extends Controller
 
         if ($action === 'delete') {
             NewsArticle::whereIn('id', $ids)->delete();
-            return response()->json(['message' => count($ids) . ' articles deleted']);
+
+            return response()->json(['message' => count($ids).' articles deleted']);
         }
 
         if ($action === 'regenerate') {
             $count = 0;
             foreach ($articles as $article) {
                 $topic = $article->topic;
-                if (! $topic) continue;
+                if (! $topic) {
+                    continue;
+                }
                 $topic->update(['generation_status' => 'pending', 'retry_count' => 0]);
-                $article->delete();
                 \App\Jobs\GenerateArticle::dispatch($topic->topic_signature);
                 $count++;
             }
-            return response()->json(['message' => $count . ' articles queued for regeneration']);
+
+            return response()->json(['message' => $count.' articles queued for regeneration']);
         }
 
         $statusMap = ['publish' => 'published', 'draft' => 'draft', 'archive' => 'archived'];
         $newStatus = $statusMap[$action];
         NewsArticle::whereIn('id', $ids)->update(['status' => $newStatus]);
 
-        return response()->json(['message' => count($ids) . ' articles set to ' . $newStatus]);
+        return response()->json(['message' => count($ids).' articles set to '.$newStatus]);
     }
 }

@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Jobs\GenerateArticle;
 use App\Models\Category;
-use App\News\Services\NewsDiscoveryService;
 use App\News\Repositories\NewsTopicRepository;
+use App\News\Services\NewsDiscoveryService;
 use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,12 +24,17 @@ class DiscoveryController extends Controller
         $freshHours = $request->integer('fresh_hours', 24);
         $sourcesPerTopic = $request->integer('sources_per_topic', 3);
         $queue = $request->boolean('queue', true);
+        $scope = $request->input('scope', 'india');
+        if (! in_array($scope, ['india', 'global'], true)) {
+            return response()->json(['message' => 'Invalid scope'], 422);
+        }
 
         $validated = [
             'limit' => max(1, min($limit, 20)),
             'fresh_hours' => max(1, min($freshHours, 48)),
             'sources_per_topic' => max(2, min($sourcesPerTopic, 6)),
             'queue' => $queue,
+            'scope' => $scope,
         ];
 
         $limit = $validated['limit'];
@@ -47,9 +52,9 @@ class DiscoveryController extends Controller
             ->all();
 
         try {
-            $topics = $this->discoveryService->discover($categories, $limit, $freshHours, $sourcesPerTopic);
+            $topics = $this->discoveryService->discover($categories, $limit, $freshHours, $sourcesPerTopic, $scope);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Discovery failed: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Discovery failed: '.$e->getMessage()], 500);
         }
 
         $signatures = [];
