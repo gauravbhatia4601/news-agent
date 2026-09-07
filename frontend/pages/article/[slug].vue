@@ -3,7 +3,18 @@ const route = useRoute()
 const articleSlug = route.params.slug as string
 
 const api = useNewsApi()
-const { data: article } = await useAsyncData(`article-${articleSlug}`, () => api.getArticle(articleSlug))
+const { data: article } = await useAsyncData(`article-${articleSlug}`, async () => {
+  const fetched = await api.getArticle(articleSlug)
+  if (!fetched) {
+    // Keep the styled not-found template but still serve a real 404 to crawlers.
+    if (import.meta.server) {
+      const event = useRequestEvent()
+      if (event) setResponseStatus(event, 404)
+    }
+    throw createError({ statusCode: 404, statusMessage: 'Article not found' })
+  }
+  return fetched
+})
 const { data: related } = await useAsyncData(`related-${articleSlug}`, () => api.getRelated(articleSlug), { default: () => [] as any[] })
 
 const siteUrl = 'https://theneuraljournal.com'
