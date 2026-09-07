@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'adsense' => [
+        'client' => env('ADSENSE_CLIENT', ''),
+        'slot' => env('ADSENSE_SLOT', ''),
+    ],
+
 ];

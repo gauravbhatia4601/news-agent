@@ -4,18 +4,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | News Categories
-    |--------------------------------------------------------------------------
-    |
-    | Flat category slugs (legacy). New hierarchical categories are stored
-    | in the `categories` table. Discovery now iterates subcategories from
-    | the database with per-subcategory search queries below.
-    |
-    */
-    'categories' => array_filter(array_map('trim', explode(',', env('NEWS_DISCOVERY_CATEGORIES', 'technology,sports,politics,entertainment,social'))) ?: []),
-
-    /*
-    |--------------------------------------------------------------------------
     | Discovery Defaults
     |--------------------------------------------------------------------------
     */

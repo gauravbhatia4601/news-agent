@@ -5,21 +5,19 @@ namespace App\News\Services;
 use App\News\DTO\DiscoveredSource;
 use App\News\DTO\DiscoveredTopic;
 use App\News\Repositories\NewsTopicRepository;
-use App\News\Sources\Contracts\NewsSource;
 use App\News\Sources\BraveSearchSource;
+use App\News\Sources\Contracts\NewsSource;
 use App\News\Sources\GoogleNewsRssSource;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use RuntimeException;
 
 class NewsDiscoveryService
 {
     public function __construct(
         private readonly NewsTopicRepository $repository,
         private readonly TopicCategoryDetectionService $topicDetection,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<int, array{slug: string, name: string, category_id: int}>  $locations
@@ -132,22 +130,6 @@ class NewsDiscoveryService
     }
 
     /**
-     * @return NewsSource[]
-     * @deprecated Kept for any callers expecting both sources. Discovery now uses Google RSS primary + Brave fallback.
-     */
-    private function resolveSources(): array
-    {
-        $sources = [$this->resolveGoogleSource()];
-
-        $brave = $this->resolveBraveSource();
-        if ($brave !== null) {
-            $sources[] = $brave;
-        }
-
-        return $sources;
-    }
-
-    /**
      * @param  array{slug: string, name: string, category_id: int}  $location
      * @param  array<int, array>  $candidates
      * @return DiscoveredTopic[]
@@ -158,8 +140,7 @@ class NewsDiscoveryService
         int $limit,
         int $sourcesPerTopic,
         bool $relaxed = false,
-    ): array
-    {
+    ): array {
         $clusters = [];
 
         foreach ($candidates as $candidate) {
@@ -184,6 +165,7 @@ class NewsDiscoveryService
                 $clusters[$bestIndex]['tokens'] = array_values(
                     array_unique(array_merge($clusters[$bestIndex]['tokens'], $candidate['tokens']))
                 );
+
                 continue;
             }
 

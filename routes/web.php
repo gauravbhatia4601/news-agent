@@ -2,10 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
 Route::prefix('sitemaps')->group(function () {
     Route::get('/', function () {
         return redirect('/sitemaps/sitemap.xml', 301);
@@ -16,6 +12,7 @@ Route::prefix('sitemaps')->group(function () {
         if (! file_exists($path)) {
             abort(404);
         }
+
         return response()->file($path, ['Content-Type' => 'application/xml']);
     });
 
@@ -23,10 +20,11 @@ Route::prefix('sitemaps')->group(function () {
         if (! preg_match('/^sitemap-[a-z0-9\-]+\.xml$/i', $filename)) {
             abort(404);
         }
-        $path = public_path('sitemaps/' . $filename);
+        $path = public_path('sitemaps/'.$filename);
         if (! file_exists($path)) {
             abort(404);
         }
+
         return response()->file($path, ['Content-Type' => 'application/xml']);
     })->where('filename', '.+');
 });
@@ -48,15 +46,15 @@ Route::get('/feed.xml', function () {
     $xml .= '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">';
     $xml .= '<channel>';
     $xml .= '<title>The Neural Journal</title>';
-    $xml .= '<link>' . $appUrl . '</link>';
+    $xml .= '<link>'.$appUrl.'</link>';
     $xml .= '<description>Latest news from India and around the world — AI-powered journalism</description>';
     $xml .= '<language>en-in</language>';
-    $xml .= '<copyright>' . date('Y') . ' The Neural Journal</copyright>';
-    $xml .= '<atom:link href="' . $appUrl . '/feed.xml" rel="self" type="application/rss+xml"/>';
+    $xml .= '<copyright>'.date('Y').' The Neural Journal</copyright>';
+    $xml .= '<atom:link href="'.$appUrl.'/feed.xml" rel="self" type="application/rss+xml"/>';
 
     foreach ($articles as $article) {
         $title = htmlspecialchars($article->title);
-        $link = $appUrl . '/article/' . $article->slug;
+        $link = $appUrl.'/article/'.$article->slug;
         $description = htmlspecialchars(
             $article->meta_description
             ?? \Illuminate\Support\Str::limit(strip_tags($article->content), 200)
@@ -68,7 +66,7 @@ Route::get('/feed.xml', function () {
             ? htmlspecialchars(explode(', ', $article->meta_keywords)[0] ?? '')
             : '';
         $mediaContent = $article->image_url
-            ? '<media:content url="' . htmlspecialchars($appUrl . $article->image_url) . '" medium="image"/>'
+            ? '<media:content url="'.htmlspecialchars($appUrl.$article->image_url).'" medium="image"/>'
             : '';
 
         $xml .= '<item>';
@@ -105,10 +103,11 @@ Route::get('/robots.txt', function () {
 });
 
 Route::get('/ads.txt', function () {
-    $client = env('ADSENSE_CLIENT', '');
+    $client = config('services.adsense.client', '');
     if (! $client) {
         abort(404);
     }
     $line = "google.com, {$client}, DIRECT, f08c47fec0942fa0";
-    return response($line . "\n", 200, ['Content-Type' => 'text/plain']);
+
+    return response($line."\n", 200, ['Content-Type' => 'text/plain']);
 });

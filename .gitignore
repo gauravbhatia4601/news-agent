@@ -51,3 +51,6 @@ Thumbs.db
 
 # Database
 database/database.sqlite
+
+# Generated sitemaps
+/public/sitemaps
