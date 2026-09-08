@@ -198,6 +198,7 @@ class NewsTopicRepository
                 'image_url' => $imageUrl,
                 'thumbnail_url' => $thumbnailUrl,
                 'status' => $status,
+                'published_at' => $status === 'published' ? now() : null,
                 'quality_report' => $qualityReport,
                 'generation_duration_seconds' => $generationDurationSeconds,
                 'metadata' => ! empty($metadata) ? json_encode($metadata) : null,

@@ -29,11 +29,17 @@ class NewsArticle extends Model
         'views',
         'hot_score',
         'view_velocity',
+        'views_1h',
+        'views_6h',
+        'views_24h',
+        'momentum_score',
+        'published_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'quality_report' => 'array',
+        'published_at' => 'datetime',
     ];
 
     /**

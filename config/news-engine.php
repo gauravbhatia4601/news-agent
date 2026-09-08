@@ -4,6 +4,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Ranking (momentum-based trending)
+    |--------------------------------------------------------------------------
+    */
+    'ranking' => [
+        'half_life_hours' => (float) env('NEWS_RANKING_HALF_LIFE_HOURS', 6.0),
+        // View-count windows (hours). Columns views_1h/6h/24h are fixed — changing
+        // this requires a migration; the env override only tunes the COUNT queries.
+        'windows' => array_map('intval', explode(',', env('NEWS_RANKING_WINDOWS', '1,6,24'))),
+        'window_weights' => [
+            1 => (float) env('NEWS_RANKING_WINDOW_WEIGHT_1H', 3.0),
+            6 => (float) env('NEWS_RANKING_WINDOW_WEIGHT_6H', 1.5),
+            24 => (float) env('NEWS_RANKING_WINDOW_WEIGHT_24H', 1.0),
+        ],
+        'quality_boost' => (float) env('NEWS_RANKING_QUALITY_BOOST', 2.0),
+        'category_weights' => [
+            'national' => (float) env('NEWS_RANKING_CAT_NATIONAL', 2.0),
+            'world' => (float) env('NEWS_RANKING_CAT_WORLD', 1.8),
+            'business-economy' => (float) env('NEWS_RANKING_CAT_BUSINESS_ECONOMY', 1.5),
+            'technology' => (float) env('NEWS_RANKING_CAT_TECHNOLOGY', 1.5),
+            'science-education' => (float) env('NEWS_RANKING_CAT_SCIENCE_EDUCATION', 1.3),
+            'sports' => (float) env('NEWS_RANKING_CAT_SPORTS', 1.0),
+            'entertainment' => (float) env('NEWS_RANKING_CAT_ENTERTAINMENT', 1.0),
+            'lifestyle' => (float) env('NEWS_RANKING_CAT_LIFESTYLE', 0.8),
+        ],
+        'trending_min_momentum' => (float) env('NEWS_RANKING_TRENDING_MIN_MOMENTUM', 5.0),
+        'trending_max_age_hours' => (float) env('NEWS_RANKING_TRENDING_MAX_AGE_HOURS', 72.0),
+        'hot_gravity' => (float) env('NEWS_RANKING_HOT_GRAVITY', 1.8),
+        'recompute_recent_window_hours' => (float) env('NEWS_RANKING_RECOMPUTE_RECENT_WINDOW_HOURS', 25.0),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Discovery Defaults
     |--------------------------------------------------------------------------
     */

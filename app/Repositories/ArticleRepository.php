@@ -130,11 +130,15 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function getTrending(int $limit = 10, ?string $categorySlug = null)
     {
+        $minMomentum = (float) config('news-engine.ranking.trending_min_momentum', 5.0);
+        $maxAgeHours = (float) config('news-engine.ranking.trending_max_age_hours', 72.0);
+        $ageCutoff = now()->subHours($maxAgeHours);
+
         $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
-            ->where('created_at', '>=', now()->subHours(48))
-            ->where('view_velocity', '>', 0.3)
-            ->orderByDesc('view_velocity');
+            ->where('momentum_score', '>', $minMomentum)
+            ->where('published_at', '>=', $ageCutoff)
+            ->orderByDesc('momentum_score');
 
         $this->applyCategoryFilter($query, $categorySlug);
 

@@ -19,6 +19,7 @@ class NewsArticleFactory extends Factory
             'content' => '<p>'.fake()->paragraph(10).'</p>',
             'slug' => fn (array $attrs) => Str::slug($attrs['title']).'-'.Str::random(6),
             'status' => 'published',
+            'published_at' => now(),
             'meta_title' => fake()->sentence(),
             'meta_description' => fake()->text(160),
             'meta_keywords' => implode(', ', fake()->words(10)),
