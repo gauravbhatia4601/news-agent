@@ -8,6 +8,8 @@ export default defineNuxtConfig({
     public: {
       adsenseClient: process.env.ADSENSE_CLIENT || '',
       adsenseSlot: process.env.ADSENSE_SLOT || '',
+      umamiWebsiteId: process.env.NUXT_PUBLIC_UMAMI_WEBSITE_ID || '',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://theneuraljournal.com',
     },
   },
 
@@ -21,7 +23,6 @@ export default defineNuxtConfig({
       'Playfair Display': [400, 700],
       'Source Serif 4': [400, 600, 700],
       Inter: [400, 500, 600, 700],
-      'JetBrains Mono': [400, 500, 600, 700],
     },
   },
 
@@ -58,13 +59,6 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-      ],
-      script: [
-        {
-          src: 'https://umami.technioz.com/script.js',
-          defer: true,
-          'data-website-id': 'a6df10a3-8111-494c-b2c8-1d72e86c4f92',
-        },
       ],
     },
   },

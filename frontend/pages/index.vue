@@ -34,6 +34,7 @@ useHead({
 
 <template>
   <div class="space-y-10">
+    <h1 class="sr-only">The Neural Journal</h1>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div class="lg:col-span-8 space-y-10">
         <NewsHeroLead v-if="featured" :article="featured" />

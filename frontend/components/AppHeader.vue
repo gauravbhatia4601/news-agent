@@ -137,7 +137,7 @@ watch(() => route.path, () => {
 
       <!-- Search icon -->
       <button
-        class="ml-2 shrink-0 inline-flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground transition-colors"
+        class="ml-2 shrink-0 inline-flex items-center justify-center h-9 w-9 text-muted-foreground hover:text-foreground transition-colors focus-ring"
         @click="showSearch = !showSearch"
         aria-label="Toggle search"
       >
@@ -156,7 +156,7 @@ watch(() => route.path, () => {
             v-model="searchQuery"
             type="search"
             placeholder="Search stories..."
-            class="h-10 w-full border border-border bg-background pl-10 pr-4 font-serif text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground transition-colors"
+            class="h-10 w-full border border-border bg-background pl-10 pr-4 font-serif text-sm text-foreground placeholder:text-muted-foreground focus-ring transition-colors"
           >
         </form>
       </div>

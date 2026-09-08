@@ -17,7 +17,7 @@ const { data: article } = await useAsyncData(`article-${articleSlug}`, async () 
 })
 const { data: related } = await useAsyncData(`related-${articleSlug}`, () => api.getRelated(articleSlug), { default: () => [] as any[] })
 
-const siteUrl = 'https://theneuraljournal.com'
+const siteUrl = useRuntimeConfig().public.siteUrl
 
 const sanitizedContent = computed(() => {
   if (!article.value?.content) return ''

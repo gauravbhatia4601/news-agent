@@ -41,8 +41,8 @@
           <div class="space-y-1.5">
             <label class="block text-xs font-medium text-slate-500">Email address</label>
             <input v-model="email" type="email" required autofocus
-              class="w-full bg-slate-50 border border-slate-200 rounded-[14px] px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-400 transition-all"
-              placeholder="admin@theneuraljournal.com"
+              class="w-full bg-slate-50 border border-slate-200 rounded-[14px] px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus-ring transition-all"
+              placeholder="you@example.com"
             />
           </div>
 
@@ -50,11 +50,11 @@
             <label class="block text-xs font-medium text-slate-500">Password</label>
             <div class="relative">
               <input v-model="password" :type="showPassword ? 'text' : 'password'" required
-                class="w-full bg-slate-50 border border-slate-200 rounded-[14px] px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-400 transition-all pr-11"
+                class="w-full bg-slate-50 border border-slate-200 rounded-[14px] px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus-ring transition-all pr-11"
                 placeholder="Enter your password"
               />
               <button type="button" @click="showPassword = !showPassword"
-                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors focus-ring"
               >
                 <Eye v-if="!showPassword" class="w-4 h-4" />
                 <EyeOff v-else class="w-4 h-4" />
@@ -63,7 +63,7 @@
           </div>
 
           <button type="submit" :disabled="loading"
-            class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-[14px] text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-[14px] text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-ring"
           >
             <Loader2 v-if="loading" class="animate-spin w-4 h-4" />
             <span v-else>Sign in</span>
@@ -90,7 +90,7 @@ const { login, isAuthenticated } = useAdminAuth()
 const router = useRouter()
 const route = useRoute()
 
-const email = ref('admin@theneuraljournal.com')
+const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')

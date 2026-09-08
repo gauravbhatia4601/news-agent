@@ -39,8 +39,8 @@ function decline() {
             <div class="flex-1 min-w-0">
               <h3 class="font-label text-sm font-bold uppercase tracking-[0.062em] mb-1.5">Cookie Notice</h3>
               <p class="font-serif text-sm text-background/80 leading-relaxed">
-                We use privacy-first analytics (Umami) with no tracking cookies. If we add advertising in the future,
-                cookies may be used to personalize ads. You can change your choice anytime in our
+                We use privacy-first analytics (Umami) that loads only after you accept. If you accept, advertising
+                cookies may also be used to personalize ads. Change your choice anytime in our
                 <NuxtLink to="/cookies" class="underline underline-offset-2 hover:text-background">cookie policy</NuxtLink>.
               </p>
             </div>

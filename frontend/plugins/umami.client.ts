@@ -1,16 +1,16 @@
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
-  const client = config.public.adsenseClient as string
+  const websiteId = config.public.umamiWebsiteId as string
   // Reuse the same cookie name/values as CookieConsent.vue
   const consent = useCookie<'accepted' | 'declined' | null>('cookie-consent')
 
   // useHead with a reactive getter — script only injected when consent is accepted
   useHead(() => ({
-    script: client && consent.value === 'accepted'
+    script: websiteId && consent.value === 'accepted'
       ? [{
-          src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`,
-          async: true,
-          crossorigin: 'anonymous',
+          src: 'https://umami.technioz.com/script.js',
+          defer: true,
+          'data-website-id': websiteId,
         }]
       : [],
   }))

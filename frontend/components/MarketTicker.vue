@@ -19,7 +19,7 @@ function formatChange(change: number, percent: number): string {
 }
 
 function directionClass(change: number): string {
-  return change >= 0 ? 'text-emerald-600' : 'text-red-600'
+  return change >= 0 ? 'text-success' : 'text-danger'
 }
 
 function arrow(change: number): string {
@@ -28,20 +28,20 @@ function arrow(change: number): string {
 </script>
 
 <template>
-  <div v-if="indices && indices.length > 0" class="w-full bg-white text-primary-foreground overflow-hidden border-b border-white/10">
+  <div v-if="indices && indices.length > 0" class="w-full bg-background text-primary-foreground overflow-hidden border-b border-border">
     <div class="ticker-track flex items-center gap-8 py-1.5 whitespace-nowrap font-label text-xs">
       <div
         v-for="(idx, i) in [...indices, ...indices]"
         :key="`${idx.symbol}-${i}`"
         class="flex items-center gap-2 shrink-0"
       >
-        <span class="font-bold uppercase tracking-wider text-black/90">{{ idx.name }}</span>
-        <span class="text-black/70">{{ formatPrice(idx.price, idx.currency) }}</span>
+        <span class="font-bold uppercase tracking-wider text-foreground">{{ idx.name }}</span>
+        <span class="text-muted-foreground">{{ formatPrice(idx.price, idx.currency) }}</span>
         <span :class="directionClass(idx.change)" class="font-semibold flex items-center gap-0.5">
           <span class="text-[8px]">{{ arrow(idx.change) }}</span>
           {{ formatChange(idx.change, idx.change_percent) }}
         </span>
-        <span class="text-black/20">|</span>
+        <span class="text-border">|</span>
       </div>
     </div>
   </div>
