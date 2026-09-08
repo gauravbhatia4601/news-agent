@@ -85,7 +85,6 @@ Route::prefix('v1/admin')->group(function () {
         Route::get('/generation/sitemaps/{name}', [GenerationController::class, 'showSitemap']);
         Route::get('/generation/stats', [GenerationController::class, 'stats']);
 
-        Route::get('/users/roles', [UserController::class, 'roles'])->name('admin.users.roles');
         Route::apiResource('users', UserController::class)->names([
             'index' => 'admin.users.index',
             'store' => 'admin.users.store',
@@ -106,7 +105,11 @@ Route::prefix('v1/admin')->group(function () {
                 \DB::select('SELECT 1');
                 $checks['database'] = 'ok';
             } catch (\Throwable $e) {
-                $checks['database'] = 'error: '.$e->getMessage();
+                \Log::warning('Health check: database error.', ['error' => $e->getMessage()]);
+                $checks['database'] = 'unavailable';
+                if (config('app.debug')) {
+                    $checks['database_detail'] = $e->getMessage();
+                }
                 $allOk = false;
             }
 
@@ -115,7 +118,11 @@ Route::prefix('v1/admin')->group(function () {
                 \Cache::store('redis')->get('health-check');
                 $checks['redis'] = 'ok';
             } catch (\Throwable $e) {
-                $checks['redis'] = 'error: '.$e->getMessage();
+                \Log::warning('Health check: redis error.', ['error' => $e->getMessage()]);
+                $checks['redis'] = 'unavailable';
+                if (config('app.debug')) {
+                    $checks['redis_detail'] = $e->getMessage();
+                }
                 $allOk = false;
             }
 

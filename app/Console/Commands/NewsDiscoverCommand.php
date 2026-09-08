@@ -31,7 +31,7 @@ class NewsDiscoverCommand extends Command
 
         $defaultLimit = max(1, (int) config('news-engine.discovery.default_limit', 5));
         $defaultFreshHours = max(1, (int) config('news-engine.discovery.default_fresh_hours', 12));
-        $defaultSourcesPerTopic = max(2, (int) config('news-engine.discovery.default_sources_per_topic', 3));
+        $defaultSourcesPerTopic = max(2, (int) config('news-engine.discovery.default_sources_per_topic', 5));
 
         $limit = $this->option('limit') !== null
             ? max(1, min((int) $this->option('limit'), 20))
@@ -47,7 +47,8 @@ class NewsDiscoverCommand extends Command
         $parent = Category::where('slug', $scope === 'global' ? 'world' : 'india')->first();
 
         if (! $parent) {
-            $this->warn(($scope === 'global' ? 'World' : 'India') . ' parent category not found.');
+            $this->warn(($scope === 'global' ? 'World' : 'India').' parent category not found.');
+
             return self::FAILURE;
         }
 
@@ -70,18 +71,20 @@ class NewsDiscoverCommand extends Command
         ])->all();
 
         if ($locations === []) {
-            $this->warn('No subcategories found under ' . ($scope === 'global' ? 'World' : 'India') . '.');
+            $this->warn('No subcategories found under '.($scope === 'global' ? 'World' : 'India').'.');
+
             return self::FAILURE;
         }
 
         $scopeLabel = $scope === 'global' ? 'global regions' : 'states/UTs';
-        $this->info("Discovery [{$scope}]: {$limit} topics/category, {$sourcesPerTopic} sources/topic, {$freshHours}h window, over " . count($locations) . " {$scopeLabel}.");
+        $this->info("Discovery [{$scope}]: {$limit} topics/category, {$sourcesPerTopic} sources/topic, {$freshHours}h window, over ".count($locations)." {$scopeLabel}.");
         $this->newLine();
 
         try {
             $topics = $service->discover($locations, $limit, $freshHours, $sourcesPerTopic, $scope);
         } catch (\Throwable $e) {
-            $this->error('Discovery failed: ' . $e->getMessage());
+            $this->error('Discovery failed: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
@@ -94,15 +97,17 @@ class NewsDiscoverCommand extends Command
         }
 
         $this->newLine();
-        $this->line("Discovered: " . count($signatures) . " topics");
+        $this->line('Discovered: '.count($signatures).' topics');
 
         if (count($signatures) === 0) {
             $this->warn('No new multi-source topics found.');
+
             return self::SUCCESS;
         }
 
         if (! (bool) config('news-engine.generation.enabled', true)) {
             $this->warn('Generation disabled by config.');
+
             return self::SUCCESS;
         }
 
@@ -111,12 +116,12 @@ class NewsDiscoverCommand extends Command
             foreach ($signatures as $sig) {
                 \App\Jobs\GenerateArticle::dispatch($sig);
             }
-            $this->line('  Dispatched: ' . count($signatures) . ' jobs');
+            $this->line('  Dispatched: '.count($signatures).' jobs');
         } else {
             $this->info('Generating articles inline...');
             $stats = $generationService->generateForDiscoveredTopics($signatures);
-            $this->line('  Generated: ' . $stats['generated']);
-            $this->line('  Failed: ' . $stats['failed']);
+            $this->line('  Generated: '.$stats['generated']);
+            $this->line('  Failed: '.$stats['failed']);
         }
 
         $this->info('Done.');

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
@@ -14,11 +13,11 @@ class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = User::with('roles');
+        $query = User::query();
 
         if ($request->filled('search')) {
-            $query->where('name', 'ilike', '%' . $request->search . '%')
-                ->orWhere('email', 'ilike', '%' . $request->search . '%');
+            $query->where('name', 'ilike', '%'.$request->search.'%')
+                ->orWhere('email', 'ilike', '%'.$request->search.'%');
         }
 
         $users = $query->orderByDesc('created_at')->paginate(25);
@@ -28,11 +27,6 @@ class UserController extends Controller
             'name' => $u->name,
             'email' => $u->email,
             'is_admin' => $u->is_admin,
-            'roles' => $u->roles->map(fn ($r) => [
-                'id' => $r->id,
-                'name' => $r->name,
-                'slug' => $r->slug,
-            ]),
             'created_at' => $u->created_at->toIso8601String(),
         ]));
     }
@@ -43,8 +37,6 @@ class UserController extends Controller
             'name' => 'required|string|max:100',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'role_ids' => 'nullable|array',
-            'role_ids.*' => 'exists:roles,id',
         ]);
 
         $user = new User([
@@ -54,10 +46,6 @@ class UserController extends Controller
         ]);
         $user->is_admin = false;
         $user->save();
-
-        if (! empty($validated['role_ids'])) {
-            $user->roles()->sync($validated['role_ids']);
-        }
 
         AuditLogService::log('create', 'User', $user->id);
 
@@ -70,16 +58,10 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:100',
-            'email' => 'sometimes|email|unique:users,email,' . $id,
-            'role_ids' => 'sometimes|array',
-            'role_ids.*' => 'exists:roles,id',
+            'email' => 'sometimes|email|unique:users,email,'.$id,
         ]);
 
         $user->update($validated);
-
-        if (isset($validated['role_ids'])) {
-            $user->roles()->sync($validated['role_ids']);
-        }
 
         AuditLogService::log('update', 'User', $id);
 
@@ -103,12 +85,5 @@ class UserController extends Controller
         AuditLogService::log('delete', 'User', $id);
 
         return response()->json(['message' => 'User deleted']);
-    }
-
-    public function roles(): JsonResponse
-    {
-        $roles = Role::with('permissions')->get();
-
-        return response()->json(['data' => $roles]);
     }
 }

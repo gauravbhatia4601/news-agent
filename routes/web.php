@@ -54,7 +54,7 @@ Route::get('/feed.xml', function () {
 
     foreach ($articles as $article) {
         $title = htmlspecialchars($article->title);
-        $link = $appUrl.'/article/'.$article->slug;
+        $link = htmlspecialchars($appUrl.'/article/'.$article->slug);
         $description = htmlspecialchars(
             $article->meta_description
             ?? \Illuminate\Support\Str::limit(strip_tags($article->content), 200)

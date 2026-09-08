@@ -10,6 +10,7 @@ use App\News\Sources\Contracts\NewsSource;
 use App\News\Sources\GoogleNewsRssSource;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class NewsDiscoveryService
@@ -48,7 +49,7 @@ class NewsDiscoveryService
         $allTopics = [];
         $googleSource = $this->resolveGoogleSource();
         $braveSource = $this->resolveBraveSource();
-        $braveFallbackThreshold = (int) config('news-engine.discovery.brave_fallback_threshold', 12);
+        $braveFallbackThreshold = (int) config('news-engine.discovery.brave_fallback_threshold', 8);
 
         foreach ($locations as $location) {
             $fetchLimit = max($limit * 12, 40);
@@ -115,7 +116,17 @@ class NewsDiscoveryService
         array $seenSignatures,
         string $scope = 'india',
     ): array {
-        $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit, $scope);
+        try {
+            $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit, $scope);
+        } catch (\Throwable $e) {
+            Log::warning('News source fetch failed, skipping.', [
+                'source' => $source->name(),
+                'location' => $locationSlug,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
 
         $candidates = [];
         foreach ($rows as $row) {

@@ -6,7 +6,7 @@ WORKDIR /app
 FROM base AS deps
 COPY frontend/package.json frontend/package-lock.json ./
 # Skip postinstall (nuxt prepare) — it needs source files not yet available
-RUN npm install
+RUN npm ci
 
 # ---------- Build ----------
 FROM base AS build
