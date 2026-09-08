@@ -22,7 +22,8 @@ export const config = {
   replyTagEnabled: process.env.REPLY_TAG_ENABLED !== 'false',
   unsubscribeUrl: process.env.UNSUBSCRIBE_URL || '',
   port: parseInt(process.env.PORT || '4100', 10),
-  dryRun: process.env.DRY_RUN === 'true',
+  // Sending disabled by default (dry-run); opt in explicitly with DRY_RUN=false
+  dryRun: process.env.DRY_RUN !== 'false',
   // Override data dir for tests (defaults to ./data); absolute paths win
   dataDir: path.resolve(root, process.env.DATA_DIR || 'data'),
   // Shared-secret bearer auth for mutating endpoints; unset = open (dev) + startup warn
