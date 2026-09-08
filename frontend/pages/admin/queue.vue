@@ -364,10 +364,24 @@ function shortId(id: string | number): string {
   return s.length > 12 ? s.slice(0, 12) + '…' : s
 }
 
+function onVisibilityChange() {
+  if (document.visibilityState === 'hidden') {
+    if (interval) { clearInterval(interval); interval = null }
+  } else if (!interval) {
+    load()
+    loadHistory(history.value.current_page)
+    interval = setInterval(() => { load(); loadHistory(history.value.current_page) }, 5000)
+  }
+}
+
 onMounted(() => {
   load()
   loadHistory(1)
   interval = setInterval(() => { load(); loadHistory(history.value.current_page) }, 5000)
+  document.addEventListener('visibilitychange', onVisibilityChange)
 })
-onUnmounted(() => { if (interval) clearInterval(interval) })
+onUnmounted(() => {
+  if (interval) clearInterval(interval)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
 </script>

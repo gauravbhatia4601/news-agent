@@ -7,22 +7,21 @@ const { data: hot } = await useAsyncData('hot', () => api.getHot({ perPage: 6 })
 const { data: trending } = await useAsyncData('trending-home', () => api.getTrending(4), { default: () => [] as any[] })
 const { data: categoryTree } = await useAsyncData('home-category-tree', () => api.getCategoryTree(), { default: () => [] as any[] })
 
-const categorySections = ref<{ name: string; slug: string; articles: any[] }[]>([])
-
-watchEffect(async () => {
-  if (!categoryTree.value?.length) {
-    categorySections.value = []
-    return
-  }
-  const results = await Promise.all(
-    categoryTree.value.map(async (cat: any) => ({
-      name: cat.name,
-      slug: cat.slug,
-      articles: await api.getHot({ category: cat.slug, perPage: 4 }),
-    }))
-  )
-  categorySections.value = results
-})
+// ponytail: one getHot per top-level category; ceiling = category count (no single endpoint buckets by category)
+const { data: categorySections } = await useAsyncData(
+  'home-category-hot',
+  async () => {
+    if (!categoryTree.value?.length) return []
+    return Promise.all(
+      categoryTree.value.map(async (cat: any) => ({
+        name: cat.name,
+        slug: cat.slug,
+        articles: await api.getHot({ category: cat.slug, perPage: 4 }),
+      })),
+    )
+  },
+  { default: () => [] as { name: string; slug: string; articles: any[] }[] },
+)
 
 useHead({
   title: 'The Neural Journal — Latest News from India',
