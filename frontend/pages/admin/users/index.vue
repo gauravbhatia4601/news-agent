@@ -19,7 +19,6 @@
           <tr class="bg-slate-50/80 border-b border-admin-border">
             <th class="px-6 py-3.5 text-left text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Name</th>
             <th class="px-6 py-3.5 text-left text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Email</th>
-            <th class="px-6 py-3.5 text-left text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Roles</th>
             <th class="px-6 py-3.5 text-left text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Created</th>
             <th class="px-6 py-3.5 text-right text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Actions</th>
           </tr>
@@ -32,13 +31,10 @@
                   {{ (u.name || 'U').charAt(0).toUpperCase() }}
                 </div>
                 <span class="font-medium text-admin-text">{{ u.name }}</span>
+                <span v-if="u.is_admin" class="text-[11px] px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Admin</span>
               </div>
             </td>
             <td class="px-6 py-3.5 text-admin-muted">{{ u.email }}</td>
-            <td class="px-6 py-3.5">
-              <span v-for="r in u.roles" :key="r.id" class="text-[11px] px-2 py-1 rounded-full bg-slate-100 text-slate-600 border border-admin-border mr-1">{{ r.name }}</span>
-              <span v-if="u.is_admin" class="text-[11px] px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Admin</span>
-            </td>
             <td class="px-6 py-3.5 text-xs text-admin-muted">{{ formatDate(u.created_at) }}</td>
             <td class="px-6 py-3.5 text-right">
               <button @click="deleteUser(u.id)" class="p-1.5 text-admin-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
@@ -46,7 +42,7 @@
               </button>
             </td>
           </tr>
-          <tr v-if="!users.data?.length"><td colspan="5" class="px-6 py-12 text-center text-admin-muted">
+          <tr v-if="!users.data?.length"><td colspan="4" class="px-6 py-12 text-center text-admin-muted">
             <Users class="w-8 h-8 mx-auto mb-3 text-slate-400" />
             No users found
           </td></tr>
@@ -75,13 +71,6 @@
             <label class="text-xs font-medium text-admin-muted uppercase tracking-wider">Password</label>
             <input v-model="newUser.password" type="password" placeholder="Secure password" required class="w-full bg-slate-50 border border-admin-border rounded-[14px] px-4 py-2.5 text-sm text-admin-text focus-ring transition-colors" />
           </div>
-          <div class="space-y-1.5">
-            <label class="text-xs font-medium text-admin-muted uppercase tracking-wider">Roles</label>
-            <select v-model="newUser.role_ids" multiple class="w-full bg-slate-50 border border-admin-border rounded-[14px] px-4 py-2.5 text-sm text-admin-text focus-ring transition-colors"
-            >
-              <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
-            </select>
-          </div>
           <div class="flex gap-2 justify-end pt-2">
             <button type="button" @click="showAdd = false" class="px-4 py-2.5 text-sm border border-admin-border rounded-[14px] hover:bg-slate-50 text-slate-600 transition-colors">Cancel</button>
             <button type="submit" class="px-4 py-2.5 text-sm bg-admin-sidebar text-white rounded-[14px] font-medium hover:bg-slate-800 transition-colors">Create</button>
@@ -99,10 +88,9 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const api = useAdminApi()
 const users = ref<any>({ data: [], meta: null })
-const roles = ref<any[]>([])
 const showAdd = ref(false)
 const filters = reactive({ search: '' })
-const newUser = reactive({ name: '', email: '', password: '', role_ids: [] as number[] })
+const newUser = reactive({ name: '', email: '', password: '' })
 
 watch(() => filters.search, loadUsers)
 
@@ -118,20 +106,12 @@ async function loadUsers() {
   } catch {}
 }
 
-async function loadRoles() {
-  try {
-    const res = await api.authFetch<{ data: any[] }>('/users/roles')
-    roles.value = res.data
-  } catch {}
-}
-
 async function createUser() {
   try {
     await api.authFetch('/users', { method: 'POST', body: { ...newUser } })
     newUser.name = ''
     newUser.email = ''
     newUser.password = ''
-    newUser.role_ids = []
     showAdd.value = false
     await loadUsers()
   } catch {}
@@ -147,6 +127,5 @@ async function deleteUser(id: number) {
 
 onMounted(() => {
   loadUsers()
-  loadRoles()
 })
 </script>

@@ -167,8 +167,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: appName, time: new Date().toISOString() })
 })
 
-// Human-readable dashboard
-app.get('/', (req, res) => {
+// Human-readable dashboard (lead PII — auth when OUTREACH_API_KEY is set)
+app.get('/', requireAuth, (req, res) => {
   try {
     res.type('html').send(dashboardHtml())
   } catch (e) {
@@ -180,7 +180,8 @@ app.get('/quota', (req, res) => {
   res.json({ ...quota(), limitToday: currentDailyLimit(), date: todayKey(), dryRun: config.dryRun })
 })
 
-app.get('/leads', (req, res) => {
+// Lead PII — auth when OUTREACH_API_KEY is set
+app.get('/leads', requireAuth, (req, res) => {
   try {
     const leads = loadLeads()
     res.json({ data: leads, count: leads.length })
@@ -270,8 +271,8 @@ app.post('/campaign/followup', corsAllowlist, requireAuth, async (req, res) => {
   }
 })
 
-// Preview who is due for a follow-up right now
-app.get('/followup/due', (req, res) => {
+// Preview who is due for a follow-up right now (lead PII — auth when set)
+app.get('/followup/due', requireAuth, (req, res) => {
   const leads = loadLeads().filter((l) => followupDue(l.email))
   res.json({ data: leads.map((l) => ({ email: l.email, name: l.name, meta: sentMeta(l.email) })), count: leads.length })
 })
@@ -292,8 +293,8 @@ app.post('/webhook/zeptomail', requireWebhookSecret, (req, res) => {
   }
 })
 
-// Stats for reporting — sent/replied/followups + delivery events
-app.get('/stats', (req, res) => {
+// Stats for reporting — sent/replied/followups + delivery events (auth when set)
+app.get('/stats', requireAuth, (req, res) => {
   let events = []
   try { events = JSON.parse(fs.readFileSync(eventsFile, 'utf8')) } catch {}
   const byEvent = events.reduce((acc, e) => {
