@@ -60,6 +60,7 @@ Code-review (`code-reviewer`) runs after any multi-file change. `security-scan` 
 
 ## Rules of this repo
 
+- **Never let a tracked directory become empty** (e.g. `resources/views`) — git drops empty dirs, fresh containers then crash at boot (`view:cache` → Finder.php "directory does not exist" → `set -e` exit). Keep a `.gitkeep`. This caused the Sep 2026 deploy outage: local checks passed because the empty dir still existed on the local disk.
 - Laravel side follows PSR-12, thin controllers → services, FormRequest validation, config() over env() in runtime code.
 - Frontend is hand-rolled Tailwind + lucide-vue-next. Do NOT add radix/shadcn deps — `frontend/package.json` carries unused ones slated for removal. Design tokens live in `BRANDING.md`; the admin palette (slate + #f5a623) is the operative one for `/admin`.
 - All external/article content is untrusted: keep prompt-injection guards in generation and DOMPurify/`sanitize.ts` on article HTML intact.
