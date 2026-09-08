@@ -3,168 +3,168 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm"><Activity class="w-5 h-5" /></div>
+        <div class="w-10 h-10 rounded-xl bg-admin-sidebar text-white flex items-center justify-center shadow-sm"><Activity class="w-5 h-5" /></div>
         <div>
-          <h1 class="text-[18px] font-semibold text-slate-900">Queue Monitor</h1>
-          <p class="text-xs text-slate-500">Refreshes every 5s · last update {{ lastUpdate ? formatTime(lastUpdate) : 'never' }}</p>
+          <h1 class="text-[18px] font-semibold text-admin-text">Queue Monitor</h1>
+          <p class="text-xs text-admin-muted">Refreshes every 5s · last update {{ lastUpdate ? formatTime(lastUpdate) : 'never' }}</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button @click="isPaused = !isPaused" class="px-3.5 py-2 rounded-[14px] text-[11px] font-medium border transition-all uppercase tracking-wider" :class="isPaused ? 'border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'"><Pause v-if="!isPaused" class="w-3.5 h-3.5 mr-1.5 inline" /><Play v-else class="w-3.5 h-3.5 mr-1.5 inline" />{{ isPaused ? 'Resume' : 'Pause' }}</button>
-        <button @click="load(true)" :disabled="refreshing" class="px-3.5 py-2 rounded-[14px] text-[11px] font-medium bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 flex items-center gap-1.5 transition-all uppercase tracking-wider"><RefreshCw :class="refreshing ? 'animate-spin' : ''" class="w-3.5 h-3.5" />Refresh</button>
+        <button @click="isPaused = !isPaused" class="px-3.5 py-2 rounded-[14px] text-[11px] font-medium border transition-all uppercase tracking-wider" :class="isPaused ? 'border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : 'border-admin-border text-slate-600 bg-admin-surface hover:bg-slate-50'"><Pause v-if="!isPaused" class="w-3.5 h-3.5 mr-1.5 inline" /><Play v-else class="w-3.5 h-3.5 mr-1.5 inline" />{{ isPaused ? 'Resume' : 'Pause' }}</button>
+        <button @click="load(true)" :disabled="refreshing" class="px-3.5 py-2 rounded-[14px] text-[11px] font-medium bg-admin-sidebar text-white hover:bg-slate-800 disabled:opacity-50 flex items-center gap-1.5 transition-all uppercase tracking-wider"><RefreshCw :class="refreshing ? 'animate-spin' : ''" class="w-3.5 h-3.5" />Refresh</button>
       </div>
     </div>
 
     <!-- Status Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all">
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-semibold">Pending Jobs</span>
+          <span class="text-[10px] uppercase tracking-[0.12em] text-admin-muted font-semibold">Pending Jobs</span>
           <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center"><Clock class="w-4 h-4 text-blue-600" /></div>
         </div>
-        <p class="text-3xl font-bold text-slate-900" :class="queue.pending_jobs > 0 ? 'text-blue-600' : ''">{{ queue.pending_jobs || 0 }}</p>
-        <p class="text-xs text-slate-500 mt-1">{{ queue.pending_jobs_list?.length || 0 }} visible in feed</p>
+        <p class="text-3xl font-bold text-admin-text" :class="queue.pending_jobs > 0 ? 'text-blue-600' : ''">{{ queue.pending_jobs || 0 }}</p>
+        <p class="text-xs text-admin-muted mt-1">{{ queue.pending_jobs_list?.length || 0 }} visible in feed</p>
       </div>
 
-      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all">
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-semibold">Failed Jobs</span>
+          <span class="text-[10px] uppercase tracking-[0.12em] text-admin-muted font-semibold">Failed Jobs</span>
           <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center"><XCircle class="w-4 h-4 text-red-600" /></div>
         </div>
         <p class="text-3xl font-bold" :class="queue.total_failed_jobs > 0 ? 'text-red-600' : 'text-slate-400'">{{ queue.total_failed_jobs || 0 }}</p>
-        <p class="text-xs text-slate-500 mt-1">Total in failed_jobs table</p>
+        <p class="text-xs text-admin-muted mt-1">Total in failed_jobs table</p>
       </div>
 
-      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all">
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-semibold">Worker Status</span>
-          <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center"><HardDrive class="w-4 h-4 text-slate-500" /></div>
+          <span class="text-[10px] uppercase tracking-[0.12em] text-admin-muted font-semibold">Worker Status</span>
+          <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center"><HardDrive class="w-4 h-4 text-admin-muted" /></div>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full" :class="workerBadgeClass" />
-          <span class="font-semibold text-sm text-slate-900">{{ workerStatusText }}</span>
+          <span class="font-semibold text-sm text-admin-text">{{ workerStatusText }}</span>
         </div>
-        <p class="text-xs text-slate-500 mt-1 truncate">{{ queue.worker_status?.details || 'Unknown' }}</p>
+        <p class="text-xs text-admin-muted mt-1 truncate">{{ queue.worker_status?.details || 'Unknown' }}</p>
       </div>
 
-      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all">
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 hover:shadow-md transition-all">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-semibold">Throughput</span>
+          <span class="text-[10px] uppercase tracking-[0.12em] text-admin-muted font-semibold">Throughput</span>
           <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center"><TrendingUp class="w-4 h-4 text-emerald-600" /></div>
         </div>
         <p class="text-3xl font-bold text-emerald-600">{{ generation.articles_last_hour || 0 }}</p>
-        <p class="text-xs text-slate-500 mt-1">articles in last hour ({{ generation.articles_last_24h || 0 }} in 24h)</p>
+        <p class="text-xs text-admin-muted mt-1">articles in last hour ({{ generation.articles_last_24h || 0 }} in 24h)</p>
       </div>
     </div>
 
     <!-- Three Column Info -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Source API Hits -->
-      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
-        <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2 text-slate-900">
-          <Globe class="w-4 h-4 text-slate-500" /> Source API Hits
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
+        <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2 text-admin-text">
+          <Globe class="w-4 h-4 text-admin-muted" /> Source API Hits
         </h2>
         <div class="space-y-5">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><Rss class="w-5 h-5" /></div>
               <div>
-                <p class="text-sm font-medium text-slate-900">Google News RSS</p>
-                <p class="text-xs text-slate-500">Primary source</p>
+                <p class="text-sm font-medium text-admin-text">Google News RSS</p>
+                <p class="text-xs text-admin-muted">Primary source</p>
               </div>
             </div>
-            <p class="text-2xl font-bold text-slate-900">{{ sources.google_rss_hits || 0 }}</p>
+            <p class="text-2xl font-bold text-admin-text">{{ sources.google_rss_hits || 0 }}</p>
           </div>
 
           <div class="h-px bg-slate-200" />
 
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><Search class="w-5 h-5" /></div>
+              <div class="w-10 h-10 rounded-xl bg-amber-50 text-admin-accent flex items-center justify-center"><Search class="w-5 h-5" /></div>
               <div>
-                <p class="text-sm font-medium text-slate-900">Brave Search API</p>
-                <p class="text-xs text-slate-500">Fallback (threshold {{ sources.brave_fallback_threshold || 8 }})</p>
+                <p class="text-sm font-medium text-admin-text">Brave Search API</p>
+                <p class="text-xs text-admin-muted">Fallback (threshold {{ sources.brave_fallback_threshold || 8 }})</p>
               </div>
             </div>
-            <p class="text-2xl font-bold text-slate-900">{{ sources.brave_search_hits || 0 }}</p>
+            <p class="text-2xl font-bold text-admin-text">{{ sources.brave_search_hits || 0 }}</p>
           </div>
 
-          <div :class="sources.brave_search_enabled ? 'bg-slate-50 border border-slate-200 rounded-[14px] p-3 text-xs text-slate-600' : 'bg-amber-50 border border-amber-200 rounded-[14px] p-3 text-xs text-amber-700'">
+          <div :class="sources.brave_search_enabled ? 'bg-slate-50 border border-admin-border rounded-[14px] p-3 text-xs text-slate-600' : 'bg-amber-50 border border-amber-200 rounded-[14px] p-3 text-xs text-amber-700'">
             {{ sources.brave_search_enabled ? 'Brave is enabled as fallback. Monthly limit: 1,000 requests.' : 'Brave fallback is disabled.' }}
           </div>
         </div>
       </div>
 
       <!-- Discovery Schedule -->
-      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
-        <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2 text-slate-900">
-          <CalendarClock class="w-4 h-4 text-slate-500" /> Discovery Schedule
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
+        <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2 text-admin-text">
+          <CalendarClock class="w-4 h-4 text-admin-muted" /> Discovery Schedule
         </h2>
         <div class="space-y-3">
-          <div v-for="item in scheduleItems" :key="item.label" class="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-            <span class="text-sm text-slate-500">{{ item.label }}</span>
-            <span class="text-sm font-medium text-slate-900">{{ item.value }}</span>
+          <div v-for="item in scheduleItems" :key="item.label" class="flex items-center justify-between py-3 border-b border-admin-border last:border-0">
+            <span class="text-sm text-admin-muted">{{ item.label }}</span>
+            <span class="text-sm font-medium text-admin-text">{{ item.value }}</span>
           </div>
         </div>
       </div>
 
       <!-- Generation Config -->
-      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
-        <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2 text-slate-900">
-          <Cpu class="w-4 h-4 text-slate-500" /> Generation Engine
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
+        <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2 text-admin-text">
+          <Cpu class="w-4 h-4 text-admin-muted" /> Generation Engine
         </h2>
         <div class="space-y-3 mb-5">
-          <div v-for="item in genItems" :key="item.label" class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-            <span class="text-sm text-slate-500">{{ item.label }}</span>
-            <span class="text-sm font-medium text-slate-900">{{ item.value }}</span>
+          <div v-for="item in genItems" :key="item.label" class="flex items-center justify-between py-2 border-b border-admin-border last:border-0">
+            <span class="text-sm text-admin-muted">{{ item.label }}</span>
+            <span class="text-sm font-medium text-admin-text">{{ item.value }}</span>
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
-          <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-slate-200">
+          <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-admin-border">
             <p class="text-xl font-bold text-blue-600">{{ generation.pending_topics || 0 }}</p>
-            <p class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Pending</p>
+            <p class="text-[10px] uppercase tracking-wider text-admin-muted mt-1">Pending</p>
           </div>
-          <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-slate-200">
+          <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-admin-border">
             <p class="text-xl font-bold text-emerald-600">{{ generation.generated_topics || 0 }}</p>
-            <p class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Generated</p>
+            <p class="text-[10px] uppercase tracking-wider text-admin-muted mt-1">Generated</p>
           </div>
-          <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-slate-200">
+          <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-admin-border">
             <p class="text-xl font-bold text-red-600">{{ generation.failed_topics || 0 }}</p>
-            <p class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Failed</p>
+            <p class="text-[10px] uppercase tracking-wider text-admin-muted mt-1">Failed</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Pending Jobs Table -->
-    <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-        <h2 class="text-[15px] font-semibold text-slate-900"><List class="w-4 h-4 text-slate-500 inline mr-2"></List>Pending Jobs ({{ queue.pending_jobs_list?.length || 0 }})</h2>
-        <span v-if="queue.pending_jobs_list?.length" class="text-xs text-slate-500">Oldest first</span>
+    <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div class="px-6 py-4 border-b border-admin-border flex items-center justify-between">
+        <h2 class="text-[15px] font-semibold text-admin-text"><List class="w-4 h-4 text-admin-muted inline mr-2"></List>Pending Jobs ({{ queue.pending_jobs_list?.length || 0 }})</h2>
+        <span v-if="queue.pending_jobs_list?.length" class="text-xs text-admin-muted">Oldest first</span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-slate-50/80">
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">ID</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Command / Topic</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Queue</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Available Since</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Attempts</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">ID</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Command / Topic</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Queue</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Available Since</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Attempts</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-if="!queue.pending_jobs_list?.length"><td colspan="5" class="px-6 py-10 text-center text-slate-500">
+            <tr v-if="!queue.pending_jobs_list?.length"><td colspan="5" class="px-6 py-10 text-center text-admin-muted">
               <CheckCircle class="w-8 h-8 mx-auto mb-2 text-slate-400" />
               No pending jobs. Queue is idle.
             </td></tr>
             <tr v-for="job in queue.pending_jobs_list" :key="job.id" class="hover:bg-slate-50 transition-colors">
-              <td class="px-6 py-3.5 text-xs text-slate-500">{{ shortId(job.id) }}</td>
-              <td class="px-6 py-3.5 font-medium text-slate-900">{{ job.command || 'GenerateArticle' }}</td>
-              <td class="px-6 py-3.5 text-slate-500">{{ job.queue }}</td>
-              <td class="px-6 py-3.5 text-slate-500">{{ job.available_at ? formatTime(job.available_at) : '—' }}</td>
-              <td class="px-6 py-3.5 text-slate-500">{{ job.attempts || 0 }}</td>
+              <td class="px-6 py-3.5 text-xs text-admin-muted">{{ shortId(job.id) }}</td>
+              <td class="px-6 py-3.5 font-medium text-admin-text">{{ job.command || 'GenerateArticle' }}</td>
+              <td class="px-6 py-3.5 text-admin-muted">{{ job.queue }}</td>
+              <td class="px-6 py-3.5 text-admin-muted">{{ job.available_at ? formatTime(job.available_at) : '—' }}</td>
+              <td class="px-6 py-3.5 text-admin-muted">{{ job.attempts || 0 }}</td>
             </tr>
           </tbody>
         </table>
@@ -172,12 +172,12 @@
     </div>
 
     <!-- Job History -->
-    <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-[15px] font-semibold text-slate-900"><List class="w-4 h-4 text-slate-500 inline mr-2"></List>Job History ({{ history.total || 0 }})</h2>
+    <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div class="px-6 py-4 border-b border-admin-border flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-[15px] font-semibold text-admin-text"><List class="w-4 h-4 text-admin-muted inline mr-2"></List>Job History ({{ history.total || 0 }})</h2>
         <div class="flex items-center gap-2">
-          <label class="text-xs text-slate-500">Status:</label>
-          <select v-model="historyFilter.status" @change="loadHistory(1)" class="text-xs bg-slate-50 border border-slate-200 rounded-[14px] px-3 py-1.5 focus:outline-none focus:border-slate-400 transition-colors text-slate-900">
+          <label class="text-xs text-admin-muted">Status:</label>
+          <select v-model="historyFilter.status" @change="loadHistory(1)" class="text-xs bg-slate-50 border border-admin-border rounded-[14px] px-3 py-1.5 focus-ring transition-colors text-admin-text">
             <option value="">All</option>
             <option value="pending">Pending</option>
             <option value="processing">Processing</option>
@@ -191,32 +191,32 @@
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-slate-50/80">
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Command / Topic</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Queue</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Attempts</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Started</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Duration</th>
-              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Exception</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Status</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Command / Topic</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Queue</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Attempts</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Started</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Duration</th>
+              <th class="text-left px-6 py-3.5 text-[11px] font-semibold text-admin-muted uppercase tracking-wider">Exception</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr v-if="!history.jobs?.length"><td colspan="7" class="px-6 py-10 text-center text-slate-500">
+            <tr v-if="!history.jobs?.length"><td colspan="7" class="px-6 py-10 text-center text-admin-muted">
               <List class="w-8 h-8 mx-auto mb-2 text-slate-400" />
               No job history yet.
             </td></tr>
             <tr v-for="job in history.jobs" :key="job.id" class="hover:bg-slate-50 transition-colors align-top">
               <td class="px-6 py-3.5"><span class="text-[11px] font-medium px-2.5 py-1 rounded-full" :class="historyStatusClass(job.status)">{{ job.status }}</span></td>
-              <td class="px-6 py-3.5"><div class="font-medium text-slate-900">{{ job.job_class || 'GenerateArticle' }}</div><div v-if="job.job_signature" class="text-xs text-slate-500 mt-0.5">{{ shortId(job.job_signature) }}</div></td>
-              <td class="px-6 py-3.5 text-slate-500">{{ job.queue }}</td>
-              <td class="px-6 py-3.5 text-slate-500">{{ job.attempts || 0 }}</td>
-              <td class="px-6 py-3.5 text-slate-500">{{ job.started_at ? formatTime(job.started_at) : formatTime(job.created_at) }}</td>
-              <td class="px-6 py-3.5 text-slate-500">{{ job.duration_seconds ? fmtDuration(job.duration_seconds) : '—' }}</td>
+              <td class="px-6 py-3.5"><div class="font-medium text-admin-text">{{ job.job_class || 'GenerateArticle' }}</div><div v-if="job.job_signature" class="text-xs text-admin-muted mt-0.5">{{ shortId(job.job_signature) }}</div></td>
+              <td class="px-6 py-3.5 text-admin-muted">{{ job.queue }}</td>
+              <td class="px-6 py-3.5 text-admin-muted">{{ job.attempts || 0 }}</td>
+              <td class="px-6 py-3.5 text-admin-muted">{{ job.started_at ? formatTime(job.started_at) : formatTime(job.created_at) }}</td>
+              <td class="px-6 py-3.5 text-admin-muted">{{ job.duration_seconds ? fmtDuration(job.duration_seconds) : '—' }}</td>
               <td class="px-6 py-3.5 max-w-xl">
                 <div v-if="job.exception">
                   <pre class="text-xs text-red-700 bg-red-50 rounded-[14px] p-3 overflow-x-auto whitespace-pre-wrap border border-red-100">{{ strLimit(job.exception, 200) }}</pre>
-                  <button v-if="job.exception.length > 200" @click="expandedHistory = expandedHistory === job.id ? null : job.id" class="mt-2 text-[11px] text-slate-500 hover:text-slate-900">{{ expandedHistory === job.id ? 'Collapse' : 'Expand full trace' }}</button>
-                  <pre v-if="expandedHistory === job.id" class="text-xs text-slate-600 bg-slate-50 rounded-[14px] p-3 overflow-x-auto whitespace-pre-wrap mt-2 border border-slate-200">{{ job.exception }}</pre>
+                  <button v-if="job.exception.length > 200" @click="expandedHistory = expandedHistory === job.id ? null : job.id" class="mt-2 text-[11px] text-admin-muted hover:text-admin-text">{{ expandedHistory === job.id ? 'Collapse' : 'Expand full trace' }}</button>
+                  <pre v-if="expandedHistory === job.id" class="text-xs text-slate-600 bg-slate-50 rounded-[14px] p-3 overflow-x-auto whitespace-pre-wrap mt-2 border border-admin-border">{{ job.exception }}</pre>
                 </div>
                 <span v-else class="text-slate-400">—</span>
               </td>
@@ -224,11 +224,11 @@
           </tbody>
         </table>
       </div>
-      <div v-if="history.last_page > 1" class="px-6 py-3 border-t border-slate-200 flex items-center justify-between">
-        <span class="text-xs text-slate-500">Page {{ history.current_page }} of {{ history.last_page }}</span>
+      <div v-if="history.last_page > 1" class="px-6 py-3 border-t border-admin-border flex items-center justify-between">
+        <span class="text-xs text-admin-muted">Page {{ history.current_page }} of {{ history.last_page }}</span>
         <div class="flex gap-1.5">
-          <button @click="loadHistory(history.current_page - 1)" :disabled="history.current_page <= 1" class="px-3 py-1.5 text-[11px] border border-slate-200 rounded-[14px] hover:bg-slate-50 disabled:opacity-40 transition-colors text-slate-600 uppercase tracking-wider">Previous</button>
-          <button @click="loadHistory(history.current_page + 1)" :disabled="history.current_page >= history.last_page" class="px-3 py-1.5 text-[11px] border border-slate-200 rounded-[14px] hover:bg-slate-50 disabled:opacity-40 transition-colors text-slate-600 uppercase tracking-wider">Next</button>
+          <button @click="loadHistory(history.current_page - 1)" :disabled="history.current_page <= 1" class="px-3 py-1.5 text-[11px] border border-admin-border rounded-[14px] hover:bg-slate-50 disabled:opacity-40 transition-colors text-slate-600 uppercase tracking-wider">Previous</button>
+          <button @click="loadHistory(history.current_page + 1)" :disabled="history.current_page >= history.last_page" class="px-3 py-1.5 text-[11px] border border-admin-border rounded-[14px] hover:bg-slate-50 disabled:opacity-40 transition-colors text-slate-600 uppercase tracking-wider">Next</button>
         </div>
       </div>
     </div>
@@ -296,10 +296,10 @@ function historyStatusClass(status: string): string {
   switch (status) {
     case 'processed': return 'bg-emerald-50 text-emerald-700 border border-emerald-100'
     case 'processing': return 'bg-blue-50 text-blue-700 border border-blue-100'
-    case 'pending': return 'bg-slate-100 text-slate-600 border border-slate-200'
+    case 'pending': return 'bg-slate-100 text-slate-600 border border-admin-border'
     case 'failed': return 'bg-red-50 text-red-700 border border-red-100'
     case 'released': return 'bg-amber-50 text-amber-700 border border-amber-100'
-    default: return 'bg-slate-100 text-slate-600 border border-slate-200'
+    default: return 'bg-slate-100 text-slate-600 border border-admin-border'
   }
 }
 

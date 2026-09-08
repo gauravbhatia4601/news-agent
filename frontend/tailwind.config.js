@@ -56,6 +56,16 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        admin: {
+          bg: "hsl(var(--admin-bg))",
+          surface: "hsl(var(--admin-surface))",
+          sidebar: "hsl(var(--admin-sidebar))",
+          border: "hsl(var(--admin-border))",
+          text: "hsl(var(--admin-text))",
+          muted: "hsl(var(--admin-text-muted))",
+          accent: "hsl(var(--admin-accent))",
+          "accent-ink": "hsl(var(--admin-accent-ink))",
+        },
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

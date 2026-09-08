@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+  <div class="min-h-screen bg-admin-bg flex items-center justify-center p-4">
     <div class="w-full max-w-[400px]">
       <div class="text-center mb-10">
         <NuxtLink to="/" target="_blank" class="inline-flex flex-col items-center gap-3"
@@ -11,16 +11,16 @@
             <circle cx="34" cy="32" r="3" stroke="white" stroke-width="1.5"/>
           </svg>
           <div>
-            <span class="text-slate-900 font-semibold text-xl tracking-tight block">The Neural Journal</span>
+            <span class="text-admin-text font-semibold text-xl tracking-tight block">The Neural Journal</span>
             <span class="text-slate-400 text-xs uppercase tracking-[0.2em] font-medium">Admin Console</span>
           </div>
         </NuxtLink>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-[14px] overflow-hidden shadow-sm">
+      <div class="bg-admin-surface border border-admin-border rounded-[14px] overflow-hidden shadow-sm">
         <div class="px-8 pt-8 pb-2">
-          <h2 class="text-slate-900 font-semibold text-lg">Welcome back</h2>
-          <p class="text-slate-500 text-sm mt-1">Enter credentials to access the dashboard</p>
+          <h2 class="text-admin-text font-semibold text-lg">Welcome back</h2>
+          <p class="text-admin-muted text-sm mt-1">Enter credentials to access the dashboard</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="p-8 pt-4 space-y-5">
@@ -39,18 +39,18 @@
           </Transition>
 
           <div class="space-y-1.5">
-            <label class="block text-xs font-medium text-slate-500">Email address</label>
+            <label class="block text-xs font-medium text-admin-muted">Email address</label>
             <input v-model="email" type="email" required autofocus
-              class="w-full bg-slate-50 border border-slate-200 rounded-[14px] px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus-ring transition-all"
+              class="w-full bg-slate-50 border border-admin-border rounded-[14px] px-4 py-3 text-sm text-admin-text placeholder-slate-400 focus-ring transition-all"
               placeholder="you@example.com"
             />
           </div>
 
           <div class="space-y-1.5">
-            <label class="block text-xs font-medium text-slate-500">Password</label>
+            <label class="block text-xs font-medium text-admin-muted">Password</label>
             <div class="relative">
               <input v-model="password" :type="showPassword ? 'text' : 'password'" required
-                class="w-full bg-slate-50 border border-slate-200 rounded-[14px] px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus-ring transition-all pr-11"
+                class="w-full bg-slate-50 border border-admin-border rounded-[14px] px-4 py-3 text-sm text-admin-text placeholder-slate-400 focus-ring transition-all pr-11"
                 placeholder="Enter your password"
               />
               <button type="button" @click="showPassword = !showPassword"
@@ -63,7 +63,7 @@
           </div>
 
           <button type="submit" :disabled="loading"
-            class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-[14px] text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-ring"
+            class="w-full bg-admin-sidebar hover:bg-slate-800 text-white font-medium py-3 rounded-[14px] text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-ring"
           >
             <Loader2 v-if="loading" class="animate-spin w-4 h-4" />
             <span v-else>Sign in</span>

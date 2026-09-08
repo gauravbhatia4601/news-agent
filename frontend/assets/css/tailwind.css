@@ -30,6 +30,16 @@
 
     --success: 142 71% 45%;
     --danger: 0 84% 60%;
+
+    /* Admin surface tokens — light slate bg + amber accent (deliberate second surface) */
+    --admin-bg: 210 40% 98%;            /* #F8FAFC slate-50 */
+    --admin-surface: 0 0% 100%;          /* white */
+    --admin-sidebar: 222 47% 11%;       /* #0f172a slate-900 */
+    --admin-border: 214 32% 91%;         /* slate-200 */
+    --admin-text: 222 47% 11%;           /* slate-900 */
+    --admin-text-muted: 215 16% 47%;     /* slate-500 */
+    --admin-accent: 37 91% 55%;          /* #f5a623 */
+    --admin-accent-ink: 221 33% 15%;     /* #1a2233 */
   }
 }
 

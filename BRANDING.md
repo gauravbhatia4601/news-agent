@@ -133,12 +133,29 @@ Primary Lockup (Horizontal)
 
 | Component | Location | Status |
 |-----------|----------|--------|
-| **Layout** | `layouts/admin.vue` | ✓ Dark sidebar (slate-900), top bar, responsive drawer |
+| **Layout** | `layouts/admin.vue` | ✓ Light slate surface, slate-900 sidebar, top bar, responsive drawer |
 | **Dashboard** | `admin/index.vue` | ✓ Stats cards, recent articles, category breakdown, failures |
 | **Queue Monitor** | `admin/queue.vue` | ✓ Live polling, status cards, pending jobs table, history with pagination |
 | **Discovery** | `admin/discovery.vue` | ✓ Parameter form, results display, retry failed |
 | **Articles/Topics/Categories/Users/Settings/Audit** | `admin/*.vue` | ✓ Standard CRUD tables |
-| **Login** | `admin/login.vue` | ✓ Branded, dark theme, shield icon |
+| **Login** | `admin/login.vue` | ✓ Branded, light slate theme, shield icon |
+
+### Admin Surface Tokens
+
+The admin is a deliberate second surface — **not** the dark theme earlier docs described. Light slate background, white surfaces, slate-900 sidebar, `#f5a623` amber accent. Centralized as CSS vars on `:root` in `assets/css/tailwind.css` and mapped to `admin.*` colors in `tailwind.config.js`:
+
+| Token | Value | Tailwind class |
+|------|-------|----------------|
+| `--admin-bg` | `#F8FAFC` (slate-50) | `bg-admin-bg` |
+| `--admin-surface` | white | `bg-admin-surface` |
+| `--admin-sidebar` | `#0f172a` (slate-900) | `bg-admin-sidebar` |
+| `--admin-border` | slate-200 | `border-admin-border` |
+| `--admin-text` | slate-900 | `text-admin-text` |
+| `--admin-text-muted` | slate-500 | `text-admin-muted` |
+| `--admin-accent` | `#f5a623` | `text-admin-accent` / `bg-admin-accent` |
+| `--admin-accent-ink` | `#1a2233` | `text-admin-accent-ink` / `bg-admin-accent-ink` |
+
+Form inputs/buttons use the shared `.focus-ring` utility (focus-visible ring on `--ring`). Status badges (draft/released/warning) keep their own amber-* and emerald-* utilities — only the brand accent is tokenized.
 
 ### Technical SEO (Complete ✓)
 
@@ -158,19 +175,21 @@ Primary Lockup (Horizontal)
 
 ## Missing / Recommended Assets
 
+> **Status**: `favicon.ico` and `robots.txt` (served via `server/routes/robots.txt.ts`) now exist. The full PNG/OG suite below is still missing.
+
 ### 1. Logo & Favicon Suite (High Priority)
 ```
 public/
-├── favicon.ico              # 32×32, 16×16 (mark only)
-├── favicon-16x16.png
-├── favicon-32x32.png
-├── apple-touch-icon.png     # 180×180 (mark + wordmark)
-├── android-chrome-192x192.png
-├── android-chrome-512x512.png
-├── safari-pinned-tab.svg    # Monochrome mark
-├── og-default.png           # 1200×630 (article fallback)
-├── og-home.png              # 1200×630 (homepage)
-└── twitter-card.png         # 1200×600
+├── favicon.ico              # ✓ EXISTS (32×32, 16×16)
+├── favicon-16x16.png        # ✗ missing
+├── favicon-32x32.png        # ✗ missing
+├── apple-touch-icon.png     # ✗ missing (180×180, mark + wordmark)
+├── android-chrome-192x192.png  # ✗ missing
+├── android-chrome-512x512.png  # ✗ missing
+├── safari-pinned-tab.svg    # ✗ missing (monochrome mark)
+├── og-default.png           # ✗ missing (1200×630, article fallback)
+├── og-home.png              # ✗ missing (1200×630, homepage)
+└── twitter-card.png         # ✗ missing (1200×600)
 ```
 
 **Design Spec for OG Default**:
@@ -277,12 +296,15 @@ Add to `tailwind.css`:
 ## Implementation Checklist
 
 ### Immediate (Before Launch)
-- [ ] Create favicon suite (mark only, 16/32/180/192/512)
+- [x] `favicon.ico` + `robots.txt` (served via `server/routes/robots.txt.ts`)
+- [ ] Create PNG favicon suite (16/32/180/192/512) — ICO exists, PNGs still missing
 - [ ] Design and add `og-default.png` (1200×630)
 - [ ] Verify contrast ratios (fix secondary amber for text)
 - [ ] Add skip link in `app.vue`
 - [ ] Test dark mode across all pages
 - [ ] Verify OG/Twitter cards render correctly
+
+> Note: Umami analytics and Google AdSense load only after cookie consent is accepted — see `plugins/umami.client.ts` and `plugins/adsense.client.ts`.
 
 ### Short-term (v1.1)
 - [ ] Build logo mark (quill+circuit) in SVG
@@ -309,7 +331,7 @@ Add to `tailwind.css`:
 | `frontend/components/AppHeader.vue` | Masthead, nav-hat, category nav, search |
 | `frontend/components/AppFooter.vue` | Footer grid, legal links, social, copyright |
 | `frontend/layouts/default.vue` | Public layout wrapper |
-| `frontend/layouts/admin.vue` | Admin layout (dark sidebar) |
+| `frontend/layouts/admin.vue` | Admin layout (light slate surface, slate-900 sidebar) |
 | `frontend/pages/article/[slug].vue` | Article template + JSON-LD |
 | `frontend/components/news/*.vue` | Reusable news components |
 | `frontend/pages/admin/*.vue` | Admin views |

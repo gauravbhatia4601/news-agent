@@ -3,13 +3,13 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-slate-900/5 flex items-center justify-center"><Map class="w-5 h-5 text-amber-600" /></div>
+        <div class="w-10 h-10 rounded-xl bg-admin-sidebar/5 flex items-center justify-center"><Map class="w-5 h-5 text-admin-accent" /></div>
         <div>
-          <h1 class="text-[18px] font-semibold text-slate-900">Sitemaps</h1>
-          <p class="text-xs text-slate-500">Manage XML sitemap files for SEO</p>
+          <h1 class="text-[18px] font-semibold text-admin-text">Sitemaps</h1>
+          <p class="text-xs text-admin-muted">Manage XML sitemap files for SEO</p>
         </div>
       </div>
-      <button @click="regenerate" :disabled="generating" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
+      <button @click="regenerate" :disabled="generating" class="px-4 py-2.5 bg-admin-sidebar hover:bg-slate-800 text-white rounded-[14px] text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
       >
         <Loader2 v-if="generating" class="w-4 h-4 animate-spin" />
         <RefreshCw v-else class="w-4 h-4" />
@@ -31,15 +31,15 @@
     <!-- Viewer Modal -->
     <div v-if="viewer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="viewer = null"
     >
-      <div class="bg-white rounded-[14px] border border-slate-200 shadow-xl w-full max-w-4xl max-h-[85vh] flex flex-col">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border shadow-xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+        <div class="px-6 py-4 border-b border-admin-border flex items-center justify-between shrink-0">
           <div class="flex items-center gap-3">
             <FileCode2 class="w-5 h-5 text-slate-400" />
-            <h3 class="text-sm font-semibold text-slate-900">{{ viewer.name }}</h3>
+            <h3 class="text-sm font-semibold text-admin-text">{{ viewer.name }}</h3>
             <span class="text-xs text-slate-400">{{ viewer.size_human }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <a :href="viewer.url" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+            <a :href="viewer.url" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-admin-border transition-colors"
             >
               <ExternalLink class="w-3.5 h-3.5" /> Open XML
             </a>
@@ -54,18 +54,18 @@
     </div>
 
     <!-- Files Table -->
-    <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 class="text-[15px] font-semibold text-slate-900">Sitemap Files</h2>
+    <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div class="px-6 py-4 border-b border-admin-border flex items-center justify-between">
+        <h2 class="text-[15px] font-semibold text-admin-text">Sitemap Files</h2>
         <span class="text-xs text-slate-400">{{ files.length }} file{{ files.length === 1 ? '' : 's' }}</span>
       </div>
       <div v-if="loading" class="p-12 text-center">
         <Loader2 class="w-8 h-8 text-slate-400 animate-spin mx-auto mb-3" />
-        <p class="text-sm text-slate-500">Loading sitemaps...</p>
+        <p class="text-sm text-admin-muted">Loading sitemaps...</p>
       </div>
       <div v-else-if="!files.length" class="p-12 text-center">
         <Map class="w-8 h-8 text-slate-300 mx-auto mb-3" />
-        <p class="text-sm text-slate-500">No sitemap files found</p>
+        <p class="text-sm text-admin-muted">No sitemap files found</p>
         <p class="text-xs text-slate-400 mt-1">Click "Regenerate Sitemap" to create them</p>
       </div>
       <div v-else class="divide-y divide-slate-100">
@@ -73,13 +73,13 @@
         >
           <FileCode2 class="w-5 h-5 text-slate-400 shrink-0" />
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-900 truncate">{{ f.name }}</p>
+            <p class="text-sm font-medium text-admin-text truncate">{{ f.name }}</p>
             <p class="text-xs text-slate-400">{{ f.size_human }} · Modified {{ fmtTime(f.modified_at) }}</p>
           </div>
           <div class="flex items-center gap-2">
-            <button @click="openViewer(f.name)" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+            <button @click="openViewer(f.name)" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-admin-border transition-colors"
             >View</button>
-            <a :href="f.url" target="_blank" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors inline-flex items-center gap-1.5"
+            <a :href="f.url" target="_blank" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-admin-border transition-colors inline-flex items-center gap-1.5"
             >
               <ExternalLink class="w-3.5 h-3.5" /> XML
             </a>

@@ -3,15 +3,15 @@
     <!-- Welcome row -->
     <div class="flex items-end justify-between">
       <div>
-        <h1 class="text-[22px] font-semibold text-slate-900 tracking-tight">Dashboard</h1>
-        <p class="text-sm text-slate-500 mt-1">{{ greeting }} · {{ todayDate }}</p>
+        <h1 class="text-[22px] font-semibold text-admin-text tracking-tight">Dashboard</h1>
+        <p class="text-sm text-admin-muted mt-1">{{ greeting }} · {{ todayDate }}</p>
       </div>
     </div>
 
     <!-- Stat Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <div v-for="card in statCards" :key="card.key"
-        class="bg-white rounded-[14px] border border-slate-200/80 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+        class="bg-admin-surface rounded-[14px] border border-admin-border/80 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
       >
         <div class="flex items-center justify-between mb-4">
           <div :class="`w-9 h-9 rounded-[12px] ${card.iconBg} ${card.iconColor} flex items-center justify-center`">
@@ -23,28 +23,28 @@
             <span>{{ Math.abs(card.trend || 0).toFixed(0) }}%</span>
           </div>
         </div>
-        <p class="text-[28px] font-semibold text-slate-900 tracking-tight leading-none">{{ card.value || '—' }}</p>
-        <p class="text-[12px] text-slate-500 mt-2 uppercase tracking-wider">{{ card.label }}</p>
+        <p class="text-[28px] font-semibold text-admin-text tracking-tight leading-none">{{ card.value || '—' }}</p>
+        <p class="text-[12px] text-admin-muted mt-2 uppercase tracking-wider">{{ card.label }}</p>
       </div>
     </div>
 
     <!-- Line Chart + Categories -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <!-- Activity Line Chart -->
-      <div class="lg:col-span-2 bg-white rounded-[14px] border border-slate-200/80 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div class="lg:col-span-2 bg-admin-surface rounded-[14px] border border-admin-border/80 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h2 class="text-[15px] font-semibold text-slate-900">Activity Overview</h2>
+            <h2 class="text-[15px] font-semibold text-admin-text">Activity Overview</h2>
             <p class="text-[11px] text-slate-400 mt-0.5">Articles vs Topics · Last 7 days</p>
           </div>
           <div class="flex items-center gap-4 text-[11px]">
             <div class="flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-slate-700"></span>
-              <span class="text-slate-500">Articles</span>
+              <span class="text-admin-muted">Articles</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-[#f5a623]"></span>
-              <span class="text-slate-500">Topics</span>
+              <span class="w-2 h-2 rounded-full bg-admin-accent"></span>
+              <span class="text-admin-muted">Topics</span>
             </div>
           </div>
         </div>
@@ -109,7 +109,7 @@
 
           <!-- Tooltip -->
           <div v-if="hoveredPoint"
-            class="absolute z-10 pointer-events-none bg-slate-900 text-white text-[11px] px-3 py-2 rounded-[12px] shadow-xl transform -translate-x-1/2 -translate-y-full mt-[-10px] min-w-[120px]"
+            class="absolute z-10 pointer-events-none bg-admin-sidebar text-white text-[11px] px-3 py-2 rounded-[12px] shadow-xl transform -translate-x-1/2 -translate-y-full mt-[-10px] min-w-[120px]"
             :style="tooltipStyle"
           >
             <div class="text-[10px] text-slate-300 mb-1">{{ chartPoints[hoveredPoint.index]?.label }}</div>
@@ -121,39 +121,39 @@
             </div>
             <div class="flex items-center justify-between gap-3 mt-0.5">
               <span class="flex items-center gap-1.5 text-slate-300">
-                <span class="w-1.5 h-1.5 rounded-full bg-[#f5a623]"></span> Topics
+                <span class="w-1.5 h-1.5 rounded-full bg-admin-accent"></span> Topics
               </span>
               <span class="font-semibold">{{ chartPoints[hoveredPoint.index]?.topics }}</span>
             </div>
-            <div class="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+            <div class="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-admin-sidebar rotate-45"></div>
           </div>
         </div>
 
-        <div class="mt-6 grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+        <div class="mt-6 grid grid-cols-2 gap-4 pt-4 border-t border-admin-border">
           <div class="text-center">
-            <p class="text-[24px] font-semibold text-slate-900">{{ stats.articles?.published || 0 }}</p>
-            <p class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Total Articles</p>
+            <p class="text-[24px] font-semibold text-admin-text">{{ stats.articles?.published || 0 }}</p>
+            <p class="text-[10px] text-admin-muted uppercase tracking-wider mt-1">Total Articles</p>
           </div>
           <div class="text-center">
-            <p class="text-[24px] font-semibold text-[#f5a623]">{{ stats.topics?.pending || 0 }}</p>
-            <p class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Pending Topics</p>
+            <p class="text-[24px] font-semibold text-admin-accent">{{ stats.topics?.pending || 0 }}</p>
+            <p class="text-[10px] text-admin-muted uppercase tracking-wider mt-1">Pending Topics</p>
           </div>
         </div>
       </div>
 
       <!-- Category Breakdown -->
-      <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100">
-          <h2 class="text-[13px] font-semibold text-slate-900 uppercase tracking-wider">Categories</h2>
+      <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div class="px-6 py-4 border-b border-admin-border">
+          <h2 class="text-[13px] font-semibold text-admin-text uppercase tracking-wider">Categories</h2>
         </div>
         <div class="p-5 space-y-4">
           <div v-for="c in stats.category_article_counts" :key="c.slug">
             <div class="flex items-center justify-between mb-1.5">
               <span class="text-[13px] text-slate-600">{{ c.name }}</span>
-              <span class="text-[13px] font-semibold text-slate-900">{{ c.article_count }}</span>
+              <span class="text-[13px] font-semibold text-admin-text">{{ c.article_count }}</span>
             </div>
             <div class="h-[3px] bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full rounded-full bg-[#1a2233] transition-all duration-700" :style="`width: ${Math.max(5, (c.article_count / maxCategoryCount) * 100)}%`"></div>
+              <div class="h-full rounded-full bg-admin-accent-ink transition-all duration-700" :style="`width: ${Math.max(5, (c.article_count / maxCategoryCount) * 100)}%`"></div>
             </div>
           </div>
           <div v-if="!(stats.category_article_counts?.length)" class="text-center py-6">
@@ -165,16 +165,16 @@
     </div>
 
     <!-- Recent Articles -->
-    <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 class="text-[13px] font-semibold text-slate-900 uppercase tracking-wider">Recent Articles</h2>
-        <NuxtLink to="/admin/articles" class="text-[11px] text-[#1a2233] font-medium hover:text-slate-700 transition-colors">View all →</NuxtLink>
+    <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div class="px-6 py-4 border-b border-admin-border flex items-center justify-between">
+        <h2 class="text-[13px] font-semibold text-admin-text uppercase tracking-wider">Recent Articles</h2>
+        <NuxtLink to="/admin/articles" class="text-[11px] text-admin-accent-ink font-medium hover:text-slate-700 transition-colors">View all →</NuxtLink>
       </div>
       <div class="divide-y divide-slate-50">
         <div v-for="a in (stats.recent_articles || []).slice(0, 5)" :key="a.id" class="px-6 py-4 hover:bg-slate-50/50 transition-colors">
           <div class="flex items-start gap-3">
             <div class="flex-1 min-w-0">
-              <p class="text-[14px] font-medium text-slate-900 truncate hover:text-[#1a2233] transition-colors">{{ a.title }}</p>
+              <p class="text-[14px] font-medium text-admin-text truncate hover:text-admin-accent-ink transition-colors">{{ a.title }}</p>
               <div class="flex items-center gap-3 mt-1.5">
                 <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ a.category }}</span>
                 <span class="text-[11px] text-slate-400">{{ formatDate(a.created_at) }}</span>
@@ -192,7 +192,7 @@
     </div>
 
     <!-- Failures -->
-    <div v-if="(stats.recent_failed_topics || []).length" class="bg-white rounded-[14px] border border-red-200/60 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+    <div v-if="(stats.recent_failed_topics || []).length" class="bg-admin-surface rounded-[14px] border border-red-200/60 shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
       <div class="px-6 py-4 border-b border-red-100 flex items-center justify-between bg-red-50/50">
         <div class="flex items-center gap-2">
           <AlertTriangle class="w-4 h-4 text-red-500" />
@@ -208,10 +208,10 @@
       <div class="divide-y divide-slate-50">
         <div v-for="t in stats.recent_failed_topics" :key="t.id" class="px-6 py-4 flex items-center justify-between hover:bg-slate-50/50">
           <div>
-            <p class="text-[13px] text-slate-900 truncate max-w-md">{{ t.topic_name }}</p>
+            <p class="text-[13px] text-admin-text truncate max-w-md">{{ t.topic_name }}</p>
             <p class="text-[11px] text-slate-400 mt-0.5">{{ t.category }} · {{ t.retry_count }} retries</p>
           </div>
-          <button class="text-[11px] px-3 py-1.5 border border-slate-200 rounded-[14px] hover:bg-slate-50 text-slate-600 transition-colors">Retry</button>
+          <button class="text-[11px] px-3 py-1.5 border border-admin-border rounded-[14px] hover:bg-slate-50 text-slate-600 transition-colors">Retry</button>
         </div>
       </div>
     </div>
@@ -380,7 +380,7 @@ const statCards = computed(() => {
       value: totalCategories.value || '—',
       icon: Tag,
       iconBg: 'bg-amber-50',
-      iconColor: 'text-amber-600',
+      iconColor: 'text-admin-accent',
       trend: 0,
       trendClass: 'text-slate-400',
     },

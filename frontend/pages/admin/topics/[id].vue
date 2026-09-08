@@ -1,12 +1,12 @@
 <template>
   <div v-if="topic" class="space-y-6">
-    <NuxtLink to="/admin/topics" class="text-sm text-slate-500 hover:text-slate-900">&larr; Back to Topics</NuxtLink>
+    <NuxtLink to="/admin/topics" class="text-sm text-admin-muted hover:text-admin-text">&larr; Back to Topics</NuxtLink>
 
-    <div class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
+    <div class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">{{ topic.topic_name }}</h1>
-          <div class="flex items-center gap-3 mt-2 text-sm text-slate-500">
+          <h1 class="text-2xl font-bold text-admin-text">{{ topic.topic_name }}</h1>
+          <div class="flex items-center gap-3 mt-2 text-sm text-admin-muted">
             <span>{{ topic.category }}</span>
             <span>&middot;</span>
             <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="topicStatusClass(topic.generation_status)">{{ topic.generation_status }}</span>
@@ -25,33 +25,33 @@
       </div>
     </div>
 
-    <div v-if="topic.article" class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
+    <div v-if="topic.article" class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-[15px] font-bold text-slate-900">Generated Article</h2>
+        <h2 class="text-[15px] font-bold text-admin-text">Generated Article</h2>
         <NuxtLink :to="`/admin/articles/${topic.article.id}`" class="text-xs text-blue-600 hover:underline">View Article &rarr;</NuxtLink>
       </div>
       <dl class="grid grid-cols-2 gap-2 text-sm">
-        <div><dt class="text-slate-500">Title</dt><dd class="text-slate-900">{{ topic.article.title }}</dd></div>
+        <div><dt class="text-admin-muted">Title</dt><dd class="text-admin-text">{{ topic.article.title }}</dd></div>
         <div>
-          <dt class="text-slate-500">Status</dt>
+          <dt class="text-admin-muted">Status</dt>
           <dd><span class="text-xs px-2 py-0.5 rounded-full" :class="topic.article.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">{{ topic.article.status }}</span></dd>
         </div>
       </dl>
     </div>
 
-    <div v-if="topic.sources?.length" class="bg-white rounded-[14px] border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
-      <h2 class="text-[15px] font-bold text-slate-900 mb-4">Sources ({{ topic.sources.length }})</h2>
+    <div v-if="topic.sources?.length" class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6">
+      <h2 class="text-[15px] font-bold text-admin-text mb-4">Sources ({{ topic.sources.length }})</h2>
       <div class="space-y-3">
-        <div v-for="s in topic.sources" :key="s.id" class="border border-slate-200 rounded-[14px] p-3">
-          <a :href="s.source_url" target="_blank" class="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">{{ s.headline || s.source_name }}</a>
-          <p class="text-xs text-slate-500 mt-1">{{ s.source_name }} · {{ s.published_at ? formatDate(s.published_at) : 'N/A' }}</p>
+        <div v-for="s in topic.sources" :key="s.id" class="border border-admin-border rounded-[14px] p-3">
+          <a :href="s.source_url" target="_blank" class="text-sm font-medium text-admin-text hover:text-blue-600 transition-colors">{{ s.headline || s.source_name }}</a>
+          <p class="text-xs text-admin-muted mt-1">{{ s.source_name }} · {{ s.published_at ? formatDate(s.published_at) : 'N/A' }}</p>
           <p v-if="s.summary" class="text-xs text-slate-400 mt-1 line-clamp-2">{{ s.summary }}</p>
         </div>
       </div>
     </div>
   </div>
 
-  <div v-else class="text-center py-20 text-slate-500">Loading topic...</div>
+  <div v-else class="text-center py-20 text-admin-muted">Loading topic...</div>
 </template>
 
 <script setup lang="ts">

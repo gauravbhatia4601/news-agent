@@ -78,14 +78,14 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div class="admin-root h-screen flex overflow-hidden bg-[#F8FAFC] font-sans">
+  <div class="admin-root h-screen flex overflow-hidden bg-admin-bg font-sans">
     <!-- Sidebar -->
     <aside
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-      class="fixed inset-y-0 left-0 z-50 w-[260px] bg-white border-r border-slate-200/80 flex flex-col transition-transform duration-300 ease-out lg:static lg:translate-x-0"
+      class="fixed inset-y-0 left-0 z-50 w-[260px] bg-admin-surface border-r border-admin-border/80 flex flex-col transition-transform duration-300 ease-out lg:static lg:translate-x-0"
     >
       <!-- Logo -->
-      <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
+      <div class="h-16 flex items-center px-6 border-b border-admin-border shrink-0">
         <NuxtLink to="/" target="_blank" class="flex items-center gap-3">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
             <rect width="28" height="28" rx="8" fill="#1a2233" />
@@ -94,7 +94,7 @@ async function handleLogout() {
             <circle cx="19.5" cy="18.5" r="2" stroke="white" stroke-width="1" />
           </svg>
           <div>
-            <span class="text-slate-900 font-semibold text-[14px] tracking-tight leading-none">The Neural Journal</span>
+            <span class="text-admin-text font-semibold text-[14px] tracking-tight leading-none">The Neural Journal</span>
             <span class="block text-[10px] text-slate-400 uppercase tracking-[0.15em] font-medium leading-tight mt-0.5">Admin</span>
           </div>
         </NuxtLink>
@@ -112,8 +112,8 @@ async function handleLogout() {
                 :to="link.to"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[13px] transition-all duration-200 relative"
                 :class="isActive(link.to)
-                  ? 'bg-slate-900 text-white font-medium shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'"
+                  ? 'bg-admin-sidebar text-white font-medium shadow-sm'
+                  : 'text-admin-muted hover:text-admin-text hover:bg-slate-50'"
               >
                 <component :is="link.icon" class="w-[18px] h-[18px] shrink-0" stroke-width="1.75" />
                 <span>{{ link.label }}</span>
@@ -125,14 +125,14 @@ async function handleLogout() {
       </nav>
 
       <!-- User -->
-      <div class="border-t border-slate-100 p-3 shrink-0">
+      <div class="border-t border-admin-border p-3 shrink-0">
         <div class="flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-slate-50 transition-colors cursor-pointer group">
-          <div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[11px] font-bold text-slate-600">{{ userInitials }}</div>
+          <div class="w-9 h-9 rounded-full bg-slate-100 border border-admin-border flex items-center justify-center text-[11px] font-bold text-slate-600">{{ userInitials }}</div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-900">{{ adminUser?.name || 'Admin' }}</p>
+            <p class="text-sm font-medium text-admin-text">{{ adminUser?.name || 'Admin' }}</p>
             <p class="text-[11px] text-slate-400 truncate">{{ adminUser?.email || '' }}</p>
           </div>
-          <button @click="handleLogout" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-900 transition-all p-1.5 rounded-lg hover:bg-slate-100" title="Sign out"
+          <button @click="handleLogout" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-admin-text transition-all p-1.5 rounded-lg hover:bg-slate-100" title="Sign out"
           >
             <LogOut class="w-4 h-4" />
           </button>
@@ -143,9 +143,9 @@ async function handleLogout() {
     <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-40 bg-black/20 lg:hidden" />
 
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <header class="h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-6 lg:px-8 sticky top-0 z-30">
+      <header class="h-16 bg-admin-surface/80 backdrop-blur-xl border-b border-admin-border flex items-center justify-between px-6 lg:px-8 sticky top-0 z-30">
         <div class="flex items-center gap-4">
-          <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 -ml-2 rounded-[14px] hover:bg-slate-100 transition-colors text-slate-500"
+          <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 -ml-2 rounded-[14px] hover:bg-slate-100 transition-colors text-admin-muted"
           ><Menu class="w-5 h-5" /></button>
           <div class="hidden lg:flex items-center gap-2 text-xs text-slate-400">
             <span>Admin</span>
@@ -153,7 +153,7 @@ async function handleLogout() {
             <span class="text-slate-700 font-medium">{{ pageTitle }}</span>
           </div>
         </div>
-        <NuxtLink to="/" target="_blank" class="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors px-3 py-1.5 rounded-[14px] hover:bg-slate-50"
+        <NuxtLink to="/" target="_blank" class="hidden sm:flex items-center gap-1.5 text-xs text-admin-muted hover:text-admin-text transition-colors px-3 py-1.5 rounded-[14px] hover:bg-slate-50"
         >
           <ExternalLink class="w-3.5 h-3.5" stroke-width="1.75" />
           View Site
