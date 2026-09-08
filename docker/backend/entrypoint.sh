@@ -11,12 +11,11 @@ chmod -R 775 storage bootstrap/cache public/sitemaps
 # Remove any stale log files created by root in previous image layers
 rm -f storage/logs/laravel.log storage/logs/laravel-*.log 2>/dev/null || true
 
-# Generate key if missing — fail fast in production (auto-generating would silently lose encrypted data)
+# Generate key if missing. In production this means APP_KEY was not injected —
+# warn loudly (a fresh key invalidates previously encrypted data) but keep booting.
 if [ -z "$APP_KEY" ]; then
-  if [ "$APP_ENV" = "production" ]; then
-    echo "ERROR: APP_KEY is empty in production. Refusing to auto-generate (would invalidate encrypted data). Set APP_KEY before starting."
-    exit 1
-  fi
+  echo "WARNING: APP_KEY is empty${APP_ENV:+ (APP_ENV=$APP_ENV)} — generating a fresh key."
+  echo "  If this is production, set APP_KEY in the Coolify environment: encrypted data is invalidated by a new key."
   su -s /bin/sh www-data -c "php artisan key:generate --force --no-interaction"
 fi
 
