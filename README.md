@@ -35,11 +35,11 @@ The Neural Journal continuously discovers news topics from Google News RSS and B
 
 - Rate limiting on all endpoints (login, public API, newsletter, admin actions)
 - Sanctum token expiration (24h)
-- DOMPurify XSS sanitization on article content
+- DOMPurify XSS sanitization on article content (client) + scheme-allowlist sanitize fallback (SSR)
 - Prompt-injection guards on scraped source content
 - Atomic topic claiming (prevents duplicate generation race conditions)
 - Audit logging on all admin actions
-- Non-root Docker containers
+- Non-root frontend container; backend workloads run via supervisord (root supervisor, see docker/backend/)
 
 ## Getting Started
 
@@ -71,10 +71,12 @@ npm run dev
 ## Testing
 
 ```bash
-php artisan test
+php artisan test        # backend (PHPUnit)
+cd frontend && npm run build
+cd cold-email-service && node --test tests/
 ```
 
-14 feature tests covering auth and newsletter flows. CI pipeline (GitHub Actions) runs PHP lint, tests, and Docker builds.
+Backend suite covers auth, newsletter, admin fixes, quality gate, feed, and health. CI pipeline (GitHub Actions, `.github/workflows/ci.yml`) runs Pint + PHPUnit, the Nuxt build, and the cold-email-service tests on every push/PR.
 
 ## Environment Variables
 
