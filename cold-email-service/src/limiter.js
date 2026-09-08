@@ -102,7 +102,7 @@ export function markSent(email, meta = {}) {
   const state = load()
   const key = email.toLowerCase()
   state.byDate[todayKey()] = (state.byDate[todayKey()] || 0) + 1
-  state.sent[key] = { at: new Date().toISOString(), replied: false, followupAt: null, followupTemplate: null, bounced: false, skipped: false, ...meta, ...state.sent[key] }
+  state.sent[key] = { at: new Date().toISOString(), replied: false, followupAt: null, followupTemplate: null, bounced: false, skipped: false, ...state.sent[key], ...meta }
   save(state)
 }
 

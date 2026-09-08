@@ -59,4 +59,30 @@ test('limiter: recordEvent below cap does not trim', () => {
   assert.equal(events.length, 3)
 })
 
+test('limiter: markSent — fresh meta must not be overwritten by stale old entry', () => {
+  // Pre-seed a stale entry with old campaign/template and skipped:true
+  fs.writeFileSync(sentFile, JSON.stringify({
+    byDate: {},
+    sent: {
+      'stale@example.com': {
+        at: '2026-01-01T00:00:00Z',
+        campaign: 'old-campaign',
+        template: 'old-template',
+        replied: false,
+        followupAt: null,
+        followupTemplate: null,
+        bounced: false,
+        skipped: true,
+      },
+    },
+  }, null, 2))
+
+  // markSent with fresh meta — fresh campaign/template must win over stale old entry
+  markSent('stale@example.com', { campaign: 'new-campaign', template: 'new-template' })
+
+  const meta = sentMeta('stale@example.com')
+  assert.equal(meta.campaign, 'new-campaign', 'fresh campaign must not be overwritten by stale old entry')
+  assert.equal(meta.template, 'new-template', 'fresh template must not be overwritten by stale old entry')
+})
+
 process.on('exit', () => fs.rmSync(dataDir, { recursive: true, force: true }))
