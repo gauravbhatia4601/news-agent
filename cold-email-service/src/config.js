@@ -23,5 +23,12 @@ export const config = {
   unsubscribeUrl: process.env.UNSUBSCRIBE_URL || '',
   port: parseInt(process.env.PORT || '4100', 10),
   dryRun: process.env.DRY_RUN === 'true',
-  dataDir: path.resolve(root, 'data'),
+  // Override data dir for tests (defaults to ./data); absolute paths win
+  dataDir: path.resolve(root, process.env.DATA_DIR || 'data'),
+  // Shared-secret bearer auth for mutating endpoints; unset = open (dev) + startup warn
+  outreachApiKey: process.env.OUTREACH_API_KEY || '',
+  // Webhook secret for /webhook/zeptomail; unset = open (dev) + startup warn
+  webhookSecret: process.env.WEBHOOK_SECRET || '',
+  // CORS allowlist for mutating endpoints (comma-separated origins); unset = no CORS headers
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean),
 }

@@ -1,6 +1,7 @@
 import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { config } from './config.js'
 import { sendMail, isPermanentError } from './zepto.js'
 import { loadLeads, buildReplyTo } from './leads.js'
@@ -22,17 +23,59 @@ import {
 } from './limiter.js'
 
 const app = express()
-app.use(express.json())
+app.use(express.json({ limit: '64kb' }))
 
 const appName = 'cold-email-service'
 const eventsFile = path.join(config.dataDir, 'events.json')
 
-function recordEvent(event) {
+// Max events retained in data/events.json; oldest dropped on overflow
+const MAX_EVENTS = 5000
+
+// RFC-ish email validation — same shape as leads.js filter
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+function isValidEmail(e) {
+  return typeof e === 'string' && EMAIL_RE.test(e)
+}
+
+// Shared-secret bearer auth for mutating endpoints.
+// If OUTREACH_API_KEY unset: endpoints stay open (dev) — a loud startup warning fires once.
+function requireAuth(req, res, next) {
+  if (!config.outreachApiKey) return next()
+  const auth = req.get('authorization') || ''
+  const [, token] = auth.split(' ')
+  if (auth.startsWith('Bearer ') && token && token === config.outreachApiKey) return next()
+  return res.status(401).json({ error: 'Unauthorized' })
+}
+
+// Webhook secret: ?token=<secret> query OR X-Webhook-Secret header.
+// If WEBHOOK_SECRET unset: webhook stays open (dev) — startup warns.
+function requireWebhookSecret(req, res, next) {
+  if (!config.webhookSecret) return next()
+  if (req.query.token === config.webhookSecret || req.get('x-webhook-secret') === config.webhookSecret) return next()
+  return res.status(403).json({ error: 'Forbidden' })
+}
+
+// Optional CORS allowlist for mutating endpoints. Unset = no CORS headers (current behavior).
+function corsAllowlist(req, res, next) {
+  if (!config.allowedOrigins.length) return next()
+  const origin = req.get('origin')
+  if (origin && config.allowedOrigins.includes(origin)) {
+    res.set('Access-Control-Allow-Origin', origin)
+    res.set('Vary', 'Origin')
+  }
+  next()
+}
+
+export function recordEvent(event) {
   fs.mkdirSync(config.dataDir, { recursive: true })
   let events = []
   try { events = JSON.parse(fs.readFileSync(eventsFile, 'utf8')) } catch {}
   events.push({ at: new Date().toISOString(), ...event })
-  fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2))
+  // Cap growth: keep only the most recent MAX_EVENTS (drop oldest)
+  if (events.length > MAX_EVENTS) events = events.slice(-MAX_EVENTS)
+  const tmp = `${eventsFile}.tmp-${process.pid}`
+  fs.writeFileSync(tmp, JSON.stringify(events, null, 2))
+  fs.renameSync(tmp, eventsFile)
   if (event.event === 'bounced') {
     if (event.email) markBounced(event.email)
   } else if (event.event === 'spam_complaint') {
@@ -58,6 +101,7 @@ async function sendOne({ lead, template, campaign, dryRun }) {
     htmlbody: rendered.htmlbody,
     replyTo: buildReplyTo(),
     tags: [campaign, template],
+    dryRun,
   })
 }
 
@@ -100,7 +144,7 @@ async function runCampaign({ campaign, templates, template, weights, limit, dryR
     const tplName = expanded[sentCount % expanded.length]
     try {
       await sendOne({ lead, template: tplName, campaign, dryRun })
-      markSent(lead.email, { campaign, template: tplName })
+      if (!dryRun) markSent(lead.email, { campaign, template: tplName })
       sentCount++
       results.sent++
       if (config.interSendDelay > 0 && !dryRun) await sleep(config.interSendDelay)
@@ -108,7 +152,7 @@ async function runCampaign({ campaign, templates, template, weights, limit, dryR
       results.failed++
       if (isPermanentError(e)) {
         results.permanentSkipped++
-        markSkipped(lead.email, e.message)
+        if (!dryRun) markSkipped(lead.email, e.message)
       }
       results.errors.push(`${lead.email}: ${e.message}`)
     }
@@ -147,11 +191,12 @@ app.get('/leads', (req, res) => {
 
 // Send to a single lead
 // body: { email, name?, website?, city?, category?, notes?, template?, campaign? }
-app.post('/send', async (req, res) => {
+app.post('/send', corsAllowlist, requireAuth, async (req, res) => {
   try {
     const { email, name = '', website = '', city = '', category = '', notes = '', template = 'cold', campaign = 'batch1', dryRun = config.dryRun } = req.body || {}
 
     if (!email) return res.status(400).json({ error: 'email is required' })
+    if (!isValidEmail(email)) return res.status(400).json({ error: 'invalid email' })
 
     const q = quota()
     if (q.remaining <= 0) {
@@ -164,7 +209,7 @@ app.post('/send', async (req, res) => {
 
     const lead = { name, email, website, city, category, notes }
     const result = await sendOne({ lead, template, campaign, dryRun })
-    markSent(email, { campaign, template })
+    if (!dryRun) markSent(email, { campaign, template })
 
     res.json({ sent: true, email, result, quota: quota() })
   } catch (e) {
@@ -177,7 +222,7 @@ app.post('/send', async (req, res) => {
 //   template: 'cold' | templates: ['cold','cold-pain'], weights: [1,1],
 //   campaign: 'batch1', limit?: number, dryRun?: bool
 // }
-app.post('/campaign', async (req, res) => {
+app.post('/campaign', corsAllowlist, requireAuth, async (req, res) => {
   try {
     const { template, templates, weights, campaign = 'batch1', limit, dryRun } = req.body || {}
     const results = await runCampaign({ template, templates, weights, campaign, limit, dryRun })
@@ -189,7 +234,7 @@ app.post('/campaign', async (req, res) => {
 
 // Send follow-ups to everyone sent ≥ FOLLOWUP_DAYS days ago who hasn't replied
 // body: { campaign?: 'followup', template?: 'followup', limit?, dryRun? }
-app.post('/campaign/followup', async (req, res) => {
+app.post('/campaign/followup', corsAllowlist, requireAuth, async (req, res) => {
   try {
     const { campaign = 'followup', template = 'followup', limit, dryRun } = req.body || {}
     const leads = loadLeads()
@@ -209,7 +254,7 @@ app.post('/campaign/followup', async (req, res) => {
 
       try {
         await sendOne({ lead, template, campaign, dryRun })
-        markFollowupSent(lead.email, template)
+        if (!dryRun) markFollowupSent(lead.email, template)
         sentCount++
         results.sent++
         if (config.interSendDelay > 0 && !dryRun) await sleep(config.interSendDelay)
@@ -233,7 +278,7 @@ app.get('/followup/due', (req, res) => {
 
 // ZeptoMail webhook receiver — configure in ZeptoMail dashboard → Webhooks
 // POSTs events (delivered, opened, clicked, bounced, spam_complaint) here.
-app.post('/webhook/zeptomail', (req, res) => {
+app.post('/webhook/zeptomail', requireWebhookSecret, (req, res) => {
   try {
     const body = req.body
     const rawEvent = body?.event || body?.type || 'unknown'
@@ -260,13 +305,28 @@ app.get('/stats', (req, res) => {
 
 // Mark an email as replied (via webhook/manual/IMAP — removes from follow-up queue)
 // body: { email }
-app.post('/replied', (req, res) => {
+app.post('/replied', corsAllowlist, requireAuth, (req, res) => {
   const { email } = req.body || {}
   if (!email) return res.status(400).json({ error: 'email is required' })
   markReplied(email)
   res.json({ ok: true, email })
 })
 
-app.listen(config.port, () => {
-  console.log(`[${appName}] listening on :${config.port} (dryRun=${config.dryRun}, dailyLimit=${currentDailyLimit()})`)
-})
+export { app }
+
+const isMain = process.argv[1] === fileURLToPath(import.meta.url)
+if (isMain) {
+  app.listen(config.port, () => {
+    console.log(`[${appName}] listening on :${config.port} (dryRun=${config.dryRun}, dailyLimit=${currentDailyLimit()})`)
+    if (!config.outreachApiKey) {
+      console.warn(`[${appName}] WARNING: OUTREACH_API_KEY unset — mutating endpoints are OPEN (no auth). Set it in production.`)
+    }
+    if (!config.webhookSecret) {
+      console.warn(`[${appName}] WARNING: WEBHOOK_SECRET unset — webhook is OPEN (anyone can POST). Set it in production.`)
+    }
+    if (!config.dryRun) {
+      if (!config.zeptoApiKey) console.warn(`[${appName}] WARNING: ZEPTO_API_KEY unset — sends will fail`)
+      if (!config.senderEmail) console.warn(`[${appName}] WARNING: SENDER_EMAIL unset — sends will fail`)
+    }
+  })
+}

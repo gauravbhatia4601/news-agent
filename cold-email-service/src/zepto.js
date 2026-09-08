@@ -10,8 +10,8 @@ export function isPermanentError(err) {
  * ZeptoMail API client (transactional email API by Zoho).
  * Docs: https://www.zoho.com/zeptomail/help/api/email-sending.html
  */
-export async function sendMail({ to, name = '', subject, textbody, htmlbody, replyTo, tags = [] }) {
-  if (config.dryRun) {
+export async function sendMail({ to, name = '', subject, textbody, htmlbody, replyTo, tags = [], dryRun = false }) {
+  if (config.dryRun || dryRun) {
     console.log(`[dry-run] to=${to} subject=${subject}`)
     return { dryRun: true, to, subject }
   }

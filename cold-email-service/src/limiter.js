@@ -46,8 +46,11 @@ function load() {
 }
 
 function save(state) {
+  // ponytail: temp-file + rename for atomic writes; no lock library (single-process service)
   fs.mkdirSync(config.dataDir, { recursive: true })
-  fs.writeFileSync(sentFile, JSON.stringify(state, null, 2))
+  const tmp = `${sentFile}.tmp-${process.pid}`
+  fs.writeFileSync(tmp, JSON.stringify(state, null, 2))
+  fs.renameSync(tmp, sentFile)
 }
 
 export function todayKey() {
