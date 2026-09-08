@@ -28,7 +28,7 @@ class ArticleDetailResource extends JsonResource
             'image_url' => $this->image_url,
             'thumbnail_url' => $this->thumbnail_url ?? $this->image_url,
             'published_at' => $this->created_at->toIso8601String(),
-            'sources' => $this->topic?->sources->map(fn($source) => [
+            'sources' => $this->topic?->sources->map(fn ($source) => [
                 'name' => $source->source_name,
                 'url' => $source->source_url,
                 'published_at' => $source->published_at?->toIso8601String(),

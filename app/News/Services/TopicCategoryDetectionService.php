@@ -32,7 +32,7 @@ class TopicCategoryDetectionService
         // World
         'south-asia' => ['pakistan', 'bangladesh', 'sri lanka', 'nepal', 'bhutan', 'maldives', 'afghanistan', 'saarc'],
         'asia-pacific' => ['china', 'japan', 'australia', 'asean', 'quad', 'indo-pacific', 'south korea', 'taiwan', 'philippines', 'vietnam', 'myanmar'],
-                'americas' => ['united states', 'usa', 'canada', 'biden', 'trump', 'mexico', 'latin america'],
+        'americas' => ['united states', 'usa', 'canada', 'biden', 'trump', 'mexico', 'latin america'],
         'europe-uk' => ['european union', 'eu ', 'uk ', 'britain', 'france', 'germany', 'russia', 'ukraine', 'nato', 'g7', 'g20'],
         'middle-east-africa' => ['uae', 'saudi arabia', 'israel', 'gaza', 'palestine', 'iran', 'iraq', 'qatar', 'kuwait', 'oman', 'africa', 'nigeria', 'south africa', 'kenya'],
 
@@ -87,7 +87,6 @@ class TopicCategoryDetectionService
     /**
      * Detect the topic category for a cluster of headlines/summaries.
      *
-     * @param  string  $topicName
      * @param  array<int, array{headline: string, summary: string}>  $sources
      * @return array{id: int|null, name: string|null, slug: string|null}
      */
@@ -95,8 +94,8 @@ class TopicCategoryDetectionService
     {
         $text = Str::lower($topicName);
         foreach ($sources as $source) {
-            $text .= ' ' . Str::lower($source['headline'] ?? '');
-            $text .= ' ' . Str::lower($source['summary'] ?? '');
+            $text .= ' '.Str::lower($source['headline'] ?? '');
+            $text .= ' '.Str::lower($source['summary'] ?? '');
         }
 
         // Collapse repeated punctuation/whitespace and strip stray apostrophes so

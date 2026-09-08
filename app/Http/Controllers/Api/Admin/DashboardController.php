@@ -23,7 +23,7 @@ class DashboardController extends Controller
         $topicsPending = NewsTopic::where('generation_status', 'pending')->count();
         $topicsFailed = NewsTopic::where('generation_status', 'failed')->count();
 
-        $queueJobs = Queue::size(config("queue.connections." . config('queue.default', 'database') . ".queue", 'default'));
+        $queueJobs = Queue::size(config('queue.connections.'.config('queue.default', 'database').'.queue', 'default'));
         $failedQueueJobs = DB::table('failed_jobs')->count();
 
         $recentArticles = NewsArticle::with('topic.categoryRelation')

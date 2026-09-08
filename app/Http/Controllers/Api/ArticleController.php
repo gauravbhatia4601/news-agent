@@ -31,7 +31,7 @@ class ArticleController extends Controller
     {
         $article = $this->articleService->getFeaturedArticle();
 
-        if (!$article) {
+        if (! $article) {
             return response()->json(['message' => 'No featured article found'], 404);
         }
 
@@ -104,7 +104,7 @@ class ArticleController extends Controller
     public function show(string $slug): ArticleDetailResource
     {
         $this->articleService->incrementArticleViews($slug);
-        
+
         $article = $this->articleService->getArticle($slug);
 
         return new ArticleDetailResource($article);

@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
 
 class BackupDatabase extends Command
 {
@@ -24,6 +23,7 @@ class BackupDatabase extends Command
 
         if ($dumpCommand === null) {
             $this->error("Database backup not supported for connection: {$connection}");
+
             return self::FAILURE;
         }
 
@@ -31,14 +31,15 @@ class BackupDatabase extends Command
 
         $exitCode = null;
         $output = [];
-        exec($dumpCommand . ' 2>&1', $output, $exitCode);
+        exec($dumpCommand.' 2>&1', $output, $exitCode);
 
         if ($exitCode !== 0) {
-            $this->error('Backup failed: ' . implode("\n", $output));
+            $this->error('Backup failed: '.implode("\n", $output));
+
             return self::FAILURE;
         }
 
-        $this->info("Backup created successfully.");
+        $this->info('Backup created successfully.');
 
         $this->pruneOldBackups($retention);
 
@@ -56,7 +57,7 @@ class BackupDatabase extends Command
 
         if ($config['driver'] === 'pgsql') {
             $env = [];
-            $env[] = 'PGPASSWORD=' . escapeshellarg($config['password'] ?? '');
+            $env[] = 'PGPASSWORD='.escapeshellarg($config['password'] ?? '');
             $cmd = sprintf(
                 '%s -U %s -h %s -p %s -d %s | gzip > %s',
                 env('PG_DUMP_PATH', 'pg_dump'),
@@ -66,7 +67,8 @@ class BackupDatabase extends Command
                 escapeshellarg($config['database']),
                 escapeshellarg($fullPath)
             );
-            return implode(' ', $env) . ' ' . $cmd;
+
+            return implode(' ', $env).' '.$cmd;
         }
 
         return null;

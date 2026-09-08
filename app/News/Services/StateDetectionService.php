@@ -33,7 +33,6 @@ class StateDetectionService
     /**
      * Detect the best-matching state category for a topic.
      *
-     * @param  string  $topicName
      * @param  array<int, array{headline: string, summary: string}>  $sources
      * @return array{id: int|null, name: string|null, slug: string|null}
      */
@@ -42,8 +41,8 @@ class StateDetectionService
         $text = Str::lower($topicName);
 
         foreach ($sources as $source) {
-            $text .= ' ' . Str::lower($source['headline'] ?? '');
-            $text .= ' ' . Str::lower($source['summary'] ?? '');
+            $text .= ' '.Str::lower($source['headline'] ?? '');
+            $text .= ' '.Str::lower($source['summary'] ?? '');
         }
 
         $scores = [];

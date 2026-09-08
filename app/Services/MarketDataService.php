@@ -9,17 +9,18 @@ use Illuminate\Support\Facades\Log;
 class MarketDataService
 {
     private const CACHE_KEY = 'news-engine:market-data';
+
     private const CACHE_TTL = 300;
 
     private array $indices = [
-        '^NSEI'     => ['name' => 'NIFTY 50',      'currency' => 'INR', 'region' => 'india'],
-        '^BSESN'    => ['name' => 'SENSEX',         'currency' => 'INR', 'region' => 'india'],
-        '^NSEBANK'  => ['name' => 'NIFTY BANK',     'currency' => 'INR', 'region' => 'india'],
-        '^GSPC'     => ['name' => 'S&P 500',        'currency' => 'USD', 'region' => 'us'],
-        '^DJI'      => ['name' => 'DOW JONES',      'currency' => 'USD', 'region' => 'us'],
-        '^IXIC'     => ['name' => 'NASDAQ',         'currency' => 'USD', 'region' => 'us'],
-        '^FTSE'     => ['name' => 'FTSE 100',       'currency' => 'GBP', 'region' => 'europe'],
-        '^N225'     => ['name' => 'NIKKEI 225',     'currency' => 'JPY', 'region' => 'asia'],
+        '^NSEI' => ['name' => 'NIFTY 50',      'currency' => 'INR', 'region' => 'india'],
+        '^BSESN' => ['name' => 'SENSEX',         'currency' => 'INR', 'region' => 'india'],
+        '^NSEBANK' => ['name' => 'NIFTY BANK',     'currency' => 'INR', 'region' => 'india'],
+        '^GSPC' => ['name' => 'S&P 500',        'currency' => 'USD', 'region' => 'us'],
+        '^DJI' => ['name' => 'DOW JONES',      'currency' => 'USD', 'region' => 'us'],
+        '^IXIC' => ['name' => 'NASDAQ',         'currency' => 'USD', 'region' => 'us'],
+        '^FTSE' => ['name' => 'FTSE 100',       'currency' => 'GBP', 'region' => 'europe'],
+        '^N225' => ['name' => 'NIKKEI 225',     'currency' => 'JPY', 'region' => 'asia'],
     ];
 
     public function getMarketData(): array
@@ -84,7 +85,8 @@ class MarketDataService
                     : null,
             ];
         } catch (\Throwable $e) {
-            Log::warning('Market data fetch failed for ' . $symbol . ': ' . $e->getMessage());
+            Log::warning('Market data fetch failed for '.$symbol.': '.$e->getMessage());
+
             return null;
         }
     }

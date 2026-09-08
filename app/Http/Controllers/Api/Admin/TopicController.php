@@ -48,7 +48,7 @@ class TopicController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('topic_name', 'ilike', '%' . $request->search . '%');
+            $query->where('topic_name', 'ilike', '%'.$request->search.'%');
         }
 
         $perPage = $request->integer('per_page', 20);
@@ -166,7 +166,8 @@ class TopicController extends Controller
                 $topic->delete();
             }
             AuditLogService::log('batch_delete', 'Topic', null, ['ids' => $ids]);
-            return response()->json(['message' => count($ids) . ' topics deleted']);
+
+            return response()->json(['message' => count($ids).' topics deleted']);
         }
 
         if ($action === 'dispatch') {
@@ -177,7 +178,8 @@ class TopicController extends Controller
                 $count++;
             }
             AuditLogService::log('batch_dispatch', 'Topic', null, ['ids' => $ids]);
-            return response()->json(['message' => $count . ' topics dispatched to queue']);
+
+            return response()->json(['message' => $count.' topics dispatched to queue']);
         }
 
         if ($action === 'retry') {
@@ -189,7 +191,8 @@ class TopicController extends Controller
                 $count++;
             }
             AuditLogService::log('batch_retry', 'Topic', null, ['ids' => $ids]);
-            return response()->json(['message' => $count . ' failed topics retried']);
+
+            return response()->json(['message' => $count.' failed topics retried']);
         }
 
         return response()->json(['message' => 'Unknown action'], 422);

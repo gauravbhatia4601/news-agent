@@ -57,7 +57,7 @@ class CategoryController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:100',
-            'slug' => 'sometimes|string|max:120|unique:categories,slug,' . $id,
+            'slug' => 'sometimes|string|max:120|unique:categories,slug,'.$id,
             'description' => 'nullable|string|max:500',
             'display_order' => 'nullable|integer',
         ]);

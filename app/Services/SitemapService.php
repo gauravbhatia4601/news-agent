@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\NewsArticle;
-use Carbon\Carbon;
-use Illuminate\Support\Str;
 
 class SitemapService
 {
@@ -58,7 +56,7 @@ class SitemapService
         $lastmod = now()->toAtomString();
 
         $xml = $this->wrapUrlset($pages, $lastmod, fn ($page) => [
-            'loc' => $this->baseUrl . $page['loc'],
+            'loc' => $this->baseUrl.$page['loc'],
             'lastmod' => $lastmod,
             'changefreq' => $page['changefreq'],
             'priority' => $page['priority'],
@@ -81,7 +79,7 @@ class SitemapService
 
         foreach ($categories as $cat) {
             $urls[] = [
-                'loc' => $this->baseUrl . '/category/' . $cat->slug,
+                'loc' => $this->baseUrl.'/category/'.$cat->slug,
                 'lastmod' => max($cat->updated_at, $cat->created_at)->toAtomString(),
                 'changefreq' => 'daily',
                 'priority' => '0.7',
@@ -89,7 +87,7 @@ class SitemapService
 
             foreach ($cat->children as $child) {
                 $urls[] = [
-                    'loc' => $this->baseUrl . '/category/' . $child->slug,
+                    'loc' => $this->baseUrl.'/category/'.$child->slug,
                     'lastmod' => max($child->updated_at, $child->created_at)->toAtomString(),
                     'changefreq' => 'daily',
                     'priority' => '0.6',
@@ -115,7 +113,7 @@ class SitemapService
         NewsArticle::select('slug', 'updated_at', 'created_at')
             ->where('status', 'published')
             ->orderByDesc('created_at')
-            ->chunk($perFile, function ($articles) use (&$files, &$batch, $perFile) {
+            ->chunk($perFile, function ($articles) use (&$files, &$batch) {
                 $batch++;
                 $filename = "sitemap-articles-{$batch}.xml";
 
@@ -127,7 +125,7 @@ class SitemapService
                     $priority = $ageHours < 12 ? '0.9' : ($ageHours < 48 ? '0.8' : ($ageHours < 168 ? '0.6' : '0.4'));
 
                     $urls[] = [
-                        'loc' => $this->baseUrl . '/article/' . $article->slug,
+                        'loc' => $this->baseUrl.'/article/'.$article->slug,
                         'lastmod' => $lastmod,
                         'changefreq' => $changefreq,
                         'priority' => $priority,
@@ -167,7 +165,7 @@ class SitemapService
         $items = '';
         foreach ($articles as $article) {
             $title = htmlspecialchars($article->title);
-            $loc = $this->baseUrl . '/article/' . $article->slug;
+            $loc = $this->baseUrl.'/article/'.$article->slug;
             $pubDate = $article->created_at->toW3cString();
             $keywords = $article->meta_keywords ? htmlspecialchars($article->meta_keywords) : '';
 
@@ -187,7 +185,7 @@ class SitemapService
             $items .= '</url>';
         }
 
-        $xml = $urlsetOpen . $items . $urlsetClose;
+        $xml = $urlsetOpen.$items.$urlsetClose;
         $this->writeFile($filename, $xml);
 
         return $filename;
@@ -205,8 +203,8 @@ class SitemapService
 
         foreach ($files as $file) {
             $xml .= '<sitemap>';
-            $xml .= '<loc>' . $this->baseUrl . '/sitemaps/' . $file . '</loc>';
-            $xml .= '<lastmod>' . now()->toAtomString() . '</lastmod>';
+            $xml .= '<loc>'.$this->baseUrl.'/sitemaps/'.$file.'</loc>';
+            $xml .= '<lastmod>'.now()->toAtomString().'</lastmod>';
             $xml .= '</sitemap>';
         }
 
@@ -225,7 +223,7 @@ class SitemapService
         $keep = array_flip($activeFiles);
         $keep['sitemap.xml'] = true;
 
-        $existing = glob($this->outputDir . '/sitemap*.xml') ?: [];
+        $existing = glob($this->outputDir.'/sitemap*.xml') ?: [];
 
         foreach ($existing as $file) {
             $basename = basename($file);
@@ -245,10 +243,10 @@ class SitemapService
 
         foreach ($urls as $url) {
             $xml .= '<url>';
-            $xml .= '<loc>' . htmlspecialchars($url['loc']) . '</loc>';
-            $xml .= '<lastmod>' . $url['lastmod'] . '</lastmod>';
-            $xml .= '<changefreq>' . $url['changefreq'] . '</changefreq>';
-            $xml .= '<priority>' . $url['priority'] . '</priority>';
+            $xml .= '<loc>'.htmlspecialchars($url['loc']).'</loc>';
+            $xml .= '<lastmod>'.$url['lastmod'].'</lastmod>';
+            $xml .= '<changefreq>'.$url['changefreq'].'</changefreq>';
+            $xml .= '<priority>'.$url['priority'].'</priority>';
             $xml .= '</url>';
         }
 
@@ -259,7 +257,6 @@ class SitemapService
 
     /**
      * @param  array<int, mixed>  $items
-     * @param  callable  $mapper
      */
     private function wrapUrlset(array $items, string $defaultLastmod, callable $mapper): string
     {
@@ -270,6 +267,6 @@ class SitemapService
 
     private function writeFile(string $filename, string $content): void
     {
-        file_put_contents($this->outputDir . '/' . $filename, $content, LOCK_EX);
+        file_put_contents($this->outputDir.'/'.$filename, $content, LOCK_EX);
     }
 }

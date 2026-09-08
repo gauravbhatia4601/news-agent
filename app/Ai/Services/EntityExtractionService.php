@@ -16,8 +16,8 @@ class EntityExtractionService
         $allText = '';
         $allHeadlines = '';
         foreach ($sources as $source) {
-            $allHeadlines .= ($source['headline'] ?? '') . ' ';
-            $allText .= ($source['headline'] ?? '') . ' ' . ($source['summary'] ?? '') . ' ';
+            $allHeadlines .= ($source['headline'] ?? '').' ';
+            $allText .= ($source['headline'] ?? '').' '.($source['summary'] ?? '').' ';
         }
 
         $allText = mb_strtolower(trim($allText));
@@ -158,24 +158,24 @@ class EntityExtractionService
         $questions = [];
 
         $questionTemplates = [
-            'what is' => "What is %s?",
-            'how to' => "How to %s?",
-            'why did' => "Why did %s?",
-            'when will' => "When will %s?",
-            'who is' => "Who is %s?",
-            'where is' => "Where is %s?",
-            'how does' => "How does %s work?",
-            'what are' => "What are the implications of %s?",
+            'what is' => 'What is %s?',
+            'how to' => 'How to %s?',
+            'why did' => 'Why did %s?',
+            'when will' => 'When will %s?',
+            'who is' => 'Who is %s?',
+            'where is' => 'Where is %s?',
+            'how does' => 'How does %s work?',
+            'what are' => 'What are the implications of %s?',
         ];
 
         $topics = $this->extractPrimaryTopics($headlinesText);
         $topicStr = implode(' ', array_slice($topics, 0, 5));
 
         if ($topicStr !== '') {
-            $questions[] = sprintf("What is happening with %s?", $topicStr);
-            $questions[] = sprintf("How will %s affect India?", $topicStr);
-            $questions[] = sprintf("What does %s mean for Indians?", $topicStr);
-            $questions[] = "What are the latest developments on " . implode(' ', array_slice($topics, 0, 3)) . "?";
+            $questions[] = sprintf('What is happening with %s?', $topicStr);
+            $questions[] = sprintf('How will %s affect India?', $topicStr);
+            $questions[] = sprintf('What does %s mean for Indians?', $topicStr);
+            $questions[] = 'What are the latest developments on '.implode(' ', array_slice($topics, 0, 3)).'?';
         }
 
         return array_slice($questions, 0, 5);
@@ -191,7 +191,7 @@ class EntityExtractionService
         $bigrams = [];
         $words = array_slice(array_filter(explode(' ', $headlinesText), fn ($w) => strlen($w) > 2), 0, 20);
         for ($i = 0; $i < count($words) - 1; $i++) {
-            $bigrams[] = $words[$i] . ' ' . $words[$i + 1];
+            $bigrams[] = $words[$i].' '.$words[$i + 1];
         }
 
         $bigramFreq = array_count_values($bigrams);

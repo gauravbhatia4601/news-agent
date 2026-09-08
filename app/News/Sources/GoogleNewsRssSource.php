@@ -22,9 +22,7 @@ class GoogleNewsRssSource implements NewsSource
 
     public const HIT_CACHE_KEY = 'news-engine:source-hits:google_rss';
 
-    public function __construct(private readonly array $config = [])
-    {
-    }
+    public function __construct(private readonly array $config = []) {}
 
     public function name(): string
     {

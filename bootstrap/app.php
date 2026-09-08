@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson() || $request->is('api/*')) {
                 return null;
             }
+
             return '/admin/login';
         });
     })
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 return true;
             }
+
             return $request->expectsJson();
         });
     })->create();

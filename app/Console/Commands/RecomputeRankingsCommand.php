@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Category;
 use App\Models\NewsArticle;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 class RecomputeRankingsCommand extends Command
 {
     protected $signature = 'news:recompute-rankings';
+
     protected $description = 'Recompute hot_score and view_velocity for all published articles';
 
     private const CATEGORY_WEIGHTS = [

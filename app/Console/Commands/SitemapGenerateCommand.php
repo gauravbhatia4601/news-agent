@@ -19,16 +19,16 @@ class SitemapGenerateCommand extends Command
         $files = $sitemapService->generate();
         $elapsed = round(microtime(true) - $start, 2);
 
-        $this->info("Done in {$elapsed}s. Generated " . count($files) . " sitemap files:");
+        $this->info("Done in {$elapsed}s. Generated ".count($files).' sitemap files:');
 
         foreach ($files as $file) {
-            $size = file_exists(public_path('sitemaps/' . $file))
-                ? round(filesize(public_path('sitemaps/' . $file)) / 1024, 1) . ' KB'
+            $size = file_exists(public_path('sitemaps/'.$file))
+                ? round(filesize(public_path('sitemaps/'.$file)) / 1024, 1).' KB'
                 : '0 KB';
             $this->line("  {$file} ({$size})");
         }
 
-        $this->info('Sitemap index: ' . url('/sitemaps/sitemap.xml'));
+        $this->info('Sitemap index: '.url('/sitemaps/sitemap.xml'));
 
         return self::SUCCESS;
     }

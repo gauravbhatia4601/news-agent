@@ -32,6 +32,7 @@ class ArticleRepository implements ArticleRepositoryInterface
                 : Category::where('slug', $categorySlug)->pluck('id')->toArray();
 
             $query->whereHas('topic', fn ($q) => $q->whereIn('location_category_id', $locationIds));
+
             return;
         }
 
@@ -42,6 +43,7 @@ class ArticleRepository implements ArticleRepositoryInterface
 
         if ($categoryIds->isEmpty()) {
             $query->whereHas('topic', fn ($q) => $q->whereRaw('1 = 0'));
+
             return;
         }
 
@@ -161,7 +163,9 @@ class ArticleRepository implements ArticleRepositoryInterface
     public function incrementViews(string $slug): void
     {
         $article = NewsArticle::where('slug', $slug)->first();
-        if (! $article) return;
+        if (! $article) {
+            return;
+        }
 
         $article->increment('views');
 
@@ -176,8 +180,8 @@ class ArticleRepository implements ArticleRepositoryInterface
         $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
             ->where(function ($q) use ($keyword) {
-                $q->where('title', 'ilike', '%' . $keyword . '%')
-                  ->orWhere('content', 'ilike', '%' . $keyword . '%');
+                $q->where('title', 'ilike', '%'.$keyword.'%')
+                    ->orWhere('content', 'ilike', '%'.$keyword.'%');
             })
             ->latest();
 

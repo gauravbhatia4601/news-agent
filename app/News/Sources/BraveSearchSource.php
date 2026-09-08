@@ -20,9 +20,7 @@ class BraveSearchSource implements NewsSource
 
     public const HIT_CACHE_KEY = 'news-engine:source-hits:brave_search';
 
-    public function __construct(private readonly array $config = [])
-    {
-    }
+    public function __construct(private readonly array $config = []) {}
 
     public function name(): string
     {
@@ -49,7 +47,7 @@ class BraveSearchSource implements NewsSource
         $globalQueryMap = $scope === 'global' ? config('news-engine-global.sources.brave_search.queries', []) : [];
         $query = $globalQueryMap[$category] ?? $queryMap[$category] ?? $category;
 
-        $url = rtrim($baseUrl, '/') . '/llm/context';
+        $url = rtrim($baseUrl, '/').'/llm/context';
 
         $response = Http::timeout($timeout)
             ->withHeaders([
@@ -69,7 +67,7 @@ class BraveSearchSource implements NewsSource
             ]);
 
         if (! $response->ok()) {
-            throw new \RuntimeException('Brave LLM Context API returned status ' . $response->status());
+            throw new \RuntimeException('Brave LLM Context API returned status '.$response->status());
         }
 
         $data = $response->json();

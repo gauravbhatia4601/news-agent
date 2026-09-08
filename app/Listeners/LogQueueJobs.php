@@ -45,6 +45,7 @@ class LogQueueJobs
 
         if (! $uuid) {
             QueueJobLog::create($data);
+
             return;
         }
 
@@ -233,6 +234,7 @@ class LogQueueJobs
                 'queue' => $queue,
                 'job_uuid' => $uuid,
             ]);
+
             return;
         }
 
@@ -264,6 +266,6 @@ class LogQueueJobs
             return null;
         }
 
-        return get_class($e) . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString();
+        return get_class($e).': '.$e->getMessage()."\n".$e->getTraceAsString();
     }
 }

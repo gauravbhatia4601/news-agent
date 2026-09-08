@@ -100,6 +100,6 @@ class ArticleResource extends JsonResource
             $excerpt = mb_substr($excerpt, 0, $lastSpace);
         }
 
-        return $excerpt . '…';
+        return $excerpt.'…';
     }
 }

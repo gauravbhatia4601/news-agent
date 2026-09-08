@@ -32,4 +32,3 @@ return new class extends Migration
         DB::statement('ALTER TABLE news_topics ALTER COLUMN topic_name TYPE VARCHAR(255) USING LEFT(topic_name, 255)');
     }
 };
-

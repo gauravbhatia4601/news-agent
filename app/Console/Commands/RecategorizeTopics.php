@@ -2,11 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Category;
 use App\Models\NewsTopic;
 use App\News\Services\TopicCategoryDetectionService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 
 class RecategorizeTopics extends Command
 {
@@ -49,11 +47,13 @@ class RecategorizeTopics extends Command
                 if ($newCategoryId === null) {
                     $this->line("  [SKIP] {$topic->id}: no category detected (was {$oldName})");
                     $unchanged++;
+
                     continue;
                 }
 
                 if ((int) $topic->category_id === (int) $newCategoryId) {
                     $unchanged++;
+
                     continue;
                 }
 
