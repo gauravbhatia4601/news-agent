@@ -142,6 +142,8 @@ class ArticleRepository implements ArticleRepositoryInterface
 
         $this->applyCategoryFilter($query, $categorySlug);
 
+        // Deliberately NO backfill: trending must stay pure momentum. When nothing
+        // is surging, this returns empty and the frontend falls back to latest.
         return $query->take($limit)->get();
     }
 
