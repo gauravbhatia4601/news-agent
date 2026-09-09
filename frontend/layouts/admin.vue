@@ -1,5 +1,5 @@
 <script setup lang="ts">import {
-  Menu, LayoutDashboard, FileText, FolderOpen, Tag, Users, ScrollText, Settings, Search, Zap, LogOut, ExternalLink, Activity, ChevronRight, Map, Mail, Cpu
+  Menu, LayoutDashboard, FileText, FolderOpen, Tag, Users, ScrollText, Settings, Search, Zap, LogOut, ExternalLink, Activity, ChevronRight, Map, Mail, Cpu, Radio
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -19,6 +19,7 @@ const navGroups = [
       { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/admin/articles', label: 'Articles', icon: FileText },
       { to: '/admin/topics', label: 'Topics', icon: FolderOpen },
+      { to: '/admin/stories', label: 'Live Stories', icon: Radio },
       { to: '/admin/categories', label: 'Categories', icon: Tag },
     ]
   },
@@ -47,6 +48,7 @@ const pageTitles: Record<string, string> = {
   '/admin': 'Dashboard',
   '/admin/articles': 'Articles',
   '/admin/topics': 'Topics',
+  '/admin/stories': 'Live Stories',
   '/admin/categories': 'Categories',
   '/admin/discovery': 'Discovery',
   '/admin/generation': 'Generation',

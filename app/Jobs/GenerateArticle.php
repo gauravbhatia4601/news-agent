@@ -20,11 +20,12 @@ class GenerateArticle implements ShouldQueue
 
     public function __construct(
         public readonly string $topicSignature,
+        public readonly ?int $storyId = null,
     ) {}
 
     public function handle(NewsArticleGenerationService $generationService): void
     {
-        $generationService->generateForDiscoveredTopics([$this->topicSignature]);
+        $generationService->generateForDiscoveredTopics([$this->topicSignature], $this->storyId);
     }
 
     /**

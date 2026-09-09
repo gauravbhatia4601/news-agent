@@ -108,3 +108,20 @@ export interface ApiPaginatedResponse<T> {
 export interface ApiItemResponse<T> {
   data: T
 }
+
+export type StoryUrgency = 'live' | 'developing' | 'ongoing' | 'concluded'
+
+export interface NewsStory {
+  id: number
+  slug: string
+  title: string
+  description?: string | null
+  category?: ArticleCategory | null
+  urgency: StoryUrgency
+  status: string
+  started_at: string | null
+  concluded_at?: string | null
+  last_monitored_at?: string | null
+  update_count: number
+  latest_update?: NewsArticleCard | null
+}

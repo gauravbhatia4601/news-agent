@@ -32,7 +32,7 @@ class NewsArticleGenerationService
      * @param  string[]  $topicSignatures
      * @return array{generated: int, failed: int}
      */
-    public function generateForDiscoveredTopics(array $topicSignatures): array
+    public function generateForDiscoveredTopics(array $topicSignatures, ?int $storyId = null): array
     {
         $provider = Setting::get('generation.provider') ?? (string) config('news-engine.generation.provider');
         $model = Setting::get('generation.model') ?? (string) config('news-engine.generation.model');
@@ -214,6 +214,7 @@ class NewsArticleGenerationService
                     status: $status,
                     qualityReport: $qualityReport,
                     generationDurationSeconds: (int) round(microtime(true) - $generationStart),
+                    storyId: $storyId,
                 );
 
                 $generated++;
@@ -226,7 +227,7 @@ class NewsArticleGenerationService
                         'error' => $e->getMessage(),
                     ]);
                     try {
-                        $this->generateWithFallback($topic, $sourceRows ?? [], $entities ?? null, $fallbackProvider, $fallbackModel, $timeout);
+                        $this->generateWithFallback($topic, $sourceRows ?? [], $entities ?? null, $fallbackProvider, $fallbackModel, $timeout, $storyId);
                         $generated++;
 
                         continue;
@@ -254,7 +255,7 @@ class NewsArticleGenerationService
         ];
     }
 
-    private function generateWithFallback(array $topic, array $sourceRows, $entities, string $fallbackProvider, string $fallbackModel, int $timeout): void
+    private function generateWithFallback(array $topic, array $sourceRows, $entities, string $fallbackProvider, string $fallbackModel, int $timeout, ?int $storyId = null): void
     {
         $aiCategories = ['artificial-intelligence'];
         $isAiTopic = in_array($topic['category'] ?? '', $aiCategories, true);
@@ -342,6 +343,7 @@ class NewsArticleGenerationService
             status: $status,
             qualityReport: $qualityReport,
             generationDurationSeconds: (int) round(microtime(true) - $generationStart),
+            storyId: $storyId,
         );
     }
 

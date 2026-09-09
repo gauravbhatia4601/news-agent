@@ -7,6 +7,7 @@ use App\News\DTO\DiscoveredTopic;
 use App\News\Repositories\NewsTopicRepository;
 use App\News\Sources\BraveSearchSource;
 use App\News\Sources\Contracts\NewsSource;
+use App\News\Sources\GdeltSource;
 use App\News\Sources\GoogleNewsRssSource;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -49,6 +50,7 @@ class NewsDiscoveryService
         $allTopics = [];
         $googleSource = $this->resolveGoogleSource();
         $braveSource = $this->resolveBraveSource();
+        $gdeltSource = $this->resolveGdeltSource();
         $braveFallbackThreshold = (int) config('news-engine.discovery.brave_fallback_threshold', 8);
 
         foreach ($locations as $location) {
@@ -63,6 +65,20 @@ class NewsDiscoveryService
                 $seenSignatures,
                 $scope,
             );
+
+            // GDELT supplements discovery only if explicitly enabled in config.
+            if ($gdeltSource !== null) {
+                $gdeltCandidates = $this->fetchFromSource(
+                    $gdeltSource,
+                    $locationSlug,
+                    $freshThreshold,
+                    $fetchLimit,
+                    $seenSignatures,
+                    $scope,
+                );
+
+                $candidates = array_merge($candidates, $gdeltCandidates);
+            }
 
             // Fall back to Brave only if Google RSS didn't return enough fresh candidates.
             if ($braveSource !== null && count($candidates) < $braveFallbackThreshold) {
@@ -115,9 +131,11 @@ class NewsDiscoveryService
         int $fetchLimit,
         array $seenSignatures,
         string $scope = 'india',
+        ?string $freshnessWindow = null,
+        ?string $freshnessOverride = null,
     ): array {
         try {
-            $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit, $scope);
+            $rows = $source->fetch($locationSlug, $freshThreshold, $fetchLimit, $scope, $freshnessWindow, $freshnessOverride);
         } catch (\Throwable $e) {
             Log::warning('News source fetch failed, skipping.', [
                 'source' => $source->name(),
@@ -281,5 +299,129 @@ class NewsDiscoveryService
         }
 
         return new BraveSearchSource(config('news-engine.sources.brave_search', []));
+    }
+
+    /**
+     * GDELT is always used in discoverForQuery; in hourly discover() only if enabled_in_discovery.
+     */
+    private function resolveGdeltSource(): ?GdeltSource
+    {
+        if (! (bool) config('news-engine.live_stories.gdelt.enabled_in_discovery', false)) {
+            return null;
+        }
+
+        return new GdeltSource(config('news-engine.live_stories.gdelt', []));
+    }
+
+    /**
+     * Per-story discovery: fetch from all three sources with adaptive freshness,
+     * cluster, save topics with a story-namespaced signature, return DiscoveredTopic[].
+     *
+     * Reuses the same seen-signatures cache + clusterCandidates + saveTopicWithSources
+     * pipeline as discover(). The story id namespaces signatures so they never collide
+     * with hourly discovery signatures.
+     *
+     * @param  array{google: string, brave: string, gdelt: string, hours: int}  $freshness
+     * @return DiscoveredTopic[]
+     */
+    public function discoverForQuery(
+        string $query,
+        array $freshness,
+        int $freshHours,
+        int $limit = 3,
+        int $sourcesPerTopic = 3,
+        ?int $storyId = null,
+    ): array {
+        $freshThreshold = now()->subHours($freshHours);
+        $cacheKey = (string) config('news-engine.discovery.seen_cache_key', 'news-engine:rss:seen-signatures');
+        $cacheTtlSeconds = (int) config('news-engine.discovery.seen_cache_ttl_seconds', 172800);
+
+        $seenSignatures = Cache::get($cacheKey, []);
+        if (! is_array($seenSignatures)) {
+            $seenSignatures = [];
+        }
+
+        $nowTs = now()->timestamp;
+        $seenSignatures = array_filter(
+            $seenSignatures,
+            fn ($timestamp) => is_int($timestamp) && $timestamp >= ($nowTs - $cacheTtlSeconds)
+        );
+
+        // Synthetic one-row "location" — story id namespaces the topic signature.
+        $locationSlug = $storyId !== null ? "story:{$storyId}" : $query;
+        $location = [
+            'slug' => $locationSlug,
+            'name' => $query,
+            'category_id' => null,
+        ];
+
+        $fetchLimit = max($limit * 12, 40);
+
+        $googleSource = $this->resolveGoogleSource();
+        $braveSource = $this->resolveBraveSource();
+        $gdeltSource = new GdeltSource(config('news-engine.live_stories.gdelt', []));
+
+        $candidates = $this->fetchFromSource(
+            $googleSource,
+            $query,
+            $freshThreshold,
+            $fetchLimit,
+            $seenSignatures,
+            'india',
+            $freshness['google'] ?? null,
+        );
+
+        $gdeltCandidates = $this->fetchFromSource(
+            $gdeltSource,
+            $query,
+            $freshThreshold,
+            $fetchLimit,
+            $seenSignatures,
+            'india',
+            $freshness['gdelt'] ?? null,
+        );
+
+        $candidates = array_merge($candidates, $gdeltCandidates);
+
+        if ($braveSource !== null) {
+            $braveCandidates = $this->fetchFromSource(
+                $braveSource,
+                $query,
+                $freshThreshold,
+                $fetchLimit,
+                $seenSignatures,
+                'india',
+                null,
+                $freshness['brave'] ?? null,
+            );
+
+            $candidates = array_merge($candidates, $braveCandidates);
+        }
+
+        if ($candidates === []) {
+            return [];
+        }
+
+        usort($candidates, fn ($a, $b) => ($b['published_at']?->timestamp ?? 0) <=> ($a['published_at']?->timestamp ?? 0));
+
+        $topics = $this->clusterCandidates($location, $candidates, $limit, $sourcesPerTopic);
+        if ($topics === []) {
+            $topics = $this->clusterCandidates($location, $candidates, $limit, $sourcesPerTopic, true);
+        }
+
+        foreach ($topics as $topic) {
+            // forceUniqueSignature: story-namespaced signatures must persist as their
+            // own row — fuzzy matching would redirect to an hourly topic row whose
+            // signature differs, silently breaking the story link.
+            $this->repository->saveTopicWithSources($topic, forceUniqueSignature: true);
+
+            foreach ($topic->sources as $source) {
+                $seenSignatures[$source->signature] = $nowTs;
+            }
+        }
+
+        Cache::put($cacheKey, $seenSignatures, now()->addSeconds($cacheTtlSeconds));
+
+        return $topics;
     }
 }

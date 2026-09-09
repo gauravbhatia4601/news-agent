@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AdminStoryController;
 use App\Http\Controllers\Api\Admin\AiInvocationController;
 use App\Http\Controllers\Api\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Api\Admin\AuditLogController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\NewsletterSubscriberController;
+use App\Http\Controllers\Api\StoryController;
 use App\Services\MarketDataService;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +32,10 @@ Route::prefix('v1')->middleware('throttle:public-api')->group(function () {
     Route::get('/articles/headlines', [ArticleController::class, 'headlines'])->name('articles.headlines');
     Route::get('/articles/{slug}', [ArticleController::class, 'show'])->name('articles.show');
     Route::get('/articles/{slug}/related', [ArticleController::class, 'related'])->name('articles.related');
+
+    Route::get('/stories', [StoryController::class, 'index'])->name('stories.index');
+    Route::get('/stories/{slug}', [StoryController::class, 'show'])->name('stories.show');
+    Route::get('/stories/{slug}/timeline', [StoryController::class, 'timeline'])->name('stories.timeline');
 
     Route::post('/newsletter/subscribe', [NewsletterSubscriberController::class, 'subscribe'])->middleware('throttle:newsletter');
     Route::post('/newsletter/unsubscribe', [NewsletterSubscriberController::class, 'unsubscribe'])->middleware('throttle:newsletter');
@@ -65,6 +71,18 @@ Route::prefix('v1/admin')->group(function () {
         Route::post('/topics/batch', [AdminTopicController::class, 'batch'])->name('admin.topics.batch')->middleware('throttle:admin-actions');
         Route::post('/topics/{id}/retry', [AdminTopicController::class, 'retry'])->name('admin.topics.retry')->middleware('throttle:admin-actions');
         Route::post('/topics/{id}/dispatch', [AdminTopicController::class, 'dispatch'])->name('admin.topics.dispatch')->middleware('throttle:admin-actions');
+
+        Route::apiResource('stories', AdminStoryController::class)->names([
+            'index' => 'admin.stories.index',
+            'store' => 'admin.stories.store',
+            'show' => 'admin.stories.show',
+            'update' => 'admin.stories.update',
+            'destroy' => 'admin.stories.destroy',
+        ]);
+        Route::post('/stories/batch', [AdminStoryController::class, 'batch'])->name('admin.stories.batch')->middleware('throttle:admin-actions');
+        Route::post('/stories/{id}/activate', [AdminStoryController::class, 'activate'])->name('admin.stories.activate')->middleware('throttle:admin-actions');
+        Route::post('/stories/{id}/conclude', [AdminStoryController::class, 'conclude'])->name('admin.stories.conclude')->middleware('throttle:admin-actions');
+        Route::post('/stories/{id}/trigger-monitor', [AdminStoryController::class, 'triggerMonitor'])->name('admin.stories.trigger-monitor')->middleware('throttle:admin-actions');
 
         Route::apiResource('categories', AdminCategoryController::class)->names([
             'index' => 'admin.categories.index',

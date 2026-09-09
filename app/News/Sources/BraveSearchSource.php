@@ -3,6 +3,7 @@
 namespace App\News\Sources;
 
 use App\News\Sources\Contracts\NewsSource;
+use App\News\Sources\Support\HeadlineTokenizer;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -27,8 +28,14 @@ class BraveSearchSource implements NewsSource
         return 'brave_search';
     }
 
-    public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit, string $scope = 'india'): array
-    {
+    public function fetch(
+        string $category,
+        Carbon $freshThreshold,
+        int $perCategoryFetchLimit,
+        string $scope = 'india',
+        ?string $freshnessWindow = null,
+        ?string $freshnessOverride = null,
+    ): array {
         Cache::increment(self::HIT_CACHE_KEY);
 
         $apiKey = (string) ($this->config['api_key'] ?? '');
@@ -39,7 +46,7 @@ class BraveSearchSource implements NewsSource
         $baseUrl = (string) ($this->config['base_url'] ?? 'https://api.search.brave.com/res/v1');
         $timeout = (int) ($this->config['timeout'] ?? 20);
         $searchLang = (string) ($this->config['search_lang'] ?? 'en');
-        $freshness = (string) ($this->config['freshness'] ?? 'pw');
+        $freshness = $freshnessOverride ?? (string) ($this->config['freshness'] ?? 'pw');
         $maxUrls = (int) ($this->config['max_urls'] ?? 20);
         $maxTokens = (int) ($this->config['max_tokens'] ?? 8192);
 
@@ -73,26 +80,6 @@ class BraveSearchSource implements NewsSource
         $data = $response->json();
         $grounding = $data['grounding'] ?? [];
         $sources = $grounding['sources'] ?? [];
-
-        $stopWords = [
-            'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'how', 'in', 'is', 'it', 'its',
-            'of', 'on', 'or', 'that', 'the', 'this', 'to', 'was', 'what', 'when', 'where', 'who', 'why', 'with',
-            'today', 'latest', 'live', 'update', 'updates', 'news',
-        ];
-
-        $tokenize = function (string $headline) use ($stopWords): array {
-            $text = Str::of($headline)
-                ->lower()
-                ->replaceMatches('/[^a-z0-9\s]/', ' ')
-                ->squish()
-                ->value();
-
-            $tokens = explode(' ', $text);
-
-            return array_values(array_unique(array_filter($tokens, function ($token) use ($stopWords) {
-                return $token !== '' && ! in_array($token, $stopWords, true) && strlen($token) > 2;
-            })));
-        };
 
         $items = [];
 
@@ -143,7 +130,7 @@ class BraveSearchSource implements NewsSource
                 'source_url' => $sourceUrl,
                 'published_at' => now(), // LLM context is freshly retrieved
                 'signature' => $signature,
-                'tokens' => $tokenize($headline),
+                'tokens' => HeadlineTokenizer::tokenize($headline),
             ];
         }
 

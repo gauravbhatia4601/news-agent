@@ -5,6 +5,11 @@ namespace App\News\DTO;
 class DiscoveredTopic
 {
     /**
+     * Persisted row id, set by the repository after saving. Null until saved.
+     */
+    public ?int $persistedId = null;
+
+    /**
      * @param  DiscoveredSource[]  $sources
      * @param  string[]  $coreTokens
      */

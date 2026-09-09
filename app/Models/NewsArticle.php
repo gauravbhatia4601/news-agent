@@ -12,6 +12,7 @@ class NewsArticle extends Model
 
     protected $fillable = [
         'topic_id',
+        'story_id',
         'title',
         'content',
         'provider',
@@ -48,5 +49,13 @@ class NewsArticle extends Model
     public function topic(): BelongsTo
     {
         return $this->belongsTo(NewsTopic::class, 'topic_id');
+    }
+
+    /**
+     * The live story this article belongs to (timeline link).
+     */
+    public function story(): BelongsTo
+    {
+        return $this->belongsTo(Story::class, 'story_id');
     }
 }

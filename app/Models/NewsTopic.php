@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -48,5 +49,13 @@ class NewsTopic extends Model
     public function article(): HasOne
     {
         return $this->hasOne(NewsArticle::class, 'topic_id');
+    }
+
+    /**
+     * Live stories that seeded or were updated by this topic (discovery provenance).
+     */
+    public function stories(): BelongsToMany
+    {
+        return $this->belongsToMany(Story::class, 'story_topics');
     }
 }

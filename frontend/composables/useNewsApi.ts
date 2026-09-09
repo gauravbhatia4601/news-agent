@@ -6,6 +6,8 @@ import type {
   CategoryNode,
   NewsArticleCard,
   NewsArticleDetail,
+  NewsStory,
+  StoryUrgency,
 } from '~/types/news'
 
 export function useNewsApi() {
@@ -168,6 +170,60 @@ export function useNewsApi() {
     async getMarketData(): Promise<any[]> {
       const response = await client<{ data: any[] }>('/market')
       return response.data ?? []
+    },
+
+    async getStories(params: { urgency?: StoryUrgency; perPage?: number; page?: number } = {}): Promise<{ data: NewsStory[]; meta: { current_page: number; last_page: number; total: number } }> {
+      const response = await client<ApiPaginatedResponse<NewsStory>>('/stories', {
+        query: {
+          urgency: params.urgency,
+          per_page: params.perPage ?? 12,
+          page: params.page ?? 1,
+        },
+      })
+
+      return {
+        data: (response.data ?? []).map((s) => ({
+          ...s,
+          latest_update: s.latest_update ? normalizeArticleMedia(s.latest_update) : null,
+        })),
+        meta: {
+          current_page: response.meta?.current_page ?? 1,
+          last_page: response.meta?.last_page ?? 1,
+          total: response.meta?.total ?? 0,
+        },
+      }
+    },
+
+    async getStory(slug: string): Promise<NewsStory | null> {
+      try {
+        const response = await client<ApiItemResponse<NewsStory>>(`/stories/${slug}`)
+        const story = response.data
+        if (!story) return null
+        return {
+          ...story,
+          latest_update: story.latest_update ? normalizeArticleMedia(story.latest_update) : null,
+        }
+      } catch {
+        return null
+      }
+    },
+
+    async getStoryTimeline(slug: string, params: { perPage?: number; page?: number } = {}): Promise<{ data: NewsArticleCard[]; meta: { current_page: number; last_page: number; total: number } }> {
+      const response = await client<ApiPaginatedResponse<NewsArticleCard>>(`/stories/${slug}/timeline`, {
+        query: {
+          per_page: params.perPage ?? 9,
+          page: params.page ?? 1,
+        },
+      })
+
+      return {
+        data: (response.data ?? []).map(normalizeArticleMedia),
+        meta: {
+          current_page: response.meta?.current_page ?? 1,
+          last_page: response.meta?.last_page ?? 1,
+          total: response.meta?.total ?? 0,
+        },
+      }
     },
   }
 }

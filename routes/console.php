@@ -48,6 +48,16 @@ Schedule::command('news:recompute-rankings')->everyFifteenMinutes()
     ->withoutOverlapping(120)
     ->runInBackground();
 
+Schedule::command('news:detect-live-stories --scope=india')->hourlyAt(10)
+    ->withoutOverlapping(300)
+    ->runInBackground();
+Schedule::command('news:detect-live-stories --scope=global')->hourlyAt(40)
+    ->withoutOverlapping(300)
+    ->runInBackground();
+Schedule::command('news:monitor-stories')->everyTenMinutes()
+    ->withoutOverlapping(600)
+    ->runInBackground();
+
 Schedule::call(function () {
     QueueJobLog::where('created_at', '<', now()->subHours(48))->delete();
 })->daily()

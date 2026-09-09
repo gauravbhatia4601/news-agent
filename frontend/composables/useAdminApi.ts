@@ -82,5 +82,17 @@ export const useAdminApi = () => {
 
     getSettings: () => authFetch<{ data: any }>('/settings'),
     updateSettings: (data: any) => authFetch<{ data: any }>('/settings', { method: 'PUT', body: data }),
+
+    getStories: (params: Record<string, string | number> = {}) => {
+      const query = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString()
+      return authFetch<any>(`/stories${query ? '?' + query : ''}`)
+    },
+    createStory: (data: any) => authFetch<{ data: any }>('/stories', { method: 'POST', body: data }),
+    updateStory: (id: number, data: any) => authFetch<{ data: any }>(`/stories/${id}`, { method: 'PUT', body: data }),
+    deleteStory: (id: number) => authFetch<any>(`/stories/${id}`, { method: 'DELETE' }),
+    activateStory: (id: number) => authFetch<any>(`/stories/${id}/activate`, { method: 'POST' }),
+    concludeStory: (id: number) => authFetch<any>(`/stories/${id}/conclude`, { method: 'POST' }),
+    triggerStoryMonitor: (id: number) => authFetch<{ data: any }>(`/stories/${id}/trigger-monitor`, { method: 'POST' }),
+    batchStories: (ids: number[], action: string) => authFetch<any>('/stories/batch', { method: 'POST', body: { ids, action } }),
   }
 }

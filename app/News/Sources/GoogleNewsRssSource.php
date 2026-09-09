@@ -3,6 +3,7 @@
 namespace App\News\Sources;
 
 use App\News\Sources\Contracts\NewsSource;
+use App\News\Sources\Support\HeadlineTokenizer;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -29,14 +30,21 @@ class GoogleNewsRssSource implements NewsSource
         return 'google_rss';
     }
 
-    public function fetch(string $category, Carbon $freshThreshold, int $perCategoryFetchLimit, string $scope = 'india'): array
-    {
+    public function fetch(
+        string $category,
+        Carbon $freshThreshold,
+        int $perCategoryFetchLimit,
+        string $scope = 'india',
+        ?string $freshnessWindow = null,
+        ?string $freshnessOverride = null,
+    ): array {
         Cache::increment(self::HIT_CACHE_KEY);
 
         $baseFeedUrl = (string) ($this->config['base_feed_url'] ?? 'https://news.google.com/rss/search');
         $queryMap = $this->config['queries'] ?? [];
         $globalQueryMap = $scope === 'global' ? config('news-engine-global.sources.google_rss.queries', []) : [];
-        $query = urlencode(($globalQueryMap[$category] ?? $queryMap[$category] ?? $category).' when:1d');
+        $when = $freshnessWindow ?? (string) ($this->config['default_when'] ?? '1d');
+        $query = urlencode(($globalQueryMap[$category] ?? $queryMap[$category] ?? $category).' when:'.$when);
 
         $isGlobal = $scope === 'global';
         $hl = (string) ($this->config['hl'] ?? 'en-US');
@@ -60,26 +68,6 @@ class GoogleNewsRssSource implements NewsSource
         if ($xml === false || ! isset($xml->channel->item)) {
             return [];
         }
-
-        $stopWords = [
-            'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'how', 'in', 'is', 'it', 'its',
-            'of', 'on', 'or', 'that', 'the', 'this', 'to', 'was', 'what', 'when', 'where', 'who', 'why', 'with',
-            'today', 'latest', 'live', 'update', 'updates', 'news',
-        ];
-
-        $tokenize = function (string $headline) use ($stopWords): array {
-            $text = Str::of($headline)
-                ->lower()
-                ->replaceMatches('/[^a-z0-9\s]/', ' ')
-                ->squish()
-                ->value();
-
-            $tokens = explode(' ', $text);
-
-            return array_values(array_unique(array_filter($tokens, function ($token) use ($stopWords) {
-                return $token !== '' && ! in_array($token, $stopWords, true) && strlen($token) > 2;
-            })));
-        };
 
         $items = [];
 
@@ -133,7 +121,7 @@ class GoogleNewsRssSource implements NewsSource
                 'source_url' => $sourceUrl,
                 'published_at' => $publishedAt,
                 'signature' => $signature,
-                'tokens' => $tokenize($headline),
+                'tokens' => HeadlineTokenizer::tokenize($headline),
             ];
         }
 

@@ -9,9 +9,9 @@ use Illuminate\Support\Str;
 
 class NewsTopicRepository
 {
-    public function saveTopicWithSources(DiscoveredTopic $topic): int
+    public function saveTopicWithSources(DiscoveredTopic $topic, bool $forceUniqueSignature = false): int
     {
-        return DB::transaction(function () use ($topic): int {
+        return DB::transaction(function () use ($topic, $forceUniqueSignature): int {
             $existingTopic = DB::table('news_topics')
                 ->where('topic_signature', $topic->signature)
                 ->first();
@@ -30,6 +30,23 @@ class NewsTopicRepository
                     ]);
 
                 $topicId = (int) $existingTopic->id;
+            } elseif ($forceUniqueSignature) {
+                // Story-namespaced signatures must persist as their own row — fuzzy
+                // matching would redirect the monitor to an hourly topic row whose
+                // signature differs, silently breaking the story link.
+                $topicId = (int) DB::table('news_topics')->insertGetId([
+                    'category' => $topic->category ?? 'Uncategorized',
+                    'category_id' => $topic->categoryId,
+                    'location_category_id' => $topic->locationCategoryId,
+                    'topic_name' => $topic->name,
+                    'topic_signature' => $topic->signature,
+                    'core_tokens' => json_encode($topic->coreTokens),
+                    'source_count' => $topic->sourceCount(),
+                    'generation_status' => 'pending',
+                    'llm_generated_at' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             } else {
                 $fuzzyMatch = $this->findFuzzyDuplicate($topic);
                 if ($fuzzyMatch !== null) {
@@ -64,6 +81,8 @@ class NewsTopicRepository
                     ]);
                 }
             }
+
+            $topic->persistedId = $topicId;
 
             foreach ($topic->sources as $source) {
                 $this->upsertSource($topicId, $source);
@@ -181,8 +200,9 @@ class NewsTopicRepository
         string $status = 'published',
         ?string $qualityReport = null,
         int $generationDurationSeconds = 0,
+        ?int $storyId = null,
     ): void {
-        DB::transaction(function () use ($topicId, $title, $content, $provider, $model, $metaTitle, $metaDescription, $metaKeywords, $imageUrl, $thumbnailUrl, $metadata, $status, $qualityReport, $generationDurationSeconds): void {
+        DB::transaction(function () use ($topicId, $title, $content, $provider, $model, $metaTitle, $metaDescription, $metaKeywords, $imageUrl, $thumbnailUrl, $metadata, $status, $qualityReport, $generationDurationSeconds, $storyId): void {
             $existing = DB::table('news_articles')->where('topic_id', $topicId)->first();
             $slug = $this->generateUniqueArticleSlug($title, $existing?->id ?? null);
 
@@ -202,6 +222,7 @@ class NewsTopicRepository
                 'quality_report' => $qualityReport,
                 'generation_duration_seconds' => $generationDurationSeconds,
                 'metadata' => ! empty($metadata) ? json_encode($metadata) : null,
+                'story_id' => $storyId,
                 'updated_at' => now(),
             ];
 
