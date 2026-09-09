@@ -24,21 +24,26 @@ const { data: categorySections } = await useAsyncData(
   { default: () => [] as { name: string; slug: string; articles: any[] }[] },
 )
 
-// Priority dedup: featured → hot → headlines → trending → categories.
-// featured is a single article; claim its slug first so it never repeats.
+// Priority dedup: featured → hot → trending → category sections → headlines rail.
+// Category sections claim BEFORE the global headlines rail: India/World dominate
+// the latest stream, and the rail consuming them first left those sections empty.
+// Sections that end up empty after dedup are dropped, not rendered as empty boxes.
 const deduped = computed(() => {
   const seen = new Set<string>()
   if (featured.value?.slug) seen.add(featured.value.slug)
 
   const hotD = dedupeBySlug(hot.value ?? [], seen).slice(0, 6)
-  const headlinesD = dedupeBySlug(headlines.value ?? [], seen).slice(0, 6)
   const trendingD = dedupeBySlug(trending.value ?? [], seen).slice(0, 4)
 
-  const sections = (categorySections.value ?? []).map(section => ({
-    name: section.name,
-    slug: section.slug,
-    articles: dedupeBySlug(section.articles ?? [], seen).slice(0, 4),
-  }))
+  const sections = (categorySections.value ?? [])
+    .map(section => ({
+      name: section.name,
+      slug: section.slug,
+      articles: dedupeBySlug(section.articles ?? [], seen).slice(0, 4),
+    }))
+    .filter(section => section.articles.length > 0)
+
+  const headlinesD = dedupeBySlug(headlines.value ?? [], seen).slice(0, 6)
 
   return { hot: hotD, headlines: headlinesD, trending: trendingD, sections }
 })

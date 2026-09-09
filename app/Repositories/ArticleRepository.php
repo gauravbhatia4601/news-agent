@@ -188,17 +188,61 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function search(string $keyword, int $perPage = 15, ?string $categorySlug = null)
     {
+        $keyword = trim($keyword);
+
+        // Guard: single characters force full-corpus noise for no value.
+        if (mb_strlen($keyword) < 2) {
+            return NewsArticle::where('status', 'published')->whereRaw('1 = 0')->paginate(min($perPage, 30));
+        }
+
+        $perPage = min($perPage, 30);
         $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
-            ->where('status', 'published')
-            ->where(function ($q) use ($keyword) {
-                $q->where('title', 'ilike', '%'.$keyword.'%')
-                    ->orWhere('content', 'ilike', '%'.$keyword.'%');
-            })
-            ->latest();
+            ->where('status', 'published');
+
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            // Index-backed full-text search (GIN on search_vector). Prefix match on
+            // the last typed word powers the live typeahead; ts_rank + recency order.
+            $tsquery = $this->buildPrefixTsquery($keyword);
+            if ($tsquery === null) {
+                return NewsArticle::where('status', 'published')->whereRaw('1 = 0')->paginate($perPage);
+            }
+
+            $query->whereRaw("search_vector @@ to_tsquery('english', ?)", [$tsquery])
+                ->orderByRaw("ts_rank(search_vector, to_tsquery('english', ?)) DESC", [$tsquery])
+                ->orderByDesc('published_at');
+        } else {
+            // sqlite (test suite) fallback — unindexed, fine at fixture scale.
+            $query->where(function ($q) use ($keyword) {
+                $q->whereRaw('LOWER(title) LIKE LOWER(?)', ['%'.$keyword.'%'])
+                    ->orWhereRaw('LOWER(content) LIKE LOWER(?)', ['%'.$keyword.'%']);
+            })->latest('published_at');
+        }
 
         $this->applyCategoryFilter($query, $categorySlug);
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Sanitized prefix tsquery: "election ref" → election & ref:* — the trailing
+     * wildcard powers live typeahead on partially-typed words.
+     */
+    private function buildPrefixTsquery(string $keyword): ?string
+    {
+        $terms = [];
+        foreach (preg_split('/[^a-z0-9]+/i', mb_strtolower($keyword)) ?: [] as $term) {
+            if ($term !== '' && mb_strlen($term) >= 2) {
+                $terms[] = $term;
+            }
+        }
+
+        if ($terms === []) {
+            return null;
+        }
+
+        $last = array_pop($terms).':*';
+
+        return implode(' & ', [...$terms, $last]);
     }
 
     public function getRelated(int $articleId, string $categorySlug, int $limit = 3)

@@ -43,6 +43,12 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(60)->by($request->ip()),
         ]);
 
+        // Search hits an index-backed query, but typeahead still multiplies fast:
+        // a dedicated, tighter limiter per client.
+        RateLimiter::for('search', fn ($request) => [
+            Limit::perMinute(30)->by($request->ip()),
+        ]);
+
         RateLimiter::for('admin-actions', fn ($request) => [
             Limit::perMinute(30)->by($request->user()?->id ?: $request->ip()),
         ]);

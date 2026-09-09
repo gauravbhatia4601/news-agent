@@ -152,33 +152,32 @@ watch(() => route.path, () => {
   <!-- Category navigation bar -->
   <nav class="sticky top-0 z-50 w-full border-b border-border bg-background">
     <div class="mx-auto flex max-w-[960px] items-center px-5 xl:max-w-[1280px]">
-      <!-- Category links: horizontal scroll at every width so they can never
-           paint under the fixed right cluster (search toggle) -->
-      <div class="flex min-w-0 flex-1 items-center gap-px py-1.5 overflow-x-auto scrollbar-none">
+      <!-- Category links: scrollable on mobile; on lg the row is sized to fit so
+           the hover dropdowns escape the container (overflow-visible). The right
+           cluster is opaque as a safety mask for any residual 1-2px overflow. -->
+      <div class="flex min-w-0 flex-1 items-center gap-px py-1.5 overflow-x-auto scrollbar-none lg:overflow-visible">
         <NuxtLink
           to="/"
-          class="shrink-0 px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
+          class="shrink-0 px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
           :class="route.path === '/' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
         >
           Home
         </NuxtLink>
 
-        <span class="mx-1 h-3 w-px bg-border shrink-0" />
         <NuxtLink
           to="/category/artificial-intelligence"
-          class="shrink-0 px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
+          class="shrink-0 px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
           :class="route.path === '/category/artificial-intelligence' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
         >
           AI
         </NuxtLink>
 
         <template v-for="cat in filteredCategories" :key="cat.id">
-          <span class="mx-1 h-3 w-px bg-border shrink-0 hidden lg:inline-block" />
           <!-- Desktop: dropdown -->
           <div class="relative shrink-0 dropdown hidden lg:block">
             <NuxtLink
               :to="`/category/${cat.slug}`"
-              class="block px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
+              class="block px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
               :class="route.path === `/category/${cat.slug}` ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
             >
               {{ cat.name }}
@@ -199,7 +198,7 @@ watch(() => route.path, () => {
           <!-- Mobile: flat links, scrollable -->
           <NuxtLink
             :to="`/category/${cat.slug}`"
-            class="shrink-0 px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors lg:hidden"
+            class="shrink-0 px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors lg:hidden"
             :class="route.path === `/category/${cat.slug}` ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
           >
             {{ cat.name }}
@@ -207,8 +206,8 @@ watch(() => route.path, () => {
         </template>
       </div>
 
-      <!-- Fixed right cluster: Trending + search toggle never overlap -->
-      <div class="ml-2 flex shrink-0 items-center">
+      <!-- Fixed right cluster: opaque so trailing overflow can't visually collide -->
+      <div class="ml-2 flex shrink-0 items-center bg-background">
         <NuxtLink
           to="/trending"
           class="px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"

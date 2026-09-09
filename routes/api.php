@@ -25,7 +25,7 @@ Route::prefix('v1')->middleware('throttle:public-api')->group(function () {
 
     Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
     Route::get('/articles/featured', [ArticleController::class, 'featured'])->name('articles.featured');
-    Route::get('/articles/search', [ArticleController::class, 'search'])->name('articles.search');
+    Route::get('/articles/search', [ArticleController::class, 'search'])->name('articles.search')->middleware('throttle:search');
     Route::get('/articles/popular', [ArticleController::class, 'popular'])->name('articles.popular');
     Route::get('/articles/hot', [ArticleController::class, 'hot'])->name('articles.hot');
     Route::get('/articles/trending', [ArticleController::class, 'trending'])->name('articles.trending');
