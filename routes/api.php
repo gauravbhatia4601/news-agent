@@ -152,6 +152,40 @@ Route::prefix('v1/admin')->group(function () {
             $heartbeat = \Cache::get('news-engine:worker-heartbeat');
             $checks['worker_heartbeat'] = $heartbeat ? 'ok' : 'no heartbeat';
 
+            // Live-stories pipeline canary: proves the scheduled commands are
+            // actually producing — not just that the process is up.
+            try {
+                $checks['live_stories_total'] = \App\Models\Story::count();
+                $checks['live_stories_active'] = \App\Models\Story::active()->count();
+                $checks['live_updates_total'] = \App\Models\StoryUpdate::count();
+
+                $lastMonitored = \App\Models\Story::active()->max('last_monitored_at');
+                $checks['live_last_monitored_at'] = $lastMonitored
+                    ? \Carbon\Carbon::parse($lastMonitored)->toIso8601String()
+                    : null;
+                $interval = (int) config('news-engine.live_stories.monitor_interval_minutes', 10);
+
+                if (\App\Models\Story::active()->count() === 0) {
+                    $checks['live_pipeline'] = 'idle (no active stories)';
+                } elseif ($lastMonitored === null) {
+                    $checks['live_pipeline'] = 'not monitored yet';
+                    $allOk = false;
+                } elseif (\Carbon\Carbon::parse($lastMonitored)->lt(now()->subMinutes($interval * 4))) {
+                    $checks['live_pipeline'] = 'stalled — monitor overdue';
+                    \Log::warning('Health check: live-stories monitor is overdue.', ['last_monitored_at' => $lastMonitored]);
+                    $allOk = false;
+                } else {
+                    $checks['live_pipeline'] = 'ok';
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Health check: live-stories pipeline error.', ['error' => $e->getMessage()]);
+                $checks['live_pipeline'] = 'unavailable';
+                if (config('app.debug')) {
+                    $checks['live_pipeline_detail'] = $e->getMessage();
+                }
+                $allOk = false;
+            }
+
             return response()->json([
                 'status' => $allOk ? 'healthy' : 'degraded',
                 'checks' => $checks,
