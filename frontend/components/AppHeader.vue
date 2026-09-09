@@ -12,6 +12,12 @@ const { data: categories } = await useAsyncData('nav-categories-tree', () => api
   default: () => [] as any[],
 })
 
+// Header only needs to know IF live stories exist (badge pulse), not the list.
+const { data: liveStories } = await useAsyncData('nav-live-stories', () => api.getStories({ perPage: 1 }), {
+  default: () => ({ data: [], meta: { current_page: 1, last_page: 1, total: 0 } }),
+})
+const hasLiveStories = computed(() => (liveStories.value?.meta?.total ?? 0) > 0)
+
 const filteredCategories = computed(() => {
   return (categories.value ?? []).filter((cat: any) => cat.slug !== 'artificial-intelligence')
 })
@@ -234,8 +240,21 @@ watch(() => route.path, () => {
         </div>
       </div>
 
-      <!-- Fixed right cluster: Trending + search toggle -->
+      <!-- Fixed right cluster: Live + Trending + search toggle -->
       <div class="ml-1 flex shrink-0 items-center bg-background">
+        <NuxtLink
+          to="/stories"
+          class="inline-flex items-center gap-1.5 px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
+          :class="route.path === '/stories' || route.path.startsWith('/story/')
+            ? (hasLiveStories ? 'text-red-600' : 'text-foreground')
+            : (hasLiveStories ? 'text-red-600 hover:text-red-700' : 'text-muted-foreground hover:text-foreground')"
+        >
+          <span v-if="hasLiveStories" class="relative inline-block h-2 w-2 rounded-full bg-red-500">
+            <span class="absolute inset-0 rounded-full bg-red-500 animate-ping" />
+          </span>
+          Live
+        </NuxtLink>
+
         <NuxtLink
           to="/trending"
           class="px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
