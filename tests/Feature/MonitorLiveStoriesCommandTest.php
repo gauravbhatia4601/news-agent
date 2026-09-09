@@ -434,6 +434,11 @@ class MonitorLiveStoriesCommandTest extends TestCase
             'generation_status' => 'failed',
             'retry_count' => 0,
             'created_at' => now()->subHour(),
+        ]);
+
+        // Eloquent resets updated_at on create — force it stale via the builder
+        // (the ensure pass only touches topics idle >15min).
+        DB::table('news_topics')->where('id', $failedTopic->id)->update([
             'updated_at' => now()->subHour(),
         ]);
 
