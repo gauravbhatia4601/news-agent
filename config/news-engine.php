@@ -58,6 +58,7 @@ return [
         'detection_batch_size' => (int) env('NEWS_LIVE_STORIES_DETECTION_BATCH', 20),
         'monitor_per_run_limit' => (int) env('NEWS_LIVE_STORIES_MONITOR_PER_RUN', 20),
         'monitor_topics_limit' => (int) env('NEWS_LIVE_STORIES_MONITOR_TOPICS', 3),
+        'update_retry_limit' => (int) env('NEWS_LIVE_STORIES_UPDATE_RETRY_LIMIT', 3),
         'auto_conclude_after_empty_cycles' => (int) env('NEWS_LIVE_STORIES_AUTO_CONCLUDE_EMPTY', 6),
         'urgency_freshness_map' => [
             'live' => [

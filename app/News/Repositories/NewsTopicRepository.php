@@ -203,6 +203,15 @@ class NewsTopicRepository
         ?int $storyId = null,
     ): void {
         DB::transaction(function () use ($topicId, $title, $content, $provider, $model, $metaTitle, $metaDescription, $metaKeywords, $imageUrl, $thumbnailUrl, $metadata, $status, $qualityReport, $generationDurationSeconds, $storyId): void {
+            // Derive the story from the pivot when not explicitly threaded: any
+            // article for a story-linked topic is automatically a supporting
+            // article — this closes the detection retcon race (pivot linked at
+            // detection, article created later by whatever queued job wins).
+            if ($storyId === null) {
+                $pivotStoryId = DB::table('story_topics')->where('topic_id', $topicId)->value('story_id');
+                $storyId = $pivotStoryId !== null ? (int) $pivotStoryId : null;
+            }
+
             $existing = DB::table('news_articles')->where('topic_id', $topicId)->first();
             $slug = $this->generateUniqueArticleSlug($title, $existing?->id ?? null);
 

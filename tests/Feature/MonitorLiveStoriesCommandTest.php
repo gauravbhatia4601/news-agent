@@ -349,6 +349,128 @@ class MonitorLiveStoriesCommandTest extends TestCase
         });
     }
 
+    /**
+     * Candidates judged "repetition" still link via pivot (provenance), but
+     * produce no timeline entry and no generation dispatch.
+     */
+    public function test_repetition_judged_candidates_still_link_via_pivot(): void
+    {
+        $parent = Category::create(['name' => 'National', 'slug' => 'national', 'display_order' => 1]);
+        Category::create([
+            'name' => 'Politics & Governance',
+            'slug' => 'politics-governance',
+            'parent_id' => $parent->id,
+            'display_order' => 1,
+        ]);
+
+        $story = Story::factory()->live()->create([
+            'search_query' => 'India election reform bill',
+        ]);
+
+        Http::fake([
+            'news.google.com/*' => Http::response($this->googleRssXml(), 200, ['Content-Type' => 'application/rss+xml']),
+            'api.gdeltproject.org/*' => Http::response(['articles' => []], 200, ['Content-Type' => 'application/json']),
+            'api.search.brave.com/*' => Http::response(['grounding' => ['sources' => []]], 200, ['Content-Type' => 'application/json']),
+        ]);
+
+        Cache::flush();
+        Queue::fake();
+
+        $mock = Mockery::mock(LiveStoryAgentService::class);
+        $mock->shouldReceive('judgeUpdateBatch')
+            ->once()
+            ->andReturnUsing(function ($storyArg, $candidates, $lastUpdate) {
+                $verdicts = [];
+                foreach ($candidates as $candidate) {
+                    $verdicts[$candidate['topic_signature']] = [
+                        'topic_signature' => $candidate['topic_signature'],
+                        'is_new_development' => false,
+                        'urgency_adjustment' => 'keep',
+                        'update_text' => 'Parliament held further debate on the reform bill.',
+                        'reasoning' => 'Restatement of prior coverage.',
+                    ];
+                }
+
+                return $verdicts;
+            });
+
+        $this->app->instance(LiveStoryAgentService::class, $mock);
+
+        $this->artisan('news:monitor-stories')->assertSuccessful();
+
+        // Pivot linked despite the "repetition" verdict.
+        $this->assertGreaterThan(0, DB::table('story_topics')->where('story_id', $story->id)->count());
+        // But no timeline entry and no generation for repetition.
+        $this->assertSame(0, DB::table('story_updates')->where('story_id', $story->id)->count());
+        Queue::assertNotPushed(GenerateArticle::class);
+    }
+
+    /**
+     * Supporting-article resilience: a linked topic whose generation failed is
+     * retried by the next monitor cycle (status reset, retry_count bumped,
+     * job re-dispatched with storyId).
+     */
+    public function test_failed_supporting_topics_get_retried(): void
+    {
+        $parent = Category::create(['name' => 'National', 'slug' => 'national', 'display_order' => 1]);
+        Category::create([
+            'name' => 'Politics & Governance',
+            'slug' => 'politics-governance',
+            'parent_id' => $parent->id,
+            'display_order' => 1,
+        ]);
+
+        $story = Story::factory()->live()->create([
+            'search_query' => 'India election reform bill',
+        ]);
+
+        // A linked topic from a previous cycle whose generation failed.
+        $failedTopic = NewsTopic::create([
+            'category' => 'politics-governance',
+            'topic_name' => 'Election reform bill clears committee',
+            'topic_signature' => sha1('story:'.$story->id.'|committee tokens'),
+            'core_tokens' => json_encode(['election', 'reform', 'committee']),
+            'source_count' => 1,
+            'generation_status' => 'failed',
+            'retry_count' => 0,
+            'created_at' => now()->subHour(),
+        ]);
+
+        DB::table('story_topics')->insert([
+            'story_id' => $story->id,
+            'topic_id' => $failedTopic->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Http::fake([
+            'news.google.com/*' => Http::response($this->googleRssXml(), 200, ['Content-Type' => 'application/rss+xml']),
+            'api.gdeltproject.org/*' => Http::response(['articles' => []], 200, ['Content-Type' => 'application/json']),
+            'api.search.brave.com/*' => Http::response(['grounding' => ['sources' => []]], 200, ['Content-Type' => 'application/json']),
+        ]);
+
+        Cache::flush();
+        Queue::fake();
+
+        // Judge: no new developments this cycle (retry path runs regardless).
+        $mock = Mockery::mock(LiveStoryAgentService::class);
+        $mock->shouldReceive('judgeUpdateBatch')
+            ->once()
+            ->andReturn([]);
+
+        $this->app->instance(LiveStoryAgentService::class, $mock);
+
+        $this->artisan('news:monitor-stories')->assertSuccessful();
+
+        $topicFresh = $failedTopic->fresh();
+        $this->assertSame('pending', $topicFresh->generation_status);
+        $this->assertSame(1, $topicFresh->retry_count);
+
+        Queue::assertPushed(GenerateArticle::class, function ($job) use ($story, $failedTopic) {
+            return $job->storyId === $story->id && $job->topicSignature === $failedTopic->topic_signature;
+        });
+    }
+
     private function googleRssXml(): string
     {
         $pubDate = now()->subMinutes(20)->format('D, d M Y H:i:s O');

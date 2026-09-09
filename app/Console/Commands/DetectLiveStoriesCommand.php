@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Ai\Services\LiveStoryAgentService;
+use App\Jobs\GenerateArticle;
 use App\Models\Story;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -156,6 +157,15 @@ class DetectLiveStoriesCommand extends Command
                 ->where('topic_id', $topic->id)
                 ->whereNull('story_id')
                 ->update(['story_id' => $story->id]);
+
+            // Guarantee ≥1 supporting article: if the seeding topic has no article
+            // yet (generation still queued or previously failed), (re)dispatch it —
+            // saveGeneratedArticle auto-links via the pivot regardless of which
+            // queued job wins the race.
+            $hasArticle = DB::table('news_articles')->where('topic_id', $topic->id)->exists();
+            if (! $hasArticle) {
+                GenerateArticle::dispatch($topic->topic_signature, $story->id);
+            }
 
             $this->line("  Created story: {$story->title} [{$urgency}]");
             $created++;

@@ -20,7 +20,7 @@ class MonitorLiveStoriesService
      * judge them for genuine new developments, dispatch generation jobs,
      * and handle auto-conclude logic.
      *
-     * @return array{discovered: int, judged_new: int, dispatched: int, concluded: bool}
+     * @return array{discovered: int, judged_new: int, dispatched: int, retried: int, concluded: bool}
      */
     public function runCycle(Story $story): array
     {
@@ -80,30 +80,32 @@ class MonitorLiveStoriesService
                 $concluded = true;
             }
 
+            // persistedId is set by discoverForQuery (forceUniqueSignature) — the
+            // namespaced row exists with this exact signature, so generation
+            // will find it. getTopicIdBySignature stays as a defensive fallback.
+            $topicId = $topic->persistedId ?? $this->getTopicIdBySignature($topic->signature);
+
+            if ($topicId === null) {
+                Log::warning('Story monitor: persisted topic id missing for signature, skipping.', [
+                    'story_id' => $story->id,
+                    'signature' => $topic->signature,
+                ]);
+
+                continue;
+            }
+
+            // Link EVERY judged candidate via pivot (provenance) — even when judged
+            // "repetition": supporting articles accumulate across cycles, and any
+            // article later generated for the topic auto-links via saveGeneratedArticle.
+            DB::table('story_topics')->insertOrIgnore([
+                'story_id' => $story->id,
+                'topic_id' => $topicId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
             if (! empty($verdict['is_new_development'])) {
                 $judgedNew++;
-
-                // persistedId is set by discoverForQuery (forceUniqueSignature) — the
-                // namespaced row exists with this exact signature, so generation
-                // will find it. getTopicIdBySignature stays as a defensive fallback.
-                $topicId = $topic->persistedId ?? $this->getTopicIdBySignature($topic->signature);
-
-                if ($topicId === null) {
-                    Log::warning('Story monitor: persisted topic id missing for signature, skipping.', [
-                        'story_id' => $story->id,
-                        'signature' => $topic->signature,
-                    ]);
-
-                    continue;
-                }
-
-                // Insert story_topics pivot if absent.
-                DB::table('story_topics')->insertOrIgnore([
-                    'story_id' => $story->id,
-                    'topic_id' => $topicId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
 
                 // Create the discrete timeline entry from the judge's update_text.
                 // Guard: skip blank entries (LLM edge cases) — never render blanks.
@@ -128,6 +130,9 @@ class MonitorLiveStoriesService
                 $dispatched++;
             }
         }
+
+        // Retry supporting-article generation for linked topics that previously failed.
+        $retried = $this->retryFailedSupportingTopics($story);
 
         // Apply urgency adjustments.
         if ($concluded) {
@@ -176,8 +181,53 @@ class MonitorLiveStoriesService
             'discovered' => $discovered,
             'judged_new' => $judgedNew,
             'dispatched' => $dispatched,
+            'retried' => $retried,
             'concluded' => $concluded,
         ];
+    }
+
+    /**
+     * Supporting-article resilience: linked topics whose generation previously
+     * failed (transient LLM error) get retried — status reset, job re-dispatched.
+     * Capped per cycle to avoid queue floods.
+     */
+    private function retryFailedSupportingTopics(Story $story): int
+    {
+        $retryLimit = (int) config('news-engine.live_stories.update_retry_limit', 3);
+
+        $failed = DB::table('story_topics')
+            ->join('news_topics', 'news_topics.id', '=', 'story_topics.topic_id')
+            ->where('story_topics.story_id', $story->id)
+            ->where('news_topics.generation_status', 'failed')
+            ->where('news_topics.retry_count', '<', $retryLimit)
+            ->limit(2)
+            ->get(['news_topics.id', 'news_topics.topic_signature', 'news_topics.retry_count']);
+
+        $retried = 0;
+
+        foreach ($failed as $topic) {
+            // A failed topic that somehow already has an article is just stale-flagged.
+            $hasArticle = DB::table('news_articles')->where('topic_id', $topic->id)->exists();
+            if ($hasArticle) {
+                DB::table('news_topics')->where('id', $topic->id)->update([
+                    'generation_status' => 'generated',
+                    'updated_at' => now(),
+                ]);
+
+                continue;
+            }
+
+            DB::table('news_topics')->where('id', $topic->id)->update([
+                'generation_status' => 'pending',
+                'retry_count' => $topic->retry_count + 1,
+                'updated_at' => now(),
+            ]);
+
+            GenerateArticle::dispatch($topic->topic_signature, $story->id);
+            $retried++;
+        }
+
+        return $retried;
     }
 
     private function getTopicIdBySignature(string $signature): ?int
