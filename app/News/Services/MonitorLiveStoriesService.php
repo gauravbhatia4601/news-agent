@@ -131,8 +131,10 @@ class MonitorLiveStoriesService
             }
         }
 
-        // Retry supporting-article generation for linked topics that previously failed.
-        $retried = $this->retryFailedSupportingTopics($story);
+        // Ensure every linked topic has its supporting article — recovers failed,
+        // never-dispatched, and crashed-generation topics alike.
+        $ensure = $this->ensureSupportingArticles($story);
+        $retried = $ensure['dispatched'];
 
         // Apply urgency adjustments.
         if ($concluded) {
@@ -187,39 +189,62 @@ class MonitorLiveStoriesService
     }
 
     /**
-     * Supporting-article resilience: linked topics whose generation previously
-     * failed (transient LLM error) get retried — status reset, job re-dispatched.
-     * Capped per cycle to avoid queue floods.
+     * Supporting-article resilience (the "ensure" pass): every linked topic
+     * without an article gets recovered, whatever its stuck state —
+     * 'failed' (transient LLM error), 'pending' with a job that never ran
+     * (pre-v2 stories seeded without a dispatch), or 'generating' with a
+     * crashed worker. Idempotent via the pending-claim, so a re-dispatch for
+     * a topic whose job is still queued is harmless. Capped per cycle.
      */
-    private function retryFailedSupportingTopics(Story $story): int
+    private function ensureSupportingArticles(Story $story): array
     {
         $retryLimit = (int) config('news-engine.live_stories.update_retry_limit', 3);
 
-        $failed = DB::table('story_topics')
+        // Only touch topics whose last activity is older than 15 min — a queued
+        // job should have claimed/finished by then. In-flight ('generating' and
+        // recent) topics are left alone.
+        $stuck = DB::table('story_topics')
             ->join('news_topics', 'news_topics.id', '=', 'story_topics.topic_id')
             ->where('story_topics.story_id', $story->id)
-            ->where('news_topics.generation_status', 'failed')
-            ->where('news_topics.retry_count', '<', $retryLimit)
-            ->limit(2)
-            ->get(['news_topics.id', 'news_topics.topic_signature', 'news_topics.retry_count']);
+            ->where('news_topics.generation_status', '!=', 'generating')
+            ->where('news_topics.updated_at', '<', now()->subMinutes(15))
+            ->limit(4)
+            ->get(['news_topics.id', 'news_topics.topic_signature', 'news_topics.generation_status', 'news_topics.retry_count']);
 
         $retried = 0;
+        $recovered = 0;
 
-        foreach ($failed as $topic) {
-            // A failed topic that somehow already has an article is just stale-flagged.
+        foreach ($stuck as $topic) {
             $hasArticle = DB::table('news_articles')->where('topic_id', $topic->id)->exists();
+
             if ($hasArticle) {
-                DB::table('news_topics')->where('id', $topic->id)->update([
-                    'generation_status' => 'generated',
-                    'updated_at' => now(),
+                // Article exists — stale flag: correct the status, no dispatch.
+                if ($topic->generation_status !== 'generated') {
+                    DB::table('news_topics')->where('id', $topic->id)->update([
+                        'generation_status' => 'generated',
+                        'updated_at' => now(),
+                    ]);
+                    $recovered++;
+                }
+
+                continue;
+            }
+
+            if ($topic->generation_status === 'failed' && $topic->retry_count >= $retryLimit) {
+                Log::warning('Story monitor: supporting topic exhausted its retries.', [
+                    'story_id' => $story->id,
+                    'topic_id' => $topic->id,
+                    'retry_count' => $topic->retry_count,
                 ]);
 
                 continue;
             }
 
+            $bumpRetry = $topic->generation_status === 'failed' ? 1 : 0;
+
             DB::table('news_topics')->where('id', $topic->id)->update([
                 'generation_status' => 'pending',
-                'retry_count' => $topic->retry_count + 1,
+                'retry_count' => $topic->retry_count + ($topic->generation_status === 'failed' ? 1 : 0),
                 'updated_at' => now(),
             ]);
 
@@ -227,7 +252,7 @@ class MonitorLiveStoriesService
             $retried++;
         }
 
-        return $retried;
+        return ['dispatched' => $retried, 'recovered' => $recovered];
     }
 
     private function getTopicIdBySignature(string $signature): ?int

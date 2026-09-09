@@ -434,6 +434,7 @@ class MonitorLiveStoriesCommandTest extends TestCase
             'generation_status' => 'failed',
             'retry_count' => 0,
             'created_at' => now()->subHour(),
+            'updated_at' => now()->subHour(),
         ]);
 
         DB::table('story_topics')->insert([

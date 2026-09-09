@@ -165,6 +165,27 @@ Route::prefix('v1/admin')->group(function () {
                     : null;
                 $interval = (int) config('news-engine.live_stories.monitor_interval_minutes', 10);
 
+                // Per-story gap diagnostics: active stories whose linked topics
+                // never produced a supporting article (stuck states surface here).
+                $missing = [];
+                $stories = \App\Models\Story::active()
+                    ->withCount(['articles', 'updates'])
+                    ->orderBy('last_monitored_at')
+                    ->limit(30)
+                    ->get();
+
+                foreach ($stories as $s) {
+                    if (($s->articles_count ?? 0) === 0) {
+                        $missing[] = [
+                            'slug' => $s->slug,
+                            'updates' => $s->updates_count,
+                            'last_monitored_at' => $s->last_monitored_at?->toIso8601String(),
+                        ];
+                    }
+                }
+                $checks['stories_missing_supporting_articles'] = count($missing);
+                $checks['stories_missing_list'] = array_slice($missing, 0, 3);
+
                 if (\App\Models\Story::active()->count() === 0) {
                     $checks['live_pipeline'] = 'idle (no active stories)';
                 } elseif ($lastMonitored === null) {
