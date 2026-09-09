@@ -36,6 +36,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Listings (hot/hero/featured windows)
+    |--------------------------------------------------------------------------
+    */
+    'listings' => [
+        'top_stories_window_hours' => (float) env('NEWS_LISTINGS_TOP_STORIES_WINDOW_HOURS', 48.0),
+        'hero_window_hours' => (float) env('NEWS_LISTINGS_HERO_WINDOW_HOURS', 24.0),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Discovery Defaults
     |--------------------------------------------------------------------------
     */

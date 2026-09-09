@@ -8,15 +8,6 @@ const props = defineProps<{
   variant?: 'default' | 'horizontal' | 'minimal'
 }>()
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const hours = Math.floor(diff / 3600000)
-  if (hours < 1) return 'Just now'
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return days === 1 ? '1 day ago' : `${days} days ago`
-}
-
 const categoryName = computed(() => props.article.category?.name ?? '')
 const categorySlug = computed(() => props.article.category?.slug ?? '')
 const locationName = computed(() => props.article.location?.name ?? '')
@@ -29,6 +20,7 @@ const locationName = computed(() => props.article.location?.name ?? '')
         <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ categoryName }}</span>
         <span class="text-border">·</span>
         <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(article.published_at) }}</span>
+        <span v-if="isNew(article.published_at)" class="font-label text-[10px] font-bold uppercase tracking-[0.062em] text-secondary">New</span>
       </div>
       <NuxtLink :to="`/article/${article.slug}`">
         <h3 class="font-display text-sm font-bold leading-snug line-clamp-2 group-hover:underline decoration-1 underline-offset-2">
@@ -63,6 +55,7 @@ const locationName = computed(() => props.article.location?.name ?? '')
       <span class="capitalize">{{ categoryName }}</span>
       <span>·</span>
       <span>{{ timeAgo(article.published_at) }}</span>
+      <span v-if="isNew(article.published_at)" class="font-label text-[10px] font-bold uppercase tracking-[0.062em] text-secondary">New</span>
       <span>·</span>
       <span>{{ article.read_time_minutes }}m read</span>
     </div>
@@ -82,6 +75,7 @@ const locationName = computed(() => props.article.location?.name ?? '')
       <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ categoryName }}</span>
       <span class="text-border">·</span>
       <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(article.published_at) }}</span>
+      <span v-if="isNew(article.published_at)" class="font-label text-[10px] font-bold uppercase tracking-[0.062em] text-secondary">New</span>
     </div>
 
     <NuxtLink :to="`/article/${article.slug}`" class="block flex-1">

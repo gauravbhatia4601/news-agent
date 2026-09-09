@@ -23,7 +23,7 @@ class ArticleResource extends JsonResource
             'read_time_minutes' => $this->metadata['read_time_minutes'] ?? 1,
             'image_url' => $this->image_url,
             'thumbnail_url' => $this->thumbnail_url ?? $this->image_url,
-            'published_at' => $this->created_at->toIso8601String(),
+            'published_at' => $this->published_at?->toIso8601String() ?? $this->created_at->toIso8601String(),
             'source_count' => $this->metadata['source_count'] ?? 0,
             'excerpt' => $this->stripExcerpt(),
         ];

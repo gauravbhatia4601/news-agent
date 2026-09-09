@@ -1,6 +1,7 @@
 import type {
   ApiCollectionResponse,
   ApiItemResponse,
+  ApiPaginatedResponse,
   CategoryDetail,
   CategoryNode,
   NewsArticleCard,
@@ -64,6 +65,25 @@ export function useNewsApi() {
       return (response.data ?? []).map(normalizeArticleMedia)
     },
 
+    async getLatestPaginated(params: { category?: string; perPage?: number; page?: number } = {}): Promise<{ data: NewsArticleCard[]; meta: { current_page: number; last_page: number; total: number } }> {
+      const response = await client<ApiPaginatedResponse<NewsArticleCard>>('/articles', {
+        query: {
+          category: params.category,
+          per_page: params.perPage ?? 12,
+          page: params.page ?? 1,
+        },
+      })
+
+      return {
+        data: (response.data ?? []).map(normalizeArticleMedia),
+        meta: {
+          current_page: response.meta?.current_page ?? 1,
+          last_page: response.meta?.last_page ?? 1,
+          total: response.meta?.total ?? 0,
+        },
+      }
+    },
+
     async getPopular(params: { category?: string; perPage?: number } = {}): Promise<NewsArticleCard[]> {
       const response = await client<ApiCollectionResponse<NewsArticleCard>>('/articles/popular', {
         query: {
@@ -94,9 +114,9 @@ export function useNewsApi() {
       return (response.data ?? []).map(normalizeArticleMedia)
     },
 
-    async getHeadlines(limit = 5): Promise<NewsArticleCard[]> {
+    async getHeadlines(limit = 5, category?: string): Promise<NewsArticleCard[]> {
       const response = await client<ApiCollectionResponse<NewsArticleCard>>('/articles/headlines', {
-        query: { per_page: limit },
+        query: { per_page: limit, category },
       })
 
       return (response.data ?? []).map(normalizeArticleMedia)

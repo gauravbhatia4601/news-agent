@@ -99,7 +99,7 @@ class ArticleRepository implements ArticleRepositoryInterface
     {
         $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
-            ->latest();
+            ->latest('published_at');
 
         $this->applyCategoryFilter($query, $categorySlug);
 
@@ -119,9 +119,14 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function paginateHot(int $perPage = 15, ?string $categorySlug = null)
     {
+        // Structural fix — articles outside the window cannot appear regardless of stale hot_score.
+        $maxAgeHours = (float) config('news-engine.listings.top_stories_window_hours', 48.0);
+
         $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
-            ->orderByDesc('hot_score');
+            ->where('published_at', '>=', now()->subHours($maxAgeHours))
+            ->orderByDesc('hot_score')
+            ->orderByDesc('published_at');
 
         $this->applyCategoryFilter($query, $categorySlug);
 
@@ -151,7 +156,7 @@ class ArticleRepository implements ArticleRepositoryInterface
     {
         $query = NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
             ->where('status', 'published')
-            ->latest();
+            ->latest('published_at');
 
         $this->applyCategoryFilter($query, $categorySlug);
 
@@ -216,10 +221,19 @@ class ArticleRepository implements ArticleRepositoryInterface
 
     public function getFeatured()
     {
-        return NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])
+        // Momentum-based featured, latest fallback.
+        $heroWindow = (float) config('news-engine.listings.hero_window_hours', 24.0);
+
+        $eagerLoad = ['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'];
+
+        return NewsArticle::with($eagerLoad)
             ->where('status', 'published')
-            ->where('created_at', '>=', now()->subHours(48))
-            ->orderByDesc('views')
-            ->first() ?? NewsArticle::with(['topic.categoryRelation.parent', 'topic.locationCategory', 'topic.sources'])->latest()->first();
+            ->where('published_at', '>=', now()->subHours($heroWindow))
+            ->orderByDesc('momentum_score')
+            ->orderByDesc('published_at')
+            ->first() ?? NewsArticle::with($eagerLoad)
+            ->where('status', 'published')
+            ->latest('published_at')
+            ->first();
     }
 }

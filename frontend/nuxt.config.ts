@@ -10,6 +10,7 @@ export default defineNuxtConfig({
       adsenseSlot: process.env.ADSENSE_SLOT || '',
       umamiWebsiteId: process.env.NUXT_PUBLIC_UMAMI_WEBSITE_ID || '',
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://theneuraljournal.com',
+      newBadgeHours: Number(process.env.NUXT_PUBLIC_NEW_BADGE_HOURS || 6),
     },
   },
 
