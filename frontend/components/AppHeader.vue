@@ -87,6 +87,21 @@ const onSearchKeydown = (e: KeyboardEvent) => {
   }
 }
 
+// ── Hoisted category dropdown ──
+// The panel renders OUTSIDE the horizontally-scrollable container so scrolling
+// can never clip it. Position tracks the hovered trigger link.
+const navRow = ref<HTMLElement>()
+const openDropdown = ref<any>(null)
+const dropdownLeft = ref(0)
+
+const onCategoryEnter = (cat: any, e: MouseEvent) => {
+  const nav = navRow.value
+  if (!nav) return
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  dropdownLeft.value = rect.left - nav.getBoundingClientRect().left
+  openDropdown.value = cat
+}
+
 // Close the dropdown when clicking outside the search area.
 const onDocumentClick = (e: MouseEvent) => {
   if (showSearch.value && searchWrap.value && !searchWrap.value.contains(e.target as Node)) {
@@ -97,9 +112,10 @@ const onDocumentClick = (e: MouseEvent) => {
 onMounted(() => document.addEventListener('click', onDocumentClick))
 onUnmounted(() => document.removeEventListener('click', onDocumentClick))
 
-// Reset search state on navigation (dropdown + panel).
+// Reset state on navigation (dropdown + panel).
 watch(() => route.fullPath, () => {
   if (searchQuery.value || suggestions.value.length) resetSearch()
+  openDropdown.value = null
   showMobileMenu.value = false
 })
 
@@ -151,11 +167,14 @@ watch(() => route.path, () => {
 
   <!-- Category navigation bar -->
   <nav class="sticky top-0 z-50 w-full border-b border-border bg-background">
-    <div class="mx-auto flex max-w-[960px] items-center px-5 xl:max-w-[1280px]">
-      <!-- Category links: scrollable on mobile; on lg the row is sized to fit so
-           the hover dropdowns escape the container (overflow-visible). The right
-           cluster is opaque as a safety mask for any residual 1-2px overflow. -->
-      <div class="flex min-w-0 flex-1 items-center gap-px py-1.5 overflow-x-auto scrollbar-none lg:overflow-visible">
+    <div
+      ref="navRow"
+      class="relative mx-auto flex max-w-[960px] items-center px-5 xl:max-w-[1280px]"
+      @mouseleave="openDropdown = null"
+    >
+      <!-- Category links: scrollable when tight; dropdowns are hoisted to nav
+           level so the scroll container can never clip them -->
+      <div class="flex min-w-0 flex-1 items-center gap-px py-1.5 overflow-x-auto scrollbar-none lg:justify-between">
         <NuxtLink
           to="/"
           class="shrink-0 px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
@@ -173,8 +192,11 @@ watch(() => route.path, () => {
         </NuxtLink>
 
         <template v-for="cat in filteredCategories" :key="cat.id">
-          <!-- Desktop: dropdown -->
-          <div class="relative shrink-0 dropdown hidden lg:block">
+          <!-- Desktop trigger: hover opens the hoisted panel -->
+          <div
+            class="relative shrink-0 hidden lg:block"
+            @mouseenter="onCategoryEnter(cat, $event)"
+          >
             <NuxtLink
               :to="`/category/${cat.slug}`"
               class="block px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
@@ -182,18 +204,6 @@ watch(() => route.path, () => {
             >
               {{ cat.name }}
             </NuxtLink>
-            <div v-if="cat.children?.length" class="dropdown-menu absolute left-0 top-full hidden pt-1 z-50">
-              <div class="border border-border bg-background py-2 shadow-lg min-w-[200px]">
-                <NuxtLink
-                  v-for="child in cat.children"
-                  :key="child.id"
-                  :to="`/category/${child.slug}`"
-                  class="block px-4 py-1.5 font-label text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  {{ child.name }}
-                </NuxtLink>
-              </div>
-            </div>
           </div>
           <!-- Mobile: flat links, scrollable -->
           <NuxtLink
@@ -206,11 +216,29 @@ watch(() => route.path, () => {
         </template>
       </div>
 
-      <!-- Fixed right cluster: opaque so trailing overflow can't visually collide -->
-      <div class="ml-2 flex shrink-0 items-center bg-background">
+      <!-- Hoisted dropdown panel — outside the scroll container, never clipped -->
+      <div
+        v-if="openDropdown?.children?.length"
+        class="absolute top-full z-50 pt-1"
+        :style="{ left: dropdownLeft + 'px' }"
+      >
+        <div class="max-h-[420px] min-w-[220px] overflow-y-auto border border-border bg-background py-2 shadow-lg">
+          <NuxtLink
+            v-for="child in openDropdown.children"
+            :key="child.id"
+            :to="`/category/${child.slug}`"
+            class="block px-4 py-1.5 font-label text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            {{ child.name }}
+          </NuxtLink>
+        </div>
+      </div>
+
+      <!-- Fixed right cluster: Trending + search toggle -->
+      <div class="ml-1 flex shrink-0 items-center bg-background">
         <NuxtLink
           to="/trending"
-          class="px-2.5 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
+          class="px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
           :class="route.path === '/trending' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
         >
           Trending
@@ -286,18 +314,3 @@ watch(() => route.path, () => {
     </div>
   </nav>
 </template>
-
-<style scoped>
-.dropdown:hover .dropdown-menu,
-.dropdown:focus-within .dropdown-menu {
-  display: block;
-}
-
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-</style>
