@@ -4,7 +4,7 @@ Agent-facing project guide. Read this before doing any work in this repo.
 
 ## What this project is
 
-AI-powered news engine ("The Neural Journal"). It discovers topics from Google News RSS (Brave Search fallback), synthesizes multi-source articles with LLMs, quality-gates them, and auto-publishes. Three loosely-coupled subsystems share this repo:
+AI-powered news engine ("The Neural Journal"). It discovers topics from Google News RSS (Brave Search + GDELT fallbacks), synthesizes multi-source articles with LLMs, quality-gates them, and auto-publishes. Ongoing events (war, match, rescue) get **live story timelines**: an LLM auto-detects them from hourly discovery (`news:detect-live-stories`, hourlyAt :10/:40), a 10-min monitor (`news:monitor-stories`) polls each story's query with adaptive freshness (live=1h/developing=6h/ongoing=24h) and an LLM judge gates updates on genuine new developments. Timeline page at `/story/[slug]`; admin management at `/admin/stories`. Three loosely-coupled subsystems share this repo:
 
 | Subsystem | Location | Stack | Role |
 |-----------|----------|-------|------|
