@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\NewsArticle;
 use App\Models\Story;
+use App\Models\StoryUpdate;
 use App\News\Services\MonitorLiveStoriesService;
 use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,7 @@ class AdminStoryController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Story::query()->with('category')->withCount('articles');
+        $query = Story::query()->with('category')->withCount(['articles', 'updates']);
 
         if ($request->filled('urgency')) {
             $query->where('urgency', $request->string('urgency')->toString());
@@ -54,7 +55,7 @@ class AdminStoryController extends Controller
             'started_at' => $s->started_at?->toIso8601String(),
             'concluded_at' => $s->concluded_at?->toIso8601String(),
             'last_monitored_at' => $s->last_monitored_at?->toIso8601String(),
-            'update_count' => $s->articles_count,
+            'update_count' => $s->updates_count,
             'created_at' => $s->created_at->toIso8601String(),
             'updated_at' => $s->updated_at->toIso8601String(),
         ]));
@@ -101,12 +102,11 @@ class AdminStoryController extends Controller
     {
         $story = Story::with('category')->findOrFail($id);
 
-        $timeline = NewsArticle::where('story_id', $story->id)
-            ->where('status', 'published')
-            ->with('topic.categoryRelation', 'topic.locationCategory')
-            ->orderByDesc('published_at')
-            ->limit(5)
-            ->get();
+        // Timeline = discrete timestamped updates (latest 10).
+        $timeline = StoryUpdate::where('story_id', $story->id)
+            ->orderByDesc('event_at')
+            ->limit(10)
+            ->get(['id', 'content', 'event_at', 'source_name', 'source_url']);
 
         return response()->json([
             'data' => [
@@ -122,12 +122,12 @@ class AdminStoryController extends Controller
                 'concluded_at' => $story->concluded_at?->toIso8601String(),
                 'last_monitored_at' => $story->last_monitored_at?->toIso8601String(),
                 'monitor_interval_minutes' => $story->monitor_interval_minutes,
-                'timeline' => $timeline->map(fn ($a) => [
-                    'id' => $a->id,
-                    'slug' => $a->slug,
-                    'title' => $a->title,
-                    'status' => $a->status,
-                    'published_at' => $a->published_at?->toIso8601String(),
+                'timeline' => $timeline->map(fn ($u) => [
+                    'id' => $u->id,
+                    'content' => $u->content,
+                    'event_at' => $u->event_at?->toIso8601String(),
+                    'source_name' => $u->source_name,
+                    'source_url' => $u->source_url,
                 ]),
                 'created_at' => $story->created_at->toIso8601String(),
                 'updated_at' => $story->updated_at->toIso8601String(),

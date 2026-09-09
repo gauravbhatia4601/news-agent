@@ -7,6 +7,7 @@ import type {
   NewsArticleCard,
   NewsArticleDetail,
   NewsStory,
+  StoryTimelineEntry,
   StoryUrgency,
 } from '~/types/news'
 
@@ -182,10 +183,7 @@ export function useNewsApi() {
       })
 
       return {
-        data: (response.data ?? []).map((s) => ({
-          ...s,
-          latest_update: s.latest_update ? normalizeArticleMedia(s.latest_update) : null,
-        })),
+        data: response.data ?? [],
         meta: {
           current_page: response.meta?.current_page ?? 1,
           last_page: response.meta?.last_page ?? 1,
@@ -197,21 +195,36 @@ export function useNewsApi() {
     async getStory(slug: string): Promise<NewsStory | null> {
       try {
         const response = await client<ApiItemResponse<NewsStory>>(`/stories/${slug}`)
-        const story = response.data
-        if (!story) return null
-        return {
-          ...story,
-          latest_update: story.latest_update ? normalizeArticleMedia(story.latest_update) : null,
-        }
+        return response.data ?? null
       } catch {
         return null
       }
     },
 
-    async getStoryTimeline(slug: string, params: { perPage?: number; page?: number } = {}): Promise<{ data: NewsArticleCard[]; meta: { current_page: number; last_page: number; total: number } }> {
-      const response = await client<ApiPaginatedResponse<NewsArticleCard>>(`/stories/${slug}/timeline`, {
+    // Timeline entries are StoryUpdateResource rows (content + event_at + source),
+    // NOT articles — no media normalization applies.
+    async getStoryTimeline(slug: string, params: { perPage?: number; page?: number } = {}): Promise<{ data: StoryTimelineEntry[]; meta: { current_page: number; last_page: number; total: number } }> {
+      const response = await client<ApiPaginatedResponse<StoryTimelineEntry>>(`/stories/${slug}/timeline`, {
         query: {
           per_page: params.perPage ?? 9,
+          page: params.page ?? 1,
+        },
+      })
+
+      return {
+        data: response.data ?? [],
+        meta: {
+          current_page: response.meta?.current_page ?? 1,
+          last_page: response.meta?.last_page ?? 1,
+          total: response.meta?.total ?? 0,
+        },
+      }
+    },
+
+    async getStoryArticles(slug: string, params: { perPage?: number; page?: number } = {}): Promise<{ data: NewsArticleCard[]; meta: { current_page: number; last_page: number; total: number } }> {
+      const response = await client<ApiPaginatedResponse<NewsArticleCard>>(`/stories/${slug}/articles`, {
+        query: {
+          per_page: params.perPage ?? 8,
           page: params.page ?? 1,
         },
       })

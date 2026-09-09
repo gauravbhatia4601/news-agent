@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ArticleResource;
 use App\Http\Resources\StoryResource;
+use App\Http\Resources\StoryUpdateResource;
 use App\Models\NewsArticle;
 use App\Models\Story;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,9 @@ class StoryController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Story::query()->with(['category', 'latestArticle'])->withCount('articles');
+        $query = Story::query()
+            ->with(['category', 'latestArticle', 'latestUpdate'])
+            ->withCount(['articles', 'updates']);
 
         $urgency = $request->filled('urgency') ? $request->string('urgency')->toString() : null;
         if (in_array($urgency, ['live', 'developing', 'ongoing', 'concluded'], true)) {
@@ -40,8 +43,8 @@ class StoryController extends Controller
      */
     public function show(string $slug): JsonResponse
     {
-        $story = Story::with(['category', 'latestArticle'])
-            ->withCount('articles')
+        $story = Story::with(['category', 'latestArticle', 'latestUpdate'])
+            ->withCount(['articles', 'updates'])
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -51,9 +54,24 @@ class StoryController extends Controller
     }
 
     /**
-     * Paginated reverse-chron timeline of published articles for a story.
+     * Paginated reverse-chron timeline of discrete updates for a story.
      */
     public function timeline(string $slug, Request $request): AnonymousResourceCollection
+    {
+        $story = Story::where('slug', $slug)->firstOrFail();
+
+        $perPage = min($request->integer('per_page', 20), 100);
+        $updates = $story->updates()
+            ->orderByDesc('event_at')
+            ->paginate($perPage);
+
+        return StoryUpdateResource::collection($updates);
+    }
+
+    /**
+     * Paginated reverse-chron supporting articles for a story.
+     */
+    public function articles(string $slug, Request $request): AnonymousResourceCollection
     {
         $story = Story::where('slug', $slug)->firstOrFail();
 

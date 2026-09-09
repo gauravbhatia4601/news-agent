@@ -36,6 +36,7 @@ Route::prefix('v1')->middleware('throttle:public-api')->group(function () {
     Route::get('/stories', [StoryController::class, 'index'])->name('stories.index');
     Route::get('/stories/{slug}', [StoryController::class, 'show'])->name('stories.show');
     Route::get('/stories/{slug}/timeline', [StoryController::class, 'timeline'])->name('stories.timeline');
+    Route::get('/stories/{slug}/articles', [StoryController::class, 'articles'])->name('stories.articles');
 
     Route::post('/newsletter/subscribe', [NewsletterSubscriberController::class, 'subscribe'])->middleware('throttle:newsletter');
     Route::post('/newsletter/unsubscribe', [NewsletterSubscriberController::class, 'unsubscribe'])->middleware('throttle:newsletter');

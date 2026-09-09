@@ -40,6 +40,13 @@ Set is_new_development = false if the candidate:
 - Covers a different angle of the same facts already reported
 - Is opinion or commentary
 
+## TIMELINE ENTRY
+
+For EVERY candidate (new development or not), write `update_text`: a publish-ready,
+ONE-SENTENCE timeline entry stating what just happened, in active voice, with the
+key fact — no source names, no "according to". This is the discrete "at this time,
+X happened" entry that will appear on the story timeline.
+
 ## URGENCY ADJUSTMENT
 
 Set urgency_adjustment to one of:
@@ -65,6 +72,7 @@ PROMPT;
                     'topic_signature' => $schema->string()->required()->description('Echo back the exact topic_signature provided'),
                     'is_new_development' => $schema->boolean()->required()->description('True if the candidate adds new facts, a new phase, or a meaningful change'),
                     'urgency_adjustment' => $schema->string()->required()->description('live, developing, ongoing, concluded, or keep'),
+                    'update_text' => $schema->string()->required()->description('A publish-ready, ONE-SENTENCE timeline entry stating what just happened, in active voice, with the key fact — no source names, no "according to"'),
                     'reasoning' => $schema->string()->required()->description('One sentence explaining the verdict'),
                 ])
             )->required()->description('Per-candidate update verdicts'),

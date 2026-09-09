@@ -133,6 +133,24 @@ class DetectLiveStoriesCommand extends Command
                 'updated_at' => now(),
             ]);
 
+            // Seed the first timeline entry from the seeding topic's most recent source.
+            $seedSource = DB::table('news_topic_sources')
+                ->where('topic_id', $topic->id)
+                ->orderByDesc('published_at')
+                ->first(['headline', 'source_name', 'source_url', 'published_at']);
+
+            if ($seedSource !== null) {
+                DB::table('story_updates')->insert([
+                    'story_id' => $story->id,
+                    'content' => mb_substr($seedSource->headline ?? $topic->topic_name, 0, 160),
+                    'event_at' => $seedSource->published_at ?? now(),
+                    'source_name' => $seedSource->source_name,
+                    'source_url' => $seedSource->source_url,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
             // Retcon: if the seeding topic has an article, link it to the story.
             DB::table('news_articles')
                 ->where('topic_id', $topic->id)

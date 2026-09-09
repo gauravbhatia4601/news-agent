@@ -11,23 +11,30 @@ class StoryResource extends JsonResource
     {
         $category = $this->resolveCategory();
 
-        // Latest update = newest published article linked to this story.
-        // Prefer the eager-loaded latestArticle (listing endpoints); fall back to
-        // the sorted articles relation (show endpoint) or a query last.
+        // Latest timeline entry = newest StoryUpdate. Prefer the eager-loaded
+        // latestUpdate (listing endpoints); fall back to the updates relation.
         $latestUpdate = null;
-        $latest = null;
-        if ($this->resource->relationLoaded('latestArticle')) {
-            $latest = $this->latestArticle;
-        } elseif ($this->resource->relationLoaded('articles')) {
-            $latest = $this->articles
-                ->sortByDesc(fn ($a) => $a->published_at ?? $a->created_at)
-                ->first();
+        if ($this->resource->relationLoaded('latestUpdate')) {
+            $update = $this->latestUpdate;
+        } else {
+            $update = $this->resource->relationLoaded('updates')
+                ? $this->updates->sortByDesc('event_at')->first()
+                : null;
         }
-        if ($latest !== null) {
-            $latestUpdate = (new ArticleResource($latest))->toArray($request);
+        if ($update !== null) {
+            $latestUpdate = [
+                'content' => $update->content,
+                'event_at' => $update->event_at?->toIso8601String(),
+            ];
         }
 
-        $updateCount = isset($this->resource->articles_count)
+        // Discrete timeline entry count — prefer the eager-loaded count column.
+        $updateCount = isset($this->resource->updates_count)
+            ? $this->resource->updates_count
+            : ($this->resource->relationLoaded('updates') ? $this->updates->count() : $this->updates()->count());
+
+        // Supporting article count (kept for listings that still want it).
+        $articleCount = isset($this->resource->articles_count)
             ? $this->resource->articles_count
             : ($this->resource->relationLoaded('articles') ? $this->articles->count() : $this->articles()->count());
 
@@ -43,6 +50,7 @@ class StoryResource extends JsonResource
             'concluded_at' => $this->concluded_at?->toIso8601String(),
             'last_monitored_at' => $this->last_monitored_at?->toIso8601String(),
             'update_count' => $updateCount,
+            'article_count' => $articleCount,
             'latest_update' => $latestUpdate,
         ];
     }

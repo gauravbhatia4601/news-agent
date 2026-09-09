@@ -83,7 +83,7 @@ class MonitorLiveStoriesService
             if (! empty($verdict['is_new_development'])) {
                 $judgedNew++;
 
-                // persistedis set by discoverForQuery (forceUniqueSignature) — the
+                // persistedId is set by discoverForQuery (forceUniqueSignature) — the
                 // namespaced row exists with this exact signature, so generation
                 // will find it. getTopicIdBySignature stays as a defensive fallback.
                 $topicId = $topic->persistedId ?? $this->getTopicIdBySignature($topic->signature);
@@ -105,7 +105,25 @@ class MonitorLiveStoriesService
                     'updated_at' => now(),
                 ]);
 
-                // Dispatch generation job with storyId.
+                // Create the discrete timeline entry from the judge's update_text.
+                // Guard: skip blank entries (LLM edge cases) — never render blanks.
+                $updateText = trim((string) ($verdict['update_text'] ?? ''));
+                if ($updateText !== '') {
+                    $firstSource = $topic->sources[0] ?? null;
+                    $story->updates()->create([
+                        'content' => $updateText,
+                        'event_at' => now(),
+                        'source_name' => $firstSource?->sourceName,
+                        'source_url' => $firstSource?->sourceUrl,
+                    ]);
+                } else {
+                    Log::warning('Story monitor: judge returned empty update_text, skipping timeline entry.', [
+                        'story_id' => $story->id,
+                        'signature' => $topic->signature,
+                    ]);
+                }
+
+                // Dispatch generation job with storyId (full article as supporting content).
                 GenerateArticle::dispatch($topic->signature, $story->id);
                 $dispatched++;
             }

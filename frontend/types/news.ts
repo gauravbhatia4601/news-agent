@@ -123,5 +123,14 @@ export interface NewsStory {
   concluded_at?: string | null
   last_monitored_at?: string | null
   update_count: number
-  latest_update?: NewsArticleCard | null
+  latest_update?: { content: string; event_at: string } | null
+}
+
+export interface StoryTimelineEntry {
+  id: number
+  story_id: number
+  content: string
+  event_at: string
+  source_name: string | null
+  source_url: string | null
 }

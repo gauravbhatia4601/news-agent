@@ -35,7 +35,7 @@ class Story extends Model
     ];
 
     /**
-     * Articles linked to this story (the timeline).
+     * Articles linked to this story (supporting content).
      */
     public function latestArticle()
     {
@@ -47,6 +47,22 @@ class Story extends Model
     public function articles(): HasMany
     {
         return $this->hasMany(NewsArticle::class, 'story_id');
+    }
+
+    /**
+     * Discrete timestamped timeline entries — the story's actual progression.
+     */
+    public function updates(): HasMany
+    {
+        return $this->hasMany(StoryUpdate::class)->orderByDesc('event_at');
+    }
+
+    /**
+     * Newest timeline entry (single row) for eager loading on listings.
+     */
+    public function latestUpdate()
+    {
+        return $this->hasOne(StoryUpdate::class)->orderByDesc('event_at');
     }
 
     /**

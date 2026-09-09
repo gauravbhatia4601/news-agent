@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import type { NewsStory } from '~/types/news'
+
 const api = useNewsApi()
 
 // Over-fetch by 1 so dedup can drop collisions without leaving sections thin.
 const { data: featured } = await useAsyncData('featured', () => api.getFeatured())
-const { data: headlines } = await useAsyncData('headlines', () => api.getHeadlines(7), { default: () => [] as any[] })
 const { data: hot } = await useAsyncData('hot', () => api.getHot({ perPage: 7 }), { default: () => [] as any[] })
-const { data: trending } = await useAsyncData('trending-home', () => api.getTrending(5), { default: () => [] as any[] })
 const { data: categoryTree } = await useAsyncData('home-category-tree', () => api.getCategoryTree(), { default: () => [] as any[] })
+
+const { data: liveStories } = await useAsyncData<{ data: NewsStory[]; meta: { current_page: number; last_page: number; total: number } }>(
+  'home-live-stories',
+  () => api.getStories({ perPage: 5 }),
+  { default: () => ({ data: [] as NewsStory[], meta: { current_page: 1, last_page: 1, total: 0 } }) },
+)
+
+const hasLiveStories = computed(() => (liveStories.value?.data?.length ?? 0) > 0)
 
 // ponytail: one getHeadlines per top-level category; ceiling = category count (no single endpoint buckets by category)
 const { data: categorySections } = await useAsyncData(
@@ -24,16 +32,12 @@ const { data: categorySections } = await useAsyncData(
   { default: () => [] as { name: string; slug: string; articles: any[] }[] },
 )
 
-// Priority dedup: featured → hot → trending → category sections → headlines rail.
-// Category sections claim BEFORE the global headlines rail: India/World dominate
-// the latest stream, and the rail consuming them first left those sections empty.
-// Sections that end up empty after dedup are dropped, not rendered as empty boxes.
+// Priority dedup: featured → hot → category sections.
 const deduped = computed(() => {
   const seen = new Set<string>()
   if (featured.value?.slug) seen.add(featured.value.slug)
 
   const hotD = dedupeBySlug(hot.value ?? [], seen).slice(0, 6)
-  const trendingD = dedupeBySlug(trending.value ?? [], seen).slice(0, 4)
 
   const sections = (categorySections.value ?? [])
     .map(section => ({
@@ -43,9 +47,7 @@ const deduped = computed(() => {
     }))
     .filter(section => section.articles.length > 0)
 
-  const headlinesD = dedupeBySlug(headlines.value ?? [], seen).slice(0, 6)
-
-  return { hot: hotD, headlines: headlinesD, trending: trendingD, sections }
+  return { hot: hotD, sections }
 })
 
 useHead({
@@ -60,7 +62,7 @@ useHead({
   <div class="space-y-10">
     <h1 class="sr-only">The Neural Journal</h1>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div class="lg:col-span-8 space-y-10">
+      <div :class="hasLiveStories ? 'lg:col-span-8' : 'lg:col-span-12'" class="space-y-10">
         <NewsHeroLead v-if="featured" :article="featured" />
 
         <div v-if="featured && deduped.hot.length > 0" class="h-px bg-border" />
@@ -83,24 +85,36 @@ useHead({
         </section>
       </div>
 
-      <div class="lg:col-span-4">
+      <div v-if="hasLiveStories" class="lg:col-span-4">
         <div class="lg:sticky lg:top-[7.5rem] space-y-8">
-          <NewsHeadlinesRail v-if="deduped.headlines.length > 0" :headlines="deduped.headlines" />
+          <section class="border-t border-border pt-6">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-red-500">
+                <span class="absolute inset-0 rounded-full bg-red-500 animate-ping" />
+              </span>
+              <h3 class="font-display text-sm font-bold uppercase tracking-[0.062em]">Live</h3>
+            </div>
 
-          <div v-if="deduped.trending.length > 0" class="border-t border-border pt-6">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-display text-sm font-bold uppercase tracking-[0.062em]">Trending Now</h3>
-              <NuxtLink to="/trending" class="text-[11px] text-muted-foreground hover:text-foreground">View all</NuxtLink>
+            <div class="space-y-5">
+              <NuxtLink
+                v-for="s in liveStories!.data"
+                :key="s.slug"
+                :to="`/story/${s.slug}`"
+                class="block group"
+              >
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <NewsLiveBadge :urgency="s.urgency" />
+                  <span class="font-label text-[11px] text-muted-foreground">· {{ s.update_count }} update{{ s.update_count === 1 ? '' : 's' }}</span>
+                </div>
+                <h4 class="font-serif text-sm font-bold leading-snug line-clamp-2 group-hover:underline decoration-1 underline-offset-2 mb-1">
+                  {{ s.title }}
+                </h4>
+                <p v-if="s.latest_update" class="text-[11px] text-muted-foreground line-clamp-1">
+                  {{ s.latest_update.content }}
+                </p>
+              </NuxtLink>
             </div>
-            <div class="space-y-3">
-              <NewsCompactArticleCard
-                v-for="article in deduped.trending"
-                :key="article.slug"
-                :article="article"
-                variant="minimal"
-              />
-            </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>

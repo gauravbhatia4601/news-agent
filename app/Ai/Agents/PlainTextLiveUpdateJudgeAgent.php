@@ -42,6 +42,13 @@ Set is_new_development = false if the candidate:
 - Covers a different angle of the same facts already reported
 - Is opinion or commentary
 
+## TIMELINE ENTRY
+
+For EVERY candidate (new development or not), write `update_text`: a publish-ready,
+ONE-SENTENCE timeline entry stating what just happened, in active voice, with the
+key fact — no source names, no "according to". This is the discrete "at this time,
+X happened" entry that will appear on the story timeline.
+
 ## URGENCY ADJUSTMENT
 
 Set urgency_adjustment to one of:
@@ -65,6 +72,7 @@ The JSON object MUST have exactly this shape:
       "topic_signature": "the exact signature provided",
       "is_new_development": true,
       "urgency_adjustment": "live",
+      "update_text": "A one-sentence timeline entry stating what just happened, in active voice, with the key fact.",
       "reasoning": "One sentence explaining the verdict"
     }
   ]

@@ -86,6 +86,7 @@ class MonitorLiveStoriesCommandTest extends TestCase
                         'topic_signature' => $candidate['topic_signature'],
                         'is_new_development' => $i === 0,
                         'urgency_adjustment' => 'keep',
+                        'update_text' => $i === 0 ? 'Parliament passes the election reform bill in a historic vote.' : 'Repetition of existing coverage.',
                         'reasoning' => $i === 0 ? 'New phase in the legislative process.' : 'Repetition of existing coverage.',
                     ];
                 }
@@ -107,6 +108,12 @@ class MonitorLiveStoriesCommandTest extends TestCase
 
         // story_topics pivot row exists for at least one topic.
         $this->assertGreaterThan(0, DB::table('story_topics')->where('story_id', $story->id)->count());
+
+        // A story_updates row was created with the verdict's update_text.
+        $this->assertGreaterThan(0, DB::table('story_updates')->where('story_id', $story->id)->count());
+        $update = DB::table('story_updates')->where('story_id', $story->id)->first();
+        $this->assertSame('Parliament passes the election reform bill in a historic vote.', $update->content);
+        $this->assertNotNull($update->event_at);
     }
 
     /**
@@ -156,6 +163,7 @@ class MonitorLiveStoriesCommandTest extends TestCase
                         'topic_signature' => $candidate['topic_signature'],
                         'is_new_development' => false,
                         'urgency_adjustment' => 'concluded',
+                        'update_text' => 'Election results finalized with a winner declared.',
                         'reasoning' => 'The election has concluded with a winner declared.',
                     ];
                 }
@@ -309,6 +317,7 @@ class MonitorLiveStoriesCommandTest extends TestCase
                         'topic_signature' => $candidate['topic_signature'],
                         'is_new_development' => true,
                         'urgency_adjustment' => 'keep',
+                        'update_text' => 'Parliament passes the election reform bill in a historic vote.',
                         'reasoning' => 'New phase in the legislative process.',
                     ];
                 }
