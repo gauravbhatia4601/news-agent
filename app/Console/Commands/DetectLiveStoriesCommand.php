@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Ai\Services\LiveStoryAgentService;
 use App\Jobs\GenerateArticle;
 use App\Models\Story;
+use App\News\Support\HeadlineSimilarity;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -80,6 +81,12 @@ class DetectLiveStoriesCommand extends Command
         $created = 0;
         $skipped = 0;
 
+        // Load active stories once for both dedupe checks (search_query + title).
+        $activeStories = Story::active()
+            ->whereNotNull('search_query')
+            ->orWhereNotNull('title')
+            ->get(['search_query', 'title']);
+
         foreach ($liveEvents as $event) {
             $sig = $event['topic_signature'] ?? '';
             $topic = $topicMeta[$sig] ?? null;
@@ -101,7 +108,14 @@ class DetectLiveStoriesCommand extends Command
             }
 
             // Dedupe by Jaccard >= 0.6 on search_query tokens vs active stories.
-            if ($this->isDuplicateQuery($searchQuery)) {
+            if ($this->isDuplicateQuery($searchQuery, $activeStories)) {
+                $skipped++;
+
+                continue;
+            }
+
+            // Dedupe by stemmed overlap on suggested_title vs active story titles.
+            if ($this->isDuplicateTitle($suggestedTitle, $activeStories)) {
                 $skipped++;
 
                 continue;
@@ -185,23 +199,51 @@ class DetectLiveStoriesCommand extends Command
 
     /**
      * Check if the search_query is too similar to an existing active story (Jaccard >= 0.6).
+     *
+     * @param  \Illuminate\Support\Collection<int, Story>  $activeStories
      */
-    private function isDuplicateQuery(string $query): bool
+    private function isDuplicateQuery(string $query, $activeStories): bool
     {
         $queryTokens = $this->tokenize($query);
         if ($queryTokens === []) {
             return false;
         }
 
-        $activeStories = Story::active()->whereNotNull('search_query')->get(['search_query']);
-
         foreach ($activeStories as $story) {
+            if (empty($story->search_query)) {
+                continue;
+            }
             $existingTokens = $this->tokenize($story->search_query);
             if ($existingTokens === []) {
                 continue;
             }
 
             if ($this->tokenJaccard($queryTokens, $existingTokens) >= 0.6) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the suggested_title is too similar to an existing active story's
+     * title (stemmed overlap coefficient >= 0.5). Catches cases the search_query
+     * Jaccard misses when the LLM rephrases the query.
+     *
+     * @param  \Illuminate\Support\Collection<int, Story>  $activeStories
+     */
+    private function isDuplicateTitle(string $title, $activeStories): bool
+    {
+        if (trim($title) === '') {
+            return false;
+        }
+
+        foreach ($activeStories as $story) {
+            if (empty($story->title)) {
+                continue;
+            }
+            if (HeadlineSimilarity::similar($title, $story->title)) {
                 return true;
             }
         }

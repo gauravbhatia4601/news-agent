@@ -160,6 +160,71 @@ class DetectLiveStoriesCommandTest extends TestCase
         $this->assertSame(0, Story::count(), 'No story should be created for non-live events.');
     }
 
+    /**
+     * Title-based dedupe: a candidate whose suggested_title is similar (stemmed
+     * overlap) to an existing active story's title is skipped even when the
+     * search_query Jaccard misses it (the LLM rephrased the query).
+     */
+    public function test_detect_skips_candidate_with_similar_title_to_existing_story(): void
+    {
+        // Existing active story — the LLM rephrased the search_query, so
+        // search_query Jaccard will NOT catch the duplicate.
+        Story::create([
+            'slug' => 'trumps-5000-midterm-payout-promise-controversy',
+            'title' => "Trump's \$5,000 Midterm Payout Promise Controversy",
+            'search_query' => 'Trump dividend payout midterm controversy backlash',
+            'urgency' => 'live',
+            'status' => 'auto-detected',
+            'started_at' => now(),
+        ]);
+
+        // A topic with a totally different signature.
+        $topic = NewsTopic::create([
+            'category' => 'politics-governance',
+            'topic_name' => 'Trump promises $5,000 dividend for midterm wins',
+            'topic_signature' => 'sig-title-dedupe-'.uniqid(),
+            'source_count' => 1,
+            'generation_status' => 'completed',
+            'created_at' => now()->subHour(),
+        ]);
+
+        DB::table('news_topic_sources')->insert([
+            'topic_id' => $topic->id,
+            'source_name' => 'Reuters',
+            'source_url' => 'https://reuters.com/trump-dividend',
+            'source_url_hash' => sha1('https://reuters.com/trump-dividend'),
+            'headline' => 'Trump Promises $5,000 Dividend for Midterm Wins',
+            'summary' => 'Trump promises a $5,000 dividend for midterm wins.',
+            'published_at' => now()->subMinutes(30),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // The LLM returns a suggested_title that is similar to the existing
+        // story's title but a search_query that is NOT similar (different
+        // wording → Jaccard < 0.6).
+        $mock = Mockery::mock(LiveStoryAgentService::class);
+        $mock->shouldReceive('detectLiveStories')
+            ->once()
+            ->andReturn([
+                [
+                    'topic_signature' => $topic->topic_signature,
+                    'is_live_event' => true,
+                    'suggested_title' => 'Trump Promises $5,000 Dividend for Midterm Wins',
+                    'search_query' => 'Trump GOP election dividend promise pledge',
+                    'urgency' => 'live',
+                    'reasoning' => 'Ongoing story.',
+                ],
+            ]);
+
+        $this->app->instance(LiveStoryAgentService::class, $mock);
+
+        $this->artisan('news:detect-live-stories')->assertSuccessful();
+
+        // No new story created — the existing one stays the only story.
+        $this->assertSame(1, Story::count(), 'Title-similar candidate should not create a duplicate story.');
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();

@@ -477,6 +477,197 @@ class MonitorLiveStoriesCommandTest extends TestCase
         });
     }
 
+    /**
+     * Pre-filter: a candidate whose headline is near-identical to an existing
+     * timeline entry is suppressed before the judge — no judge call, no
+     * dispatch, no new timeline entry.
+     */
+    public function test_candidate_near_identical_to_timeline_entry_is_suppressed(): void
+    {
+        $parent = Category::create(['name' => 'National', 'slug' => 'national', 'display_order' => 1]);
+        Category::create([
+            'name' => 'Politics & Governance',
+            'slug' => 'politics-governance',
+            'parent_id' => $parent->id,
+            'display_order' => 1,
+        ]);
+        // Seed the Americas category — the topic detector matches "Trump" to
+        // the americas pattern, so the category must exist for the topic to
+        // survive detection.
+        $world = Category::create(['name' => 'World', 'slug' => 'world', 'display_order' => 2]);
+        Category::create([
+            'name' => 'Americas',
+            'slug' => 'americas',
+            'parent_id' => $world->id,
+            'display_order' => 1,
+        ]);
+
+        $story = Story::factory()->live()->create([
+            'search_query' => 'Trump $5,000 dividend payout promise',
+        ]);
+
+        // Seed a timeline entry with near-identical wording to the candidate
+        // the monitor will discover.
+        DB::table('story_updates')->insert([
+            'story_id' => $story->id,
+            'content' => 'Trump pledges $5,000 dividend to Americans if Republicans win midterms',
+            'event_at' => now()->subMinutes(30),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // GDELT surfaces a reworded duplicate from two different domains (the
+        // cluster needs >=2 unique sources to form a topic).
+        $gdeltBody = json_encode([
+            'articles' => [
+                [
+                    'title' => 'Donald Trump pledges to give every US adult $5,000 specifically if the GOP wins the midterm elections',
+                    'url' => 'https://example.com/gdelt-payout-dup-a',
+                    'domain' => 'example.com',
+                    'seendate' => now()->format('Ymd\THis\Z'),
+                ],
+                [
+                    'title' => 'Donald Trump pledges to give every US adult $5,000 specifically if the GOP wins the midterm elections',
+                    'url' => 'https://reuters.com/gdelt-payout-dup-b',
+                    'domain' => 'reuters.com',
+                    'seendate' => now()->format('Ymd\THis\Z'),
+                ],
+            ],
+        ]);
+        Http::fake([
+            'news.google.com/*' => Http::response($this->emptyGoogleRssXml(), 200, ['Content-Type' => 'application/rss+xml']),
+            'api.gdeltproject.org/*' => Http::response($gdeltBody, 200, ['Content-Type' => 'application/json']),
+            'api.search.brave.com/*' => Http::response(['grounding' => ['sources' => []]], 200, ['Content-Type' => 'application/json']),
+        ]);
+
+        Cache::flush();
+        Queue::fake();
+
+        // The judge must NEVER be invoked — the candidate is suppressed pre-judge.
+        $mock = Mockery::mock(LiveStoryAgentService::class);
+        $mock->shouldNotReceive('judgeUpdateBatch');
+
+        $this->app->instance(LiveStoryAgentService::class, $mock);
+
+        $this->artisan('news:monitor-stories')->assertSuccessful();
+
+        // No new timeline entry (only the seeded one remains).
+        $this->assertSame(1, DB::table('story_updates')->where('story_id', $story->id)->count());
+        // No generation dispatched.
+        Queue::assertNotPushed(GenerateArticle::class);
+    }
+
+    /**
+     * Pre-filter: when two candidates in the same cycle are near-duplicates of
+     * each other, only the first survives to the judge — the second is
+     * suppressed, so only one generation is dispatched.
+     */
+    public function test_duplicate_candidates_in_same_cycle_only_one_judged(): void
+    {
+        $parent = Category::create(['name' => 'National', 'slug' => 'national', 'display_order' => 1]);
+        Category::create([
+            'name' => 'Politics & Governance',
+            'slug' => 'politics-governance',
+            'parent_id' => $parent->id,
+            'display_order' => 1,
+        ]);
+        $world = Category::create(['name' => 'World', 'slug' => 'world', 'display_order' => 2]);
+        Category::create([
+            'name' => 'Americas',
+            'slug' => 'americas',
+            'parent_id' => $world->id,
+            'display_order' => 1,
+        ]);
+
+        $story = Story::factory()->live()->create([
+            'search_query' => 'Trump $5,000 dividend payout promise',
+        ]);
+
+        // Four GDELT articles forming two topics (each with 2 unique-source
+        // articles so the cluster passes the >=2 sources threshold). The two
+        // topics' headlines are near-duplicates of each other (HeadlineSimilarity
+        // overlap >= 0.5) but have different tokens (Jaccard < 0.35) so they
+        // form separate clusters.
+        $gdeltBody = json_encode([
+            'articles' => [
+                // Topic A: "Trump pledges $5,000 dividend..."
+                [
+                    'title' => 'Trump pledges $5,000 dividend to Americans if Republicans win midterms',
+                    'url' => 'https://example.com/gdelt-payout-a1',
+                    'domain' => 'example.com',
+                    'seendate' => now()->format('Ymd\THis\Z'),
+                ],
+                [
+                    'title' => 'Trump pledges $5,000 dividend to Americans if Republicans win midterms',
+                    'url' => 'https://reuters.com/gdelt-payout-a2',
+                    'domain' => 'reuters.com',
+                    'seendate' => now()->format('Ymd\THis\Z'),
+                ],
+                // Topic B: "Donald Trump pledges to give every US adult $5,000..."
+                [
+                    'title' => 'Donald Trump pledges to give every US adult $5,000 specifically if the GOP wins the midterm elections',
+                    'url' => 'https://apnews.com/gdelt-payout-b1',
+                    'domain' => 'apnews.com',
+                    'seendate' => now()->format('Ymd\THis\Z'),
+                ],
+                [
+                    'title' => 'Donald Trump pledges to give every US adult $5,000 specifically if the GOP wins the midterm elections',
+                    'url' => 'https://cnn.com/gdelt-payout-b2',
+                    'domain' => 'cnn.com',
+                    'seendate' => now()->format('Ymd\THis\Z'),
+                ],
+            ],
+        ]);
+        Http::fake([
+            'news.google.com/*' => Http::response($this->emptyGoogleRssXml(), 200, ['Content-Type' => 'application/rss+xml']),
+            'api.gdeltproject.org/*' => Http::response($gdeltBody, 200, ['Content-Type' => 'application/json']),
+            'api.search.brave.com/*' => Http::response(['grounding' => ['sources' => []]], 200, ['Content-Type' => 'application/json']),
+        ]);
+
+        Cache::flush();
+        Queue::fake();
+
+        // The judge should be called exactly once (only the first candidate survives).
+        $mock = Mockery::mock(LiveStoryAgentService::class);
+        $mock->shouldReceive('judgeUpdateBatch')
+            ->once()
+            ->andReturnUsing(function ($storyArg, $candidates, $lastUpdate) {
+                $verdicts = [];
+                foreach ($candidates as $candidate) {
+                    $verdicts[$candidate['topic_signature']] = [
+                        'topic_signature' => $candidate['topic_signature'],
+                        'is_new_development' => true,
+                        'urgency_adjustment' => 'keep',
+                        'update_text' => 'Trump pledges $5,000 dividend to Americans if Republicans win midterms.',
+                        'reasoning' => 'New development.',
+                    ];
+                }
+
+                return $verdicts;
+            });
+
+        $this->app->instance(LiveStoryAgentService::class, $mock);
+
+        $this->artisan('news:monitor-stories')->assertSuccessful();
+
+        // Only one timeline entry created.
+        $this->assertSame(1, DB::table('story_updates')->where('story_id', $story->id)->count());
+        // Only one generation dispatched.
+        Queue::assertPushed(GenerateArticle::class, 1);
+    }
+
+    private function emptyGoogleRssXml(): string
+    {
+        return <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Google News</title>
+  </channel>
+</rss>
+XML;
+    }
+
     private function googleRssXml(): string
     {
         $pubDate = now()->subMinutes(20)->format('D, d M Y H:i:s O');

@@ -5,6 +5,7 @@ namespace App\News\Services;
 use App\Ai\Services\LiveStoryAgentService;
 use App\Jobs\GenerateArticle;
 use App\Models\Story;
+use App\News\Support\HeadlineSimilarity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -50,18 +51,76 @@ class MonitorLiveStoriesService
             ? ['headline' => $lastUpdateArticle->title, 'summary' => (string) $lastUpdateArticle->meta_description]
             : null;
 
-        // Build candidate input for the judge.
+        // Build the "already covered" headline set for the pre-filter:
+        // the last update article title + recent timeline entry contents.
+        // Candidates near-duplicate to any covered headline are suppressed
+        // before the judge (no judge cost, no pivot, no timeline, no dispatch).
+        $coveredHeadlines = [];
+        if ($lastUpdateArticle !== null && $lastUpdateArticle->title !== '') {
+            $coveredHeadlines[] = $lastUpdateArticle->title;
+        }
+        $recentTimelineContents = $story->updates()
+            ->where('event_at', '>=', now()->subHours(6))
+            ->limit(10)
+            ->pluck('content')
+            ->all();
+        foreach ($recentTimelineContents as $content) {
+            if (trim((string) $content) !== '') {
+                $coveredHeadlines[] = $content;
+            }
+        }
+
+        // Pre-filter candidates: skip near-duplicates of covered headlines
+        // or of candidates already accepted this cycle.
         $candidates = [];
+        $acceptedThisCycle = [];
         foreach ($topics as $topic) {
             $firstSource = $topic->sources[0] ?? null;
+            $candidateHeadline = $firstSource?->headline ?? $topic->name;
+
+            $isDuplicate = false;
+            foreach ($coveredHeadlines as $covered) {
+                if (HeadlineSimilarity::similar($candidateHeadline, $covered)) {
+                    $isDuplicate = true;
+                    break;
+                }
+            }
+            if (! $isDuplicate) {
+                foreach ($acceptedThisCycle as $accepted) {
+                    if (HeadlineSimilarity::similar($candidateHeadline, $accepted)) {
+                        $isDuplicate = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($isDuplicate) {
+                Log::info('Story monitor: suppressed duplicate candidate before judge.', [
+                    'story_id' => $story->id,
+                    'headline' => $candidateHeadline,
+                ]);
+
+                continue;
+            }
+
+            $acceptedThisCycle[] = $candidateHeadline;
             $candidates[] = [
                 'topic_signature' => $topic->signature,
-                'headline' => $firstSource?->headline ?? $topic->name,
+                'headline' => $candidateHeadline,
                 'summary' => $firstSource?->summary ?? '',
             ];
         }
 
-        $verdicts = $this->agentService->judgeUpdateBatch($story, $candidates, $lastUpdate);
+        if ($candidates === []) {
+            Log::info('Story monitor: all candidates suppressed as duplicates, skipping judge.', [
+                'story_id' => $story->id,
+                'discovered' => $discovered,
+            ]);
+
+            $verdicts = [];
+        } else {
+            $verdicts = $this->agentService->judgeUpdateBatch($story, $candidates, $lastUpdate);
+        }
 
         $judgedNew = 0;
         $dispatched = 0;
