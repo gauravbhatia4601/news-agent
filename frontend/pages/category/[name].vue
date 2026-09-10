@@ -35,6 +35,8 @@ if (firstPage.value) {
 
 const canLoadMore = computed(() => page.value < lastPage.value)
 
+const heroRel = useRelativeTime(() => articles.value[0]?.published_at)
+
 async function loadMore() {
   if (loading.value || !canLoadMore.value) return
   loading.value = true
@@ -96,7 +98,7 @@ useHead({
           <div class="flex items-center gap-2 mb-2">
             <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ articles[0].category?.name ?? '' }}</span>
             <span class="text-border">|</span>
-            <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(articles[0].published_at) }}</span>
+            <span class="font-label text-[11px] text-muted-foreground">{{ heroRel }}</span>
             <span v-if="isNew(articles[0].published_at)" class="font-label text-[10px] font-bold uppercase tracking-[0.062em] text-secondary">New</span>
           </div>
 

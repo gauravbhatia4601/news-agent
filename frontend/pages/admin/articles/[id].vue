@@ -77,6 +77,14 @@
           </div>
         </div>
 
+        <div v-if="article.image_url" class="bg-admin-surface rounded-[14px] border border-admin-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4">
+          <h3 class="text-sm font-bold text-admin-text mb-3">Featured Image</h3>
+          <img :src="article.image_url" :alt="article.title" class="w-full rounded-lg mb-3 max-h-40 object-cover" />
+          <button @click="removeImage"
+            class="text-[10px] font-semibold uppercase tracking-wider px-3 py-1.5 border border-red-300 text-red-700 hover:bg-red-50 rounded-full transition-colors"
+          >Remove Image</button>
+        </div>
+
         <div class="bg-admin-surface rounded-[14px] border border-red-100 shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4">
           <h3 class="text-sm font-bold text-admin-text mb-3 text-red-600">Danger Zone</h3>
           <button @click="deleteArticle"
@@ -145,6 +153,14 @@ async function deleteArticle() {
   try {
     await api.deleteArticle(article.value.id)
     router.push('/admin/articles')
+  } catch {}
+}
+
+async function removeImage() {
+  if (!confirm('Remove the featured image from this article?')) return
+  try {
+    const res = await api.removeArticleImage(article.value.id)
+    article.value = res.data
   } catch {}
 }
 

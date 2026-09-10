@@ -13,6 +13,16 @@ useSeoMeta({
   description: 'Live minute-by-minute timelines of breaking news events.',
 })
 
+// Hydration-safe: formatAbsolute (deterministic UTC) during SSR + initial client
+// render, timeAgo only after mount. Composables can't be called per v-for item,
+// so we use the same mechanism manually.
+const isMounted = ref(false)
+onMounted(() => { isMounted.value = true })
+function storyTime(dateStr?: string): string {
+  if (!dateStr) return ''
+  return isMounted.value ? timeAgo(dateStr) : formatAbsolute(dateStr)
+}
+
 useHead({
   title: 'Live Stories',
   link: [
@@ -50,7 +60,7 @@ useHead({
       >
         <div class="flex items-center gap-3 mb-2 flex-wrap">
           <NewsLiveBadge :urgency="story.urgency" />
-          <span v-if="story.started_at" class="font-label text-[11px] text-muted-foreground">{{ timeAgo(story.started_at) }}</span>
+          <span v-if="story.started_at" class="font-label text-[11px] text-muted-foreground">{{ storyTime(story.started_at) }}</span>
           <span class="font-label text-[11px] text-muted-foreground">· {{ story.update_count }} update{{ story.update_count === 1 ? '' : 's' }}</span>
         </div>
         <h2 class="font-display text-xl font-bold leading-snug group-hover:underline decoration-1 underline-offset-4 mb-1">

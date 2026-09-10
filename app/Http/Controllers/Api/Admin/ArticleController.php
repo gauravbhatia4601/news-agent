@@ -10,6 +10,7 @@ use App\News\Services\NewsArticleGenerationService;
 use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ArticleController extends Controller
 {
@@ -231,5 +232,65 @@ class ArticleController extends Controller
         NewsArticle::whereIn('id', $ids)->update(['status' => $newStatus]);
 
         return response()->json(['message' => count($ids).' articles set to '.$newStatus]);
+    }
+
+    public function removeImage(int $id): JsonResponse
+    {
+        $article = NewsArticle::with('topic.categoryRelation', 'topic.sources')->findOrFail($id);
+
+        // Best-effort file deletion — only for locally-stored images.
+        if ($article->image_url && str_starts_with($article->image_url, '/storage/news-images/')) {
+            $path = substr($article->image_url, strlen('/storage/'));
+            try {
+                Storage::disk('public')->delete($path);
+            } catch (\Throwable $e) {
+                \Log::warning('Failed to delete article image file.', [
+                    'article_id' => $id,
+                    'path' => $path,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $article->image_url = null;
+        $article->thumbnail_url = null;
+        $metadata = $article->metadata ?? [];
+        $metadata['image_origin'] = null;
+        $article->metadata = $metadata;
+        $article->save();
+
+        AuditLogService::log('remove_image', 'Article', $id);
+
+        return response()->json([
+            'data' => [
+                'id' => $article->id,
+                'slug' => $article->slug,
+                'title' => $article->title,
+                'content' => $article->content,
+                'status' => $article->status,
+                'provider' => $article->provider,
+                'model' => $article->model,
+                'meta_title' => $article->meta_title,
+                'meta_description' => $article->meta_description,
+                'meta_keywords' => $article->meta_keywords,
+                'image_url' => $article->image_url,
+                'thumbnail_url' => $article->thumbnail_url,
+                'quality_report' => $article->quality_report,
+                'metadata' => $article->metadata,
+                'views' => $article->views,
+                'category' => $article->topic?->categoryRelation?->name,
+                'category_slug' => $article->topic?->categoryRelation?->slug,
+                'topic_name' => $article->topic?->topic_name,
+                'sources' => $article->topic?->sources?->map(fn ($s) => [
+                    'id' => $s->id,
+                    'source_name' => $s->source_name,
+                    'source_url' => $s->source_url,
+                    'headline' => $s->headline,
+                    'summary' => $s->summary,
+                ]),
+                'created_at' => $article->created_at->toIso8601String(),
+                'updated_at' => $article->updated_at->toIso8601String(),
+            ],
+        ]);
     }
 }

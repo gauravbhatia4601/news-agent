@@ -63,6 +63,7 @@ Route::prefix('v1/admin')->group(function () {
         ]);
         Route::post('/articles/batch', [AdminArticleController::class, 'batch'])->name('admin.articles.batch')->middleware('throttle:admin-actions');
         Route::post('/articles/{id}/regenerate', [AdminArticleController::class, 'regenerate'])->name('admin.articles.regenerate')->middleware('throttle:admin-actions');
+        Route::delete('/articles/{id}/image', [AdminArticleController::class, 'removeImage'])->name('admin.articles.remove-image')->middleware('throttle:admin-actions');
 
         Route::apiResource('topics', AdminTopicController::class)->except(['store', 'update'])->names([
             'index' => 'admin.topics.index',

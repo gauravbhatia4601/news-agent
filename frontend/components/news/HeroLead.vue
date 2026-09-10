@@ -29,6 +29,8 @@ function formatDate(dateStr: string) {
 
 const categoryName = computed(() => props.article.category?.name ?? '')
 const categorySlug = computed(() => props.article.category?.slug ?? '')
+
+const publishedRel = useRelativeTime(() => props.article.published_at)
 </script>
 
 <template>
@@ -48,7 +50,7 @@ const categorySlug = computed(() => props.article.category?.slug ?? '')
       <div class="flex items-center gap-2 mb-2">
         <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ categoryName }}</span>
         <span class="text-border">|</span>
-        <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(article.published_at) }}</span>
+        <span class="font-label text-[11px] text-muted-foreground">{{ publishedRel }}</span>
       </div>
 
       <h1 class="font-display text-2xl sm:text-3xl md:text-[2.25rem] font-bold leading-[1.15] mb-3 group-hover:underline decoration-1 underline-offset-4">

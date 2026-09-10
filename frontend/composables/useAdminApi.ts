@@ -29,6 +29,7 @@ export const useAdminApi = () => {
     updateArticle: (id: number, data: any) => authFetch<{ data: any }>(`/articles/${id}`, { method: 'PUT', body: data }),
     deleteArticle: (id: number) => authFetch<any>(`/articles/${id}`, { method: 'DELETE' }),
     regenerateArticle: (id: number) => authFetch<any>(`/articles/${id}/regenerate`, { method: 'POST' }),
+    removeArticleImage: (id: number) => authFetch<{ data: any }>(`/articles/${id}/image`, { method: 'DELETE' }),
     batchArticles: (ids: number[], action: string) => authFetch<any>('/articles/batch', { method: 'POST', body: { ids, action } }),
 
     getTopics: (params: Record<string, string | number> = {}) => {

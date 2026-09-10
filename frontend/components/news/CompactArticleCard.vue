@@ -11,6 +11,8 @@ const props = defineProps<{
 const categoryName = computed(() => props.article.category?.name ?? '')
 const categorySlug = computed(() => props.article.category?.slug ?? '')
 const locationName = computed(() => props.article.location?.name ?? '')
+
+const publishedRel = useRelativeTime(() => props.article.published_at)
 </script>
 
 <template>
@@ -19,7 +21,7 @@ const locationName = computed(() => props.article.location?.name ?? '')
       <div class="flex items-center gap-1.5 mb-0.5">
         <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ categoryName }}</span>
         <span class="text-border">·</span>
-        <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(article.published_at) }}</span>
+        <span class="font-label text-[11px] text-muted-foreground">{{ publishedRel }}</span>
         <span v-if="isNew(article.published_at)" class="font-label text-[10px] font-bold uppercase tracking-[0.062em] text-secondary">New</span>
       </div>
       <NuxtLink :to="`/article/${article.slug}`">
@@ -56,7 +58,7 @@ const locationName = computed(() => props.article.location?.name ?? '')
     <div class="flex items-center gap-1.5 font-label text-[11px] text-muted-foreground">
       <span class="capitalize">{{ categoryName }}</span>
       <span>·</span>
-      <span>{{ timeAgo(article.published_at) }}</span>
+      <span>{{ publishedRel }}</span>
       <span v-if="isNew(article.published_at)" class="font-label text-[10px] font-bold uppercase tracking-[0.062em] text-secondary">New</span>
       <span>·</span>
       <span>{{ article.read_time_minutes }}m read</span>
@@ -78,7 +80,7 @@ const locationName = computed(() => props.article.location?.name ?? '')
     <div class="flex items-center gap-1.5 mb-1.5">
       <span class="font-label text-[11px] font-bold uppercase tracking-[0.062em] text-muted-foreground">{{ categoryName }}</span>
       <span class="text-border">·</span>
-      <span class="font-label text-[11px] text-muted-foreground">{{ timeAgo(article.published_at) }}</span>
+      <span class="font-label text-[11px] text-muted-foreground">{{ publishedRel }}</span>
       <span v-if="isNew(article.published_at)" class="font-label text-[10px] font-bold uppercase tracking-[0.062em] text-secondary">New</span>
     </div>
 

@@ -79,17 +79,22 @@ async function loadMoreArticles() {
 }
 
 // "Sep 9, 3:10 PM" — long-form time label for timeline entries.
+// Parses the ISO string and formats UTC parts directly (no Date methods that
+// shift by timezone) so server and client produce the identical string.
 function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
+  if (!m) return dateStr
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const hour = Number(m[4])
+  const h12 = hour % 12 || 12
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  return `${months[Number(m[2]) - 1]} ${Number(m[3])}, ${h12}:${m[5]} ${ampm}`
 }
 
 const siteUrl = useRuntimeConfig().public.siteUrl
 const canonicalUrl = computed(() => `${siteUrl}/story/${slug}`)
+
+const startedRel = useRelativeTime(() => story.value?.started_at)
 
 const seoDescription = computed(() => {
   const s = story.value
@@ -163,7 +168,7 @@ useHead({
 
       <div class="flex items-center gap-3 flex-wrap">
         <NewsLiveBadge :urgency="story.urgency" />
-        <span v-if="story.started_at" class="font-label text-[11px] text-muted-foreground">{{ timeAgo(story.started_at) }}</span>
+        <span v-if="story.started_at" class="font-label text-[11px] text-muted-foreground">{{ startedRel }}</span>
         <span class="font-label text-[11px] text-muted-foreground">· {{ story.update_count }} update{{ story.update_count === 1 ? '' : 's' }}</span>
       </div>
 
