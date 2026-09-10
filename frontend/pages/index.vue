@@ -51,16 +51,18 @@ const deduped = computed(() => {
 })
 
 useHead({
-  title: 'The Neural Journal — Latest News from India',
+  title: 'Latest News from India',
   meta: [
     { name: 'description', content: 'Stay informed with the latest news across India — politics, business, technology, sports, entertainment and more.' },
+  ],
+  link: [
+    { rel: 'canonical', href: useCanonical() },
   ],
 })
 </script>
 
 <template>
   <div class="space-y-10">
-    <h1 class="sr-only">The Neural Journal</h1>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div :class="hasLiveStories ? 'lg:col-span-8' : 'lg:col-span-12'" class="space-y-10">
         <NewsHeroLead v-if="featured" :article="featured" />

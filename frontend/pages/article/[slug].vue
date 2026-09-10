@@ -43,6 +43,7 @@ useSeoMeta({
   ogTitle: () => article.value ? (article.value.meta_title || article.value.title) : '',
   ogDescription: () => article.value ? (article.value.meta_description || article.value.title) : '',
   ogImage: () => article.value?.image_url || undefined,
+  ogUrl: () => article.value ? `${siteUrl}/article/${article.value.slug}` : '',
   twitterTitle: () => article.value ? (article.value.meta_title || article.value.title) : '',
   twitterDescription: () => article.value ? (article.value.meta_description || article.value.title) : '',
   twitterImage: () => article.value?.image_url || undefined,
@@ -179,6 +180,8 @@ useHead({
           <img
             :src="article.image_url"
             :alt="generateImageAlt()"
+            width="1200"
+            height="675"
             class="h-64 w-full object-cover md:h-80"
             loading="eager"
             fetchpriority="high"

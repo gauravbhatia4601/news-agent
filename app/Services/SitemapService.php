@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\NewsArticle;
+use App\Models\Story;
 
 class SitemapService
 {
@@ -15,7 +16,7 @@ class SitemapService
     {
         $this->outputDir = public_path('sitemaps');
         $this->baseUrl = rtrim(
-            config('app.frontend_url') ?: config('app.url', 'https://theneuraljournal.com'),
+            config('app.frontend_url', config('app.url', 'https://theneuraljournal.com')),
             '/'
         );
     }
@@ -36,6 +37,7 @@ class SitemapService
         if ($newsFile) {
             $files[] = $newsFile;
         }
+        $files[] = $this->generateStories();
         $files[] = $this->generateIndex($files);
 
         $this->cleanupOrphaned($files);
@@ -50,7 +52,8 @@ class SitemapService
             ['loc' => '', 'priority' => '1.0', 'changefreq' => 'hourly'],
             ['loc' => '/trending', 'priority' => '0.9', 'changefreq' => 'hourly'],
             ['loc' => '/categories', 'priority' => '0.8', 'changefreq' => 'daily'],
-            ['loc' => '/search', 'priority' => '0.5', 'changefreq' => 'weekly'],
+            ['loc' => '/stories', 'priority' => '0.8', 'changefreq' => 'daily'],
+            ['loc' => '/about', 'priority' => '0.5', 'changefreq' => 'weekly'],
         ];
 
         $lastmod = now()->toAtomString();
@@ -94,6 +97,49 @@ class SitemapService
                 ];
             }
         }
+
+        $xml = $this->renderUrlset($urls);
+        $this->writeFile($filename, $xml);
+
+        return $filename;
+    }
+
+    /**
+     * Live-story hub + individual story pages for stories started in the last 30 days
+     * (active and concluded both). lastmod is the latest timeline entry's event_at,
+     * falling back to the story's updated_at.
+     */
+    private function generateStories(): string
+    {
+        $filename = 'sitemap-stories.xml';
+
+        $urls = [
+            [
+                'loc' => $this->baseUrl.'/stories',
+                'lastmod' => now()->toAtomString(),
+                'changefreq' => 'daily',
+                'priority' => '0.8',
+            ],
+        ];
+
+        // Eager load latestUpdate so lastmod resolves without N+1 queries.
+        Story::with('latestUpdate')
+            ->where('started_at', '>=', now()->subDays(30))
+            ->orderByDesc('started_at')
+            ->chunk(1000, function ($stories) use (&$urls) {
+                foreach ($stories as $story) {
+                    $lastmod = ($story->latestUpdate && $story->latestUpdate->event_at)
+                        ? $story->latestUpdate->event_at->toAtomString()
+                        : ($story->updated_at ? $story->updated_at->toAtomString() : $story->started_at->toAtomString());
+
+                    $urls[] = [
+                        'loc' => $this->baseUrl.'/story/'.$story->slug,
+                        'lastmod' => $lastmod,
+                        'changefreq' => 'daily',
+                        'priority' => '0.7',
+                    ];
+                }
+            });
 
         $xml = $this->renderUrlset($urls);
         $this->writeFile($filename, $xml);

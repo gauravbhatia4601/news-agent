@@ -12,9 +12,12 @@ const showMomentum = computed(() => (trending.value?.length ?? 0) > 0)
 const displayArticles = computed(() => (showMomentum.value ? trending.value : (fallbackLatest.value ?? [])))
 
 useHead({
-  title: 'Trending — The Neural Journal',
+  title: 'Trending',
   meta: [
     { name: 'description', content: 'What\'s trending right now — the fastest-moving stories across India.' },
+  ],
+  link: [
+    { rel: 'canonical', href: useCanonical() },
   ],
 })
 </script>

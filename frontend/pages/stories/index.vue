@@ -9,8 +9,15 @@ const { data: stories } = await useAsyncData(
   { default: () => ({ data: [] as NewsStory[], meta: { current_page: 1, last_page: 1, total: 0 } }) },
 )
 
+useSeoMeta({
+  description: 'Live minute-by-minute timelines of breaking news events.',
+})
+
 useHead({
-  title: 'Live Stories — The Neural Journal',
+  title: 'Live Stories',
+  link: [
+    { rel: 'canonical', href: useCanonical() },
+  ],
 })
 </script>
 

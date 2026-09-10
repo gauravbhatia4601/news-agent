@@ -55,5 +55,10 @@
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'About — The Neural Journal' })
+useHead({
+  title: 'About',
+  link: [
+    { rel: 'canonical', href: useCanonical() },
+  ],
+})
 </script>

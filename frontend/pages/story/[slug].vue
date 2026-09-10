@@ -88,8 +88,64 @@ function formatTime(dateStr: string): string {
   })
 }
 
+const siteUrl = useRuntimeConfig().public.siteUrl
+const canonicalUrl = computed(() => `${siteUrl}/story/${slug}`)
+
+const seoDescription = computed(() => {
+  const s = story.value
+  if (!s) return 'Live coverage and timeline of a developing news story.'
+  if (s.description) return s.description
+  if (s.latest_update?.content) {
+    return s.latest_update.content.length > 155
+      ? s.latest_update.content.slice(0, 155).trimEnd() + '…'
+      : s.latest_update.content
+  }
+  return 'Live coverage and timeline of a developing news story.'
+})
+
+const dateModified = computed(() => {
+  const s = story.value
+  return s?.latest_update?.event_at || s?.started_at || ''
+})
+
+useSeoMeta({
+  title: () => story.value?.title ?? 'Story',
+  description: seoDescription,
+  ogTitle: () => story.value?.title ?? 'Story',
+  ogDescription: seoDescription,
+  ogUrl: canonicalUrl,
+  twitterCard: 'summary_large_image',
+})
+
 useHead({
-  title: computed(() => `${story.value?.title ?? 'Story'} — The Neural Journal`),
+  link: [
+    { rel: 'canonical', href: canonicalUrl },
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      children: () => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'LiveBlogPosting',
+        headline: story.value?.title || '',
+        datePublished: story.value?.started_at || '',
+        dateModified: dateModified.value,
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': canonicalUrl.value,
+        },
+        coverageStartTime: story.value?.started_at || '',
+        liveBlogUpdate: (timeline.value ?? [])
+          .slice(0, 20)
+          .filter((entry: StoryTimelineEntry) => entry.content?.trim())
+          .map((entry: StoryTimelineEntry) => ({
+            '@type': 'BlogPosting',
+            headline: entry.content,
+            datePublished: entry.event_at,
+          })),
+      }),
+    },
+  ],
 })
 </script>
 

@@ -49,7 +49,13 @@ async function loadMore() {
 }
 
 useHead({
-  title: computed(() => `${categoryName.value} News — The Neural Journal`),
+  title: computed(() => `${categoryName.value} News`),
+  meta: [
+    { name: 'description', content: computed(() => `Latest news, analysis and updates about ${categoryName.value} — curated by The Neural Journal.`) },
+  ],
+  link: [
+    { rel: 'canonical', href: useCanonical() },
+  ],
 })
 </script>
 

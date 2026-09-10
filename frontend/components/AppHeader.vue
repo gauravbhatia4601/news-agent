@@ -158,9 +158,9 @@ watch(() => route.path, () => {
   <header class="w-full border-b border-border bg-background">
     <div class="mx-auto flex max-w-[960px] flex-col items-center px-5 py-2 xl:max-w-[1280px]">
       <NuxtLink to="/" class="block">
-        <h1 class="font-display text-[2.25rem] font-bold tracking-tight sm:text-[2.75rem] md:text-[3.25rem]">
+        <span class="font-display text-[2.25rem] font-bold tracking-tight sm:text-[2.75rem] md:text-[3.25rem]">
           THE NEURAL JOURNAL
-        </h1>
+        </span>
       </NuxtLink>
     </div>
   </header>

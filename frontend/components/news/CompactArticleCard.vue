@@ -38,6 +38,8 @@ const locationName = computed(() => props.article.location?.name ?? '')
       <img
         :src="article.thumbnail_url || article.image_url || ''"
         :alt="article.title"
+        width="800"
+        height="450"
         class="h-full w-full object-cover"
         loading="lazy"
       >
@@ -66,6 +68,8 @@ const locationName = computed(() => props.article.location?.name ?? '')
       <img
         :src="article.thumbnail_url || article.image_url || ''"
         :alt="article.title"
+        width="800"
+        height="450"
         class="aspect-[16/10] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         loading="lazy"
       >

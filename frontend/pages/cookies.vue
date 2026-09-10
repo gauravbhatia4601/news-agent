@@ -41,5 +41,12 @@
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'Cookie Notice — The Neural Journal' })
+useSeoMeta({ robots: 'noindex, follow' })
+
+useHead({
+  title: 'Cookie Notice',
+  link: [
+    { rel: 'canonical', href: useCanonical() },
+  ],
+})
 </script>

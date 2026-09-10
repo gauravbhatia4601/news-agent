@@ -3,7 +3,10 @@ const api = useNewsApi()
 const { data: categories } = await useAsyncData('browse-categories', () => api.getCategoryTree(), { default: () => [] as any[] })
 
 useHead({
-  title: 'Browse Topics — The Neural Journal',
+  title: 'Browse Topics',
+  link: [
+    { rel: 'canonical', href: useCanonical() },
+  ],
 })
 </script>
 

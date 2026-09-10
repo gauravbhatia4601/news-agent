@@ -56,5 +56,12 @@
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'Privacy Policy — The Neural Journal' })
+useSeoMeta({ robots: 'noindex, follow' })
+
+useHead({
+  title: 'Privacy Policy',
+  link: [
+    { rel: 'canonical', href: useCanonical() },
+  ],
+})
 </script>

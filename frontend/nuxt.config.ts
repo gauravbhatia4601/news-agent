@@ -9,7 +9,7 @@ export default defineNuxtConfig({
       adsenseClient: process.env.ADSENSE_CLIENT || '',
       adsenseSlot: process.env.ADSENSE_SLOT || '',
       umamiWebsiteId: process.env.NUXT_PUBLIC_UMAMI_WEBSITE_ID || '',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://theneuraljournal.com',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://news.technioz.com',
       newBadgeHours: Number(process.env.NUXT_PUBLIC_NEW_BADGE_HOURS || 6),
     },
   },
@@ -20,9 +20,11 @@ export default defineNuxtConfig({
   ],
 
   googleFonts: {
+    display: 'swap',
+    preconnect: true,
     families: {
-      'Playfair Display': [400, 700],
-      'Source Serif 4': [400, 600, 700],
+      'Playfair Display': [700],
+      'Source Serif 4': [400, 600],
       Inter: [400, 500, 600, 700],
     },
   },
@@ -61,6 +63,17 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
       ],
+    },
+  },
+
+  nitro: {
+    routeRules: {
+      '/': { swr: 120 },
+      '/article/**': { swr: 300 },
+      '/category/**': { swr: 600 },
+      '/stories': { swr: 300 },
+      '/story/**': { swr: 120 },
+      '/trending': { swr: 300 },
     },
   },
 })

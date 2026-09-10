@@ -65,5 +65,12 @@
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'Terms of Use — The Neural Journal' })
+useSeoMeta({ robots: 'noindex, follow' })
+
+useHead({
+  title: 'Terms of Use',
+  link: [
+    { rel: 'canonical', href: useCanonical() },
+  ],
+})
 </script>

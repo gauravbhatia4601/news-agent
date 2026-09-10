@@ -40,7 +40,7 @@ Route::get('/feed.xml', function () {
         ->take(50)
         ->get();
 
-    $appUrl = config('app.url', 'https://theneuraljournal.com');
+    $appUrl = rtrim(config('app.frontend_url', config('app.url', 'https://theneuraljournal.com')), '/');
 
     $xml = '<?xml version="1.0" encoding="UTF-8"?>';
     $xml .= '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">';
@@ -93,7 +93,7 @@ Route::get('/feed.xml', function () {
 });
 
 Route::get('/robots.txt', function () {
-    $appUrl = config('app.url', 'https://theneuraljournal.com');
+    $appUrl = rtrim(config('app.frontend_url', config('app.url', 'https://theneuraljournal.com')), '/');
     $content = "User-agent: *\n";
     $content .= "Allow: /\n\n";
     $content .= "Sitemap: {$appUrl}/sitemaps/sitemap.xml\n";

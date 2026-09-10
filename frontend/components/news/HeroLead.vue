@@ -38,6 +38,8 @@ const categorySlug = computed(() => props.article.category?.slug ?? '')
         <img
           :src="article.image_url"
           :alt="article.title"
+          width="1200"
+          height="675"
           class="h-64 w-full object-cover sm:h-80 transition-transform duration-500 group-hover:scale-[1.02]"
           loading="eager"
         >

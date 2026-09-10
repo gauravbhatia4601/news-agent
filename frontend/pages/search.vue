@@ -9,8 +9,15 @@ const { data: results } = await useAsyncData(
   { default: () => [] as any[], watch: [query] }
 )
 
+useSeoMeta({
+  robots: 'noindex, follow',
+})
+
 useHead({
-  title: () => query.value ? `Search: ${query.value} — The Neural Journal` : 'Search — The Neural Journal',
+  title: () => query.value ? `Search: ${query.value}` : 'Search',
+  link: [
+    { rel: 'canonical', href: useCanonical() },
+  ],
 })
 </script>
 
