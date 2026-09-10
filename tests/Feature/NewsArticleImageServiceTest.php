@@ -240,7 +240,7 @@ class NewsArticleImageServiceTest extends TestCase
                 ['Content-Type' => 'text/html']
             ),
             'api.search.brave.com/res/v1/images/search*' => Http::response([
-                'results' => [
+                'image_results' => [
                     [
                         'url' => $braveImageUrl,
                         'thumbnail' => ['src' => 'https://cdn.brave.example.com/thumb.jpg'],
@@ -287,7 +287,7 @@ class NewsArticleImageServiceTest extends TestCase
                 ['Content-Type' => 'text/html']
             ),
             'api.search.brave.com/res/v1/images/search*' => Http::response(
-                ['results' => []],
+                ['image_results' => []],
                 200,
                 ['Content-Type' => 'application/json']
             ),
@@ -329,7 +329,7 @@ class NewsArticleImageServiceTest extends TestCase
                 $braveCalls++;
 
                 return Http::response([
-                    'results' => [
+                    'image_results' => [
                         ['url' => $braveImageUrl, 'title' => 'cached photo'],
                     ],
                 ], 200, ['Content-Type' => 'application/json']);
@@ -382,7 +382,7 @@ class NewsArticleImageServiceTest extends TestCase
                 ['Content-Type' => 'text/html']
             ),
             'api.search.brave.com/res/v1/images/search*' => Http::response([
-                'results' => [
+                'image_results' => [
                     [
                         // Blocklisted (contains "logo.") — must be skipped.
                         'url' => 'https://cdn.brave.example.com/logo.png',

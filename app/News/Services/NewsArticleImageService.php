@@ -177,7 +177,8 @@ class NewsArticleImageService
 
         // Cache hits (including null) for 24h — avoids repeat API calls for
         // recurring topic names across the same discovery cycle.
-        $cacheKey = 'news-images:brave:'.sha1($query);
+        // v2: prior key cached 24h nulls from the wrong response-shape bug.
+        $cacheKey = 'news-images:brave:v2:'.sha1($query);
         if (Cache::has($cacheKey)) {
             return Cache::get($cacheKey);
         }
@@ -227,7 +228,12 @@ class NewsArticleImageService
             return null;
         }
 
-        $results = $response->json('results', []);
+        // Brave's Images endpoint nests items under "image_results" (the Web
+        // Search API uses "results"); accept both defensively.
+        $results = $response->json('image_results', []);
+        if (! is_array($results) || $results === []) {
+            $results = $response->json('results', []);
+        }
         if (! is_array($results)) {
             return null;
         }
