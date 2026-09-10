@@ -138,7 +138,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'images' => [
-        'enabled' => (bool) env('NEWS_IMAGES_ENABLED', false),
+        'enabled' => (bool) env('NEWS_IMAGES_ENABLED', true),
 
         'source' => [
             'enabled' => (bool) env('NEWS_SOURCE_IMAGES_ENABLED', false),
@@ -148,7 +148,7 @@ return [
         ],
 
         'ai' => [
-            'enabled' => (bool) env('NEWS_AI_IMAGE_ENABLED', false),
+            'enabled' => (bool) env('NEWS_AI_IMAGE_ENABLED', true),
             'provider' => env('NEWS_AI_IMAGE_PROVIDER', 'pollinations'),
             'style_prompt' => env(
                 'NEWS_AI_IMAGE_STYLE_PROMPT',

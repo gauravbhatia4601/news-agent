@@ -2,6 +2,7 @@
 
 namespace App\News\Services;
 
+use App\News\Support\GoogleNewsUrlDecoder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -58,6 +59,21 @@ class NewsArticleImageService
             ];
         }
 
+        // Source scraping failed (usually Google News redirects that bot-block).
+        // Fall back to AI generation when enabled — keeps articles illustrated.
+        $aiImage = $this->generateAiFallbackImage(
+            $articleTitle,
+            (string) ($topic['topic_name'] ?? ''),
+            (string) ($topic['category'] ?? ''),
+        );
+        if ($aiImage !== null) {
+            return [
+                'image_url' => $aiImage,
+                'thumbnail_url' => $aiImage,
+                'image_origin' => 'ai',
+            ];
+        }
+
         return ['image_url' => null, 'thumbnail_url' => null, 'image_origin' => null];
     }
 
@@ -73,8 +89,13 @@ class NewsArticleImageService
         $maxAttempts = max(1, (int) config('news-engine.images.source.max_attempts', 3));
         $htmlTimeout = max(5, (int) config('news-engine.images.source.html_timeout', 10));
 
+        // Direct publisher URLs (GDELT, Brave) scrape far more reliably than
+        // Google News redirects, which JS-gate or bot-block. Try non-news.google.com
+        // sources first, then the redirects. Stable ordering — no shuffling.
+        $ordered = $this->orderSourcesForScraping($sources);
+
         $attempts = 0;
-        foreach ($sources as $source) {
+        foreach ($ordered as $source) {
             if ($attempts >= $maxAttempts) {
                 break;
             }
@@ -83,6 +104,9 @@ class NewsArticleImageService
             if ($sourceUrl === '') {
                 continue;
             }
+
+            // Best-effort: unwrap Google News redirects to the real publisher URL.
+            $sourceUrl = GoogleNewsUrlDecoder::decode($sourceUrl);
 
             $attempts++;
 
@@ -237,6 +261,31 @@ class NewsArticleImageService
         }
 
         return true;
+    }
+
+    /**
+     * Stable sort: direct publisher URLs first, news.google.com redirects last.
+     * Preserves original order within each group.
+     *
+     * @param  array<int,array<string,mixed>>  $sources
+     * @return array<int,array<string,mixed>>
+     */
+    private function orderSourcesForScraping(array $sources): array
+    {
+        $direct = [];
+        $redirects = [];
+
+        foreach ($sources as $source) {
+            $url = trim((string) ($source['source_url'] ?? ''));
+            $host = $url !== '' ? parse_url($url, PHP_URL_HOST) : null;
+            if ($host === 'news.google.com') {
+                $redirects[] = $source;
+            } else {
+                $direct[] = $source;
+            }
+        }
+
+        return array_merge($direct, $redirects);
     }
 
     private function generateAiFallbackImage(string $articleTitle, string $topicName, string $category): ?string
