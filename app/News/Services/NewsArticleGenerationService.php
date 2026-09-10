@@ -185,7 +185,7 @@ class NewsArticleGenerationService
                     $faqSection,
                 );
 
-                $this->repository->saveGeneratedArticle(
+                $savedId = $this->repository->saveGeneratedArticle(
                     (int) $topic['id'],
                     title: Str::limit($title, 250, ''),
                     content: $article,
@@ -217,6 +217,14 @@ class NewsArticleGenerationService
                     storyId: $storyId,
                 );
 
+                // saveGeneratedArticle returns null when the duplicate gate
+                // suppressed the save (topic already marked failed + retries
+                // exhausted so the ensure-pass won't resurrect it). Not a
+                // generation failure — don't count it as generated or failed.
+                if ($savedId === null) {
+                    continue;
+                }
+
                 $generated++;
             } catch (\Throwable $e) {
                 if ($fallbackProvider && $fallbackModel) {
@@ -227,7 +235,10 @@ class NewsArticleGenerationService
                         'error' => $e->getMessage(),
                     ]);
                     try {
-                        $this->generateWithFallback($topic, $sourceRows ?? [], $entities ?? null, $fallbackProvider, $fallbackModel, $timeout, $storyId);
+                        $fallbackSaved = $this->generateWithFallback($topic, $sourceRows ?? [], $entities ?? null, $fallbackProvider, $fallbackModel, $timeout, $storyId);
+                        if ($fallbackSaved === null) {
+                            continue;
+                        }
                         $generated++;
 
                         continue;
@@ -255,7 +266,7 @@ class NewsArticleGenerationService
         ];
     }
 
-    private function generateWithFallback(array $topic, array $sourceRows, $entities, string $fallbackProvider, string $fallbackModel, int $timeout, ?int $storyId = null): void
+    private function generateWithFallback(array $topic, array $sourceRows, $entities, string $fallbackProvider, string $fallbackModel, int $timeout, ?int $storyId = null): ?int
     {
         $aiCategories = ['artificial-intelligence'];
         $isAiTopic = in_array($topic['category'] ?? '', $aiCategories, true);
@@ -314,7 +325,7 @@ class NewsArticleGenerationService
         $resolvedImage = $this->imageService->resolveImageForTopic($topic, $title);
         [$status, $qualityReport] = $this->assessQuality($articleMarkdown, $article, count($sourceRows), $metaKeywords, $faqSection);
 
-        $this->repository->saveGeneratedArticle(
+        return $this->repository->saveGeneratedArticle(
             (int) $topic['id'],
             title: Str::limit($title, 250, ''),
             content: $article,

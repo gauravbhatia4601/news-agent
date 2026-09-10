@@ -207,6 +207,15 @@ class NewsTopicRepository
         return $result;
     }
 
+    /**
+     * Persist a generated article for a topic.
+     *
+     * Returns the article id on save, or null when the article was suppressed
+     * as a duplicate of a recently-published article (the last-resort gate).
+     * Null is not an error — callers must NOT treat it as a failure.
+     *
+     * @return int|null Article id, or null when suppressed as a duplicate.
+     */
     public function saveGeneratedArticle(
         int $topicId,
         string $title,
@@ -223,8 +232,47 @@ class NewsTopicRepository
         ?string $qualityReport = null,
         int $generationDurationSeconds = 0,
         ?int $storyId = null,
-    ): void {
-        DB::transaction(function () use ($topicId, $title, $content, $provider, $model, $metaTitle, $metaDescription, $metaKeywords, $imageUrl, $thumbnailUrl, $metadata, $status, $qualityReport, $generationDurationSeconds, $storyId): void {
+    ): ?int {
+        // Duplicate gate (last-resort backstop): before persisting as
+        // published, compare the candidate title against every published
+        // article from the last 24h across ALL pipelines (hourly discovery
+        // AND live-story supporting articles). Upstream stem-matching,
+        // the monitor pre-filter, and the per-story daily cap catch most
+        // duplicates; this is the guaranteed backstop that runs at the
+        // moment a generated article is about to be saved — so it also
+        // blocks an hourly-discovery article duplicating a story's
+        // supporting article for the same event.
+        // ponytail: a few hundred published rows/day at current scale (~200
+        // baseline) — an unindexed 24h scan is fine here. If volume ever
+        // reaches ~10k/day, narrow to same-category or add a title hash
+        // index. This is not a hot path (one call per generated article).
+        if ($status === 'published' && ($dupe = $this->findRecentPublishedDuplicate($title, $topicId)) !== null) {
+            \Log::info('Duplicate article suppressed at save gate.', [
+                'topic_id' => $topicId,
+                'suppressed_title' => $title,
+                'matched_article_id' => $dupe->id,
+                'matched_title' => $dupe->title,
+            ]);
+
+            // Mark the topic failed with retry_count pushed to the retry
+            // limit so the live-story monitor's ensure-pass (which skips
+            // topics with retry_count >= limit) never resurrects it. Never
+            // decrease an existing higher retry_count. Harmless for non-story
+            // topics (no ensure-pass touches them). ponytail: a read-then-
+            // write is fine — this is the rare suppression path, one call
+            // per duplicate, not a hot loop.
+            $retryLimit = (int) config('news-engine.live_stories.update_retry_limit', 5);
+            $currentRetry = (int) DB::table('news_topics')->where('id', $topicId)->value('retry_count');
+            DB::table('news_topics')->where('id', $topicId)->update([
+                'generation_status' => 'failed',
+                'retry_count' => max($currentRetry, $retryLimit),
+                'updated_at' => now(),
+            ]);
+
+            return null;
+        }
+
+        return DB::transaction(function () use ($topicId, $title, $content, $provider, $model, $metaTitle, $metaDescription, $metaKeywords, $imageUrl, $thumbnailUrl, $metadata, $status, $qualityReport, $generationDurationSeconds, $storyId): int {
             // Derive the story from the pivot when not explicitly threaded: any
             // article for a story-linked topic is automatically a supporting
             // article — this closes the detection retcon race (pivot linked at
@@ -261,15 +309,41 @@ class NewsTopicRepository
                 DB::table('news_articles')
                     ->where('topic_id', $topicId)
                     ->update($payload);
+                $articleId = (int) $existing->id;
             } else {
-                DB::table('news_articles')->insert($payload + [
+                $articleId = (int) DB::table('news_articles')->insertGetId($payload + [
                     'topic_id' => $topicId,
                     'created_at' => now(),
                 ]);
             }
 
             $this->markGenerated($topicId);
+
+            return $articleId;
         });
+    }
+
+    /**
+     * Find a published article from the last 24h whose title is similar to the
+     * candidate. Returns the first match (id, title) or null. The cross-
+     * pipeline scan (all stories + hourly discovery) is the guarantee that no
+     * duplicate slips past the upstream filters.
+     */
+    private function findRecentPublishedDuplicate(string $candidateTitle, int $topicId): ?object
+    {
+        $recent = DB::table('news_articles')
+            ->where('status', 'published')
+            ->where('published_at', '>=', now()->subDay())
+            ->where('topic_id', '!=', $topicId)
+            ->get(['id', 'title']);
+
+        foreach ($recent as $article) {
+            if (HeadlineSimilarity::similar($candidateTitle, (string) $article->title)) {
+                return $article;
+            }
+        }
+
+        return null;
     }
 
     public function markGenerationFailed(int $topicId): void
