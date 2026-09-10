@@ -3,6 +3,7 @@
 namespace App\News\Services;
 
 use App\News\Support\GoogleNewsUrlDecoder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -60,7 +61,21 @@ class NewsArticleImageService
         }
 
         // Source scraping failed (usually Google News redirects that bot-block).
-        // Fall back to AI generation when enabled — keeps articles illustrated.
+        // Try the Brave Images API next — real photos without AI generation.
+        $braveImage = $this->fetchFromBraveImages(
+            (string) ($topic['topic_name'] ?? ''),
+            $articleTitle,
+        );
+        if ($braveImage !== null) {
+            return [
+                'image_url' => $braveImage,
+                'thumbnail_url' => $braveImage,
+                'image_origin' => 'brave',
+            ];
+        }
+
+        // Last resort: AI generation (config-gated, off in prod) — keeps
+        // articles illustrated when neither sources nor Brave yield an image.
         $aiImage = $this->generateAiFallbackImage(
             $articleTitle,
             (string) ($topic['topic_name'] ?? ''),
@@ -130,6 +145,102 @@ class NewsArticleImageService
                 }
             } catch (\Throwable $e) {
                 Log::warning('Source image fetch failed: '.$e->getMessage(), ['source_url' => $sourceUrl]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Query the Brave Images API for a real photo matching the topic/headline.
+     * Reuses the same api_key + base_url as the brave_search source so only one
+     * credential is configured. Caches the chosen path (or null) per query for
+     * 24h so recurring topics don't re-hit the API.
+     */
+    private function fetchFromBraveImages(string $topicName, string $articleTitle): ?string
+    {
+        if (! (bool) config('news-engine.images.brave.enabled', true)) {
+            return null;
+        }
+
+        // Reuse the brave_search source credential — single source of truth.
+        $apiKey = (string) config('news-engine.sources.brave_search.api_key', '');
+        if ($apiKey === '') {
+            return null;
+        }
+
+        $query = trim($topicName) !== '' ? trim($topicName) : trim($articleTitle);
+        if ($query === '') {
+            return null;
+        }
+        $query = preg_replace('/\s+/', ' ', $query) ?? $query;
+
+        // Cache hits (including null) for 24h — avoids repeat API calls for
+        // recurring topic names across the same discovery cycle.
+        $cacheKey = 'news-images:brave:'.sha1($query);
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
+        $baseUrl = rtrim((string) config(
+            'news-engine.sources.brave_search.base_url',
+            'https://api.search.brave.com/res/v1',
+        ), '/');
+        $timeout = max(5, (int) config('news-engine.images.brave.timeout', 15));
+        $count = max(1, (int) config('news-engine.images.brave.results_limit', 5));
+
+        try {
+            $response = Http::timeout($timeout)
+                ->withHeaders([
+                    'X-Subscription-Token' => $apiKey,
+                    'Accept' => 'application/json',
+                ])
+                ->get($baseUrl.'/images/search', [
+                    'q' => $query,
+                    'count' => $count,
+                    'safesearch' => 'moderate',
+                ]);
+        } catch (\Throwable $e) {
+            // Transient failure — don't cache so the next cycle can retry.
+            Log::warning('Brave Images fetch failed: '.$e->getMessage(), ['query' => $query]);
+
+            return null;
+        }
+
+        $result = $this->pickBraveImageResult($response);
+        // Cache the outcome (path or null) so the same query doesn't re-hit
+        // Brave for 24h. Only an actual HTTP response reaches here; exceptions
+        // return above without caching to permit retry.
+        Cache::put($cacheKey, $result, now()->addHours(24));
+
+        return $result;
+    }
+
+    /**
+     * Pick the first Brave Images result that passes the blocklist and downloads.
+     *
+     * @param  \Illuminate\Http\Client\Response  $response
+     */
+    private function pickBraveImageResult($response): ?string
+    {
+        if (! $response->ok()) {
+            return null;
+        }
+
+        $results = $response->json('results', []);
+        if (! is_array($results)) {
+            return null;
+        }
+
+        foreach ($results as $item) {
+            $imageUrl = trim((string) ($item['url'] ?? ''));
+            if ($imageUrl === '' || ! $this->isLikelyArticleImageUrl($imageUrl)) {
+                continue;
+            }
+
+            $stored = $this->downloadAndStoreImage($imageUrl, 'brave');
+            if ($stored !== null) {
+                return $stored;
             }
         }
 

@@ -145,6 +145,10 @@ return [
             'max_attempts' => (int) env('NEWS_SOURCE_IMAGES_MAX_ATTEMPTS', 3),
             'html_timeout' => (int) env('NEWS_SOURCE_IMAGES_HTML_TIMEOUT', 10),
             'image_timeout' => (int) env('NEWS_SOURCE_IMAGES_DOWNLOAD_TIMEOUT', 20),
+            // Gate the batchexecute HTTP resolution of opaque Google News
+            // redirect tokens. The local protobuf decode stays free; this only
+            // fires for the opaque-token path where the payload is not a URL.
+            'resolve_google_redirects' => (bool) env('NEWS_RESOLVE_GNEWS_REDIRECTS', true),
         ],
 
         'ai' => [
@@ -161,6 +165,16 @@ return [
                 'height' => (int) env('NEWS_AI_IMAGE_HEIGHT', 864),
                 'timeout' => (int) env('NEWS_AI_IMAGE_TIMEOUT', 35),
             ],
+        ],
+
+        // Brave Images API fallback — runs after source scraping fails and
+        // before the (config-gated, off-in-prod) AI generator. Reuses the same
+        // Brave API key + base URL as the brave_search source so there is a
+        // single configured credential.
+        'brave' => [
+            'enabled' => (bool) env('NEWS_BRAVE_IMAGES_ENABLED', true),
+            'timeout' => (int) env('NEWS_BRAVE_IMAGES_TIMEOUT', 15),
+            'results_limit' => (int) env('NEWS_BRAVE_IMAGES_RESULTS_LIMIT', 5),
         ],
     ],
 
