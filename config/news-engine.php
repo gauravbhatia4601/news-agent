@@ -60,6 +60,7 @@ return [
         'monitor_topics_limit' => (int) env('NEWS_LIVE_STORIES_MONITOR_TOPICS', 3),
         'update_retry_limit' => (int) env('NEWS_LIVE_STORIES_UPDATE_RETRY_LIMIT', 5),
         'auto_conclude_after_empty_cycles' => (int) env('NEWS_LIVE_STORIES_AUTO_CONCLUDE_EMPTY', 6),
+        'max_supporting_articles_per_day' => (int) env('NEWS_LIVE_STORIES_MAX_ARTICLES_PER_DAY', 4),
         'urgency_freshness_map' => [
             'live' => [
                 'google' => env('NEWS_LIVE_FRESHNESS_LIVE_GOOGLE', '1h'),

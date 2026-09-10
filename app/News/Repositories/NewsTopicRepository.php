@@ -4,6 +4,7 @@ namespace App\News\Repositories;
 
 use App\News\DTO\DiscoveredSource;
 use App\News\DTO\DiscoveredTopic;
+use App\News\Support\HeadlineSimilarity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -94,23 +95,44 @@ class NewsTopicRepository
 
     private function findFuzzyDuplicate(DiscoveredTopic $topic): ?int
     {
-        if ($topic->coreTokens === []) {
+        if ($topic->name === '') {
             return null;
         }
 
+        // Hourly-discovery existing-topic matcher. Raw-token Jaccard on
+        // core_tokens missed headline drift (plurals, possessives, reworded
+        // leads) and spawned duplicate topic rows — ~700 articles/day vs the
+        // ~200 baseline. Two gates now attach a candidate to an existing row:
+        //   1. Stemmed-token Jaccard >= 0.55 (HeadlineSimilarity::tokens)
+        //   2. HeadlineSimilarity::similar(name, existingName, 0.6)
+        // Signatures are untouched — only the attach-vs-insert decision changes.
+        $candidateTokens = HeadlineSimilarity::tokens($topic->name);
+
         $recentTopics = DB::table('news_topics')
             ->where('created_at', '>=', now()->subDays(7))
-            ->whereNotNull('core_tokens')
-            ->get(['id', 'core_tokens']);
+            ->orderByDesc('id')
+            ->get(['id', 'topic_name']);
 
         foreach ($recentTopics as $existing) {
-            $existingTokens = json_decode($existing->core_tokens, true);
-            if (! is_array($existingTokens) || $existingTokens === []) {
+            $existingName = (string) ($existing->topic_name ?? '');
+            if ($existingName === '') {
                 continue;
             }
 
-            $intersection = count(array_intersect($topic->coreTokens, $existingTokens));
-            $union = count(array_unique(array_merge($topic->coreTokens, $existingTokens)));
+            // Gate 2: stemmed overlap coefficient (handles reworded leads that
+            // Jaccard on full token sets can miss).
+            if (HeadlineSimilarity::similar($topic->name, $existingName, 0.6)) {
+                return (int) $existing->id;
+            }
+
+            // Gate 1: stemmed-token Jaccard >= 0.55.
+            $existingTokens = HeadlineSimilarity::tokens($existingName);
+            if ($candidateTokens === [] || $existingTokens === []) {
+                continue;
+            }
+
+            $intersection = count(array_intersect($candidateTokens, $existingTokens));
+            $union = count(array_unique(array_merge($candidateTokens, $existingTokens)));
             $jaccard = $union > 0 ? $intersection / $union : 0;
 
             if ($jaccard >= 0.55) {

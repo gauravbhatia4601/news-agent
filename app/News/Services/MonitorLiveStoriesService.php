@@ -184,9 +184,19 @@ class MonitorLiveStoriesService
                     ]);
                 }
 
-                // Dispatch generation job with storyId (full article as supporting content).
-                GenerateArticle::dispatch($topic->signature, $story->id);
-                $dispatched++;
+                // Per-story daily article cap: still link via pivot and still
+                // create timeline entries above, but skip generation dispatch
+                // once the story has published cap articles in the last 24h.
+                if ($this->storyDailyArticleCapReached($story)) {
+                    Log::info('Story monitor: daily supporting-article cap reached, skipping dispatch.', [
+                        'story_id' => $story->id,
+                        'signature' => $topic->signature,
+                    ]);
+                } else {
+                    // Dispatch generation job with storyId (full article as supporting content).
+                    GenerateArticle::dispatch($topic->signature, $story->id);
+                    $dispatched++;
+                }
             }
         }
 
@@ -299,7 +309,18 @@ class MonitorLiveStoriesService
                 continue;
             }
 
-            $bumpRetry = $topic->generation_status === 'failed' ? 1 : 0;
+            // Per-story daily article cap: skip the recovery dispatch when the
+            // story has already published cap articles in the last 24h. The
+            // topic is NOT reset to pending in this case — it stays stuck so
+            // the next cycle outside the cap window can recover it.
+            if ($this->storyDailyArticleCapReached($story)) {
+                Log::info('Story monitor: daily supporting-article cap reached, skipping recovery dispatch.', [
+                    'story_id' => $story->id,
+                    'topic_id' => $topic->id,
+                ]);
+
+                continue;
+            }
 
             DB::table('news_topics')->where('id', $topic->id)->update([
                 'generation_status' => 'pending',
@@ -319,5 +340,26 @@ class MonitorLiveStoriesService
         $id = DB::table('news_topics')->where('topic_signature', $signature)->value('id');
 
         return $id !== null ? (int) $id : null;
+    }
+
+    /**
+     * Per-story daily article cap: true when the story has published >= cap
+     * articles in the last 24h. Guards both the judged-new dispatch path and
+     * the ensureSupportingArticles recovery path.
+     */
+    private function storyDailyArticleCapReached(Story $story): bool
+    {
+        $cap = (int) config('news-engine.live_stories.max_supporting_articles_per_day', 4);
+        if ($cap <= 0) {
+            return false;
+        }
+
+        $publishedLast24h = DB::table('news_articles')
+            ->where('story_id', $story->id)
+            ->where('status', 'published')
+            ->where('published_at', '>=', now()->subDay())
+            ->count();
+
+        return $publishedLast24h >= $cap;
     }
 }

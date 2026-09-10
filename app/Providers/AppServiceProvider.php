@@ -39,8 +39,10 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(5)->by($request->ip()),
         ]);
 
+        // A browsing user fires 15-25 calls per page view legitimately, so the
+        // public-api limiter is sized to absorb a few page views per minute per IP.
         RateLimiter::for('public-api', fn ($request) => [
-            Limit::perMinute(60)->by($request->ip()),
+            Limit::perMinute(240)->by($request->ip()),
         ]);
 
         // Search hits an index-backed query, but typeahead still multiplies fast:
