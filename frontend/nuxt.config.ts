@@ -61,6 +61,7 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'AI-powered news engine delivering curated, fact-driven journalism with an Indian perspective. Covering politics, business, technology, sports, and culture.' },
         { name: 'theme-color', content: '#1a2233' },
+        { name: 'ahrefs-site-verification', content: 'd4c7e273ac3f8b0907551ea6ba488dfd92d567b16bf0f066efb76b32718712a6' },
         { property: 'og:site_name', content: 'The Neural Journal' },
         { property: 'og:type', content: 'website' },
         { property: 'og:locale', content: 'en_IN' },
