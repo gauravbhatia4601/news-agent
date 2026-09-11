@@ -22,6 +22,7 @@ class DashboardController extends Controller
         $topicsGenerated = NewsTopic::where('generation_status', 'generated')->count();
         $topicsPending = NewsTopic::where('generation_status', 'pending')->count();
         $topicsFailed = NewsTopic::where('generation_status', 'failed')->count();
+        $topicsDuplicateSkipped = NewsTopic::where('generation_status', 'duplicate_skipped')->count();
 
         $queueJobs = Queue::size(config('queue.connections.'.config('queue.default', 'database').'.queue', 'default'));
         $failedQueueJobs = DB::table('failed_jobs')->count();
@@ -86,6 +87,7 @@ class DashboardController extends Controller
                     'generated' => $topicsGenerated,
                     'pending' => $topicsPending,
                     'failed' => $topicsFailed,
+                    'duplicate_skipped' => $topicsDuplicateSkipped,
                 ],
                 'queue_jobs' => $queueJobs,
                 'failed_queue_jobs' => $failedQueueJobs,

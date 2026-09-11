@@ -58,6 +58,10 @@ Schedule::command('news:monitor-stories')->everyTenMinutes()
     ->withoutOverlapping(600)
     ->runInBackground();
 
+Schedule::command('news:janitor-topics')->everyThirtyMinutes()
+    ->withoutOverlapping(300)
+    ->runInBackground();
+
 Schedule::call(function () {
     QueueJobLog::where('created_at', '<', now()->subHours(48))->delete();
 })->daily()

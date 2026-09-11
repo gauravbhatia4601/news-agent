@@ -15,7 +15,7 @@
           </div>
         </div>
         <div class="flex gap-2">
-          <button v-if="topic.generation_status === 'failed'" @click="retry"
+          <button v-if="topic.generation_status === 'failed' || topic.generation_status === 'duplicate_skipped'" @click="retry"
             class="text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded-full hover:bg-amber-50 transition-colors"
           >Retry</button>
           <button @click="deleteTopic"
@@ -66,6 +66,7 @@ function topicStatusClass(s: string) {
   if (s === 'generated') return 'bg-emerald-100 text-emerald-700'
   if (s === 'pending') return 'bg-blue-100 text-blue-700'
   if (s === 'failed') return 'bg-red-100 text-red-700'
+  if (s === 'duplicate_skipped') return 'bg-violet-100 text-violet-700'
   return 'bg-slate-100 text-slate-600'
 }
 

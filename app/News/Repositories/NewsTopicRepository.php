@@ -257,18 +257,12 @@ class NewsTopicRepository
                 'matched_title' => $dupe->title,
             ]);
 
-            // Mark the topic failed with retry_count pushed to the retry
-            // limit so the live-story monitor's ensure-pass (which skips
-            // topics with retry_count >= limit) never resurrects it. Never
-            // decrease an existing higher retry_count. Harmless for non-story
-            // topics (no ensure-pass touches them). ponytail: a read-then-
-            // write is fine — this is the rare suppression path, one call
-            // per duplicate, not a hot loop.
-            $retryLimit = (int) config('news-engine.live_stories.update_retry_limit', 5);
-            $currentRetry = (int) DB::table('news_topics')->where('id', $topicId)->value('retry_count');
+            // Mark the topic as a deliberate duplicate skip — a terminal
+            // status distinct from real failures. Recovery paths (ensure-
+            // pass, janitor, retry-failed) all skip 'duplicate_skipped'.
+            // An admin can still manually force-retry via the admin UI.
             DB::table('news_topics')->where('id', $topicId)->update([
-                'generation_status' => 'failed',
-                'retry_count' => max($currentRetry, $retryLimit),
+                'generation_status' => 'duplicate_skipped',
                 'updated_at' => now(),
             ]);
 

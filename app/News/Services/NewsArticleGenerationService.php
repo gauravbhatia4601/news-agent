@@ -218,9 +218,9 @@ class NewsArticleGenerationService
                 );
 
                 // saveGeneratedArticle returns null when the duplicate gate
-                // suppressed the save (topic already marked failed + retries
-                // exhausted so the ensure-pass won't resurrect it). Not a
-                // generation failure — don't count it as generated or failed.
+                // suppressed the save (topic marked 'duplicate_skipped' — a
+                // terminal status recovery paths skip). Not a generation
+                // failure — don't count it as generated or failed.
                 if ($savedId === null) {
                     continue;
                 }

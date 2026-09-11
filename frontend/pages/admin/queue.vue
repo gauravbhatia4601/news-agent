@@ -120,7 +120,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-4 gap-3">
           <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-admin-border">
             <p class="text-xl font-bold text-blue-600">{{ generation.pending_topics || 0 }}</p>
             <p class="text-[10px] uppercase tracking-wider text-admin-muted mt-1">Pending</p>
@@ -132,6 +132,10 @@
           <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-admin-border">
             <p class="text-xl font-bold text-red-600">{{ generation.failed_topics || 0 }}</p>
             <p class="text-[10px] uppercase tracking-wider text-admin-muted mt-1">Failed</p>
+          </div>
+          <div class="bg-slate-50 rounded-[14px] p-3 text-center border border-admin-border">
+            <p class="text-xl font-bold text-violet-600">{{ generation.duplicate_skipped_topics || 0 }}</p>
+            <p class="text-[10px] uppercase tracking-wider text-admin-muted mt-1">Dupe Skipped</p>
           </div>
         </div>
       </div>

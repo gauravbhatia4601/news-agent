@@ -17,13 +17,11 @@ class NewsTopicRepositoryDuplicateGateTest extends TestCase
     /**
      * A candidate title similar (plural/possessive/reworded) to a published
      * article from the last 24h must be suppressed: no article row created,
-     * the topic marked failed with retry_count >= the retry limit, and a
-     * second ensure-pass-style dispatch must not resurrect it.
+     * the topic marked 'duplicate_skipped' (a terminal status that recovery
+     * paths skip), and no ensure-pass-style dispatch must resurrect it.
      */
     public function test_similar_title_to_recent_published_article_is_suppressed(): void
     {
-        $retryLimit = (int) config('news-engine.live_stories.update_retry_limit', 5);
-
         // Existing published article for a different topic.
         $existingTopic = NewsTopic::factory()->create([
             'generation_status' => 'generated',
@@ -61,18 +59,11 @@ class NewsTopicRepositoryDuplicateGateTest extends TestCase
         $this->assertNull($result, 'Suppressed duplicate must return null.');
         $this->assertSame(0, NewsArticle::where('topic_id', $candidateTopic->id)->count(), 'No article row should be created for the suppressed topic.');
 
-        // Topic marked failed with retry_count at the limit.
+        // Topic marked duplicate_skipped — terminal status, not a failure.
         $candidateTopic->refresh();
-        $this->assertSame('failed', $candidateTopic->generation_status, 'Suppressed topic must be marked failed so the ensure-pass does not re-dispatch.');
-        $this->assertGreaterThanOrEqual($retryLimit, $candidateTopic->retry_count, 'retry_count must be bumped to the retry limit.');
-
-        // Ensure-pass-style resurrection: simulate the monitor's exhausted-
-        // retries guard. A topic that is 'failed' with retry_count >= limit
-        // is skipped permanently — verify the invariant the guard relies on.
-        $this->assertTrue(
-            $candidateTopic->generation_status === 'failed' && $candidateTopic->retry_count >= $retryLimit,
-            'Retry-exhausted invariant must hold so the ensure-pass skips it.',
-        );
+        $this->assertSame('duplicate_skipped', $candidateTopic->generation_status, 'Suppressed topic must be marked duplicate_skipped.');
+        // retry_count is not bumped — the topic was not a failure.
+        $this->assertSame(0, $candidateTopic->retry_count, 'retry_count must not change for a duplicate skip.');
     }
 
     /**

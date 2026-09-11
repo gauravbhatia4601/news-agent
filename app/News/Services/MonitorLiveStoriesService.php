@@ -275,7 +275,7 @@ class MonitorLiveStoriesService
         $stuck = DB::table('story_topics')
             ->join('news_topics', 'news_topics.id', '=', 'story_topics.topic_id')
             ->where('story_topics.story_id', $story->id)
-            ->where('news_topics.generation_status', '!=', 'generating')
+            ->whereNotIn('news_topics.generation_status', ['generating', 'duplicate_skipped'])
             ->where('news_topics.updated_at', '<', now()->subMinutes(15))
             ->limit(4)
             ->get(['news_topics.id', 'news_topics.topic_signature', 'news_topics.generation_status', 'news_topics.retry_count']);

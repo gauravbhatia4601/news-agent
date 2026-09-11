@@ -7,6 +7,7 @@
         <option value="pending">Pending</option>
         <option value="generated">Generated</option>
         <option value="failed">Failed</option>
+        <option value="duplicate_skipped">Duplicate Skipped</option>
       </select>
       <select v-model="filters.category" class="bg-slate-50 border border-admin-border rounded-[14px] px-4 py-2.5 text-sm text-admin-text focus-ring transition-colors">
         <option value="">All Categories</option>
@@ -65,7 +66,7 @@
             <td class="px-6 py-3.5 text-right">
               <div class="flex items-center justify-end gap-1">
                 <button v-if="t.generation_status === 'pending'" @click="dispatchTopic(t.id)" class="p-1.5 text-admin-muted hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Dispatch to queue"><Send class="w-3.5 h-3.5" /></button>
-                <button v-if="t.generation_status === 'failed'" @click="retryTopic(t.id)" class="p-1.5 text-admin-muted hover:text-admin-accent hover:bg-amber-50 rounded-lg transition-colors" title="Retry"><RefreshCw class="w-3.5 h-3.5" /></button>
+                <button v-if="t.generation_status === 'failed' || t.generation_status === 'duplicate_skipped'" @click="retryTopic(t.id)" class="p-1.5 text-admin-muted hover:text-admin-accent hover:bg-amber-50 rounded-lg transition-colors" title="Retry"><RefreshCw class="w-3.5 h-3.5" /></button>
                 <button @click="deleteTopic(t.id)" class="p-1.5 text-admin-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 class="w-3.5 h-3.5" /></button>
               </div>
             </td>
@@ -143,6 +144,7 @@ function topicStatusClass(s: string) {
   if (s === 'generated') return 'bg-emerald-50 text-emerald-700 border border-emerald-100'
   if (s === 'pending') return 'bg-blue-50 text-blue-700 border border-blue-100'
   if (s === 'failed') return 'bg-red-50 text-red-700 border border-red-100'
+  if (s === 'duplicate_skipped') return 'bg-violet-50 text-violet-700 border border-violet-100'
   return 'bg-slate-100 text-slate-600 border border-admin-border'
 }
 

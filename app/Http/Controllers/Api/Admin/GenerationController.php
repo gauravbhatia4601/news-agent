@@ -98,6 +98,7 @@ class GenerationController extends Controller
                     'pending_topics' => NewsTopic::where('generation_status', 'pending')->count(),
                     'generated_topics' => NewsTopic::where('generation_status', 'generated')->count(),
                     'failed_topics' => NewsTopic::where('generation_status', 'failed')->count(),
+                    'duplicate_skipped_topics' => NewsTopic::where('generation_status', 'duplicate_skipped')->count(),
                 ],
                 'timestamp' => $now->toIso8601String(),
             ],
@@ -332,6 +333,7 @@ class GenerationController extends Controller
         $topicsGenerated = DB::table('news_topics')->where('generation_status', 'generated')->count();
         $topicsFailed = DB::table('news_topics')->where('generation_status', 'failed')->count();
         $topicsPending = DB::table('news_topics')->where('generation_status', 'pending')->count();
+        $topicsDuplicateSkipped = DB::table('news_topics')->where('generation_status', 'duplicate_skipped')->count();
 
         $articlesPublished = DB::table('news_articles')->where('status', 'published')->count();
         $articlesDraft = DB::table('news_articles')->where('status', 'draft')->count();
@@ -395,10 +397,11 @@ class GenerationController extends Controller
         return response()->json([
             'data' => [
                 'topics' => [
-                    'total' => $topicsGenerated + $topicsFailed + $topicsPending,
+                    'total' => $topicsGenerated + $topicsFailed + $topicsPending + $topicsDuplicateSkipped,
                     'generated' => $topicsGenerated,
                     'failed' => $topicsFailed,
                     'pending' => $topicsPending,
+                    'duplicate_skipped' => $topicsDuplicateSkipped,
                     'discovered_24h' => $discovered24h,
                     'discovered_7d' => $discovered7d,
                 ],

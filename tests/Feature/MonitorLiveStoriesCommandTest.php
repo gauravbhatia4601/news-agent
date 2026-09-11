@@ -656,6 +656,69 @@ class MonitorLiveStoriesCommandTest extends TestCase
         Queue::assertPushed(GenerateArticle::class, 1);
     }
 
+    /**
+     * A duplicate_skipped topic linked to a story must NOT be recovered by
+     * the ensure pass — it is a deliberate suppression, not a failure.
+     */
+    public function test_duplicate_skipped_topics_are_not_recovered_by_ensure_pass(): void
+    {
+        $parent = Category::create(['name' => 'National', 'slug' => 'national', 'display_order' => 1]);
+        Category::create([
+            'name' => 'Politics & Governance',
+            'slug' => 'politics-governance',
+            'parent_id' => $parent->id,
+            'display_order' => 1,
+        ]);
+
+        $story = Story::factory()->live()->create([
+            'search_query' => 'India election reform bill',
+        ]);
+
+        $dupTopic = NewsTopic::create([
+            'category' => 'politics-governance',
+            'topic_name' => 'Election reform passes committee stage',
+            'topic_signature' => sha1('story:'.$story->id.'|dup tokens'),
+            'core_tokens' => json_encode(['election', 'reform', 'committee']),
+            'source_count' => 1,
+            'generation_status' => 'duplicate_skipped',
+            'retry_count' => 0,
+            'created_at' => now()->subHour(),
+        ]);
+
+        DB::table('news_topics')->where('id', $dupTopic->id)->update([
+            'updated_at' => now()->subHour(),
+        ]);
+
+        DB::table('story_topics')->insert([
+            'story_id' => $story->id,
+            'topic_id' => $dupTopic->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Http::fake([
+            'news.google.com/*' => Http::response($this->googleRssXml(), 200, ['Content-Type' => 'application/rss+xml']),
+            'api.gdeltproject.org/*' => Http::response(['articles' => []], 200, ['Content-Type' => 'application/json']),
+            'api.search.brave.com/*' => Http::response(['grounding' => ['sources' => []]], 200, ['Content-Type' => 'application/json']),
+        ]);
+
+        Cache::flush();
+        Queue::fake();
+
+        $mock = Mockery::mock(LiveStoryAgentService::class);
+        $mock->shouldReceive('judgeUpdateBatch')
+            ->once()
+            ->andReturn([]);
+
+        $this->app->instance(LiveStoryAgentService::class, $mock);
+
+        $this->artisan('news:monitor-stories')->assertSuccessful();
+
+        // Status unchanged — ensure pass skipped it.
+        $this->assertSame('duplicate_skipped', $dupTopic->fresh()->generation_status);
+        Queue::assertNotPushed(GenerateArticle::class);
+    }
+
     private function emptyGoogleRssXml(): string
     {
         return <<<'XML'

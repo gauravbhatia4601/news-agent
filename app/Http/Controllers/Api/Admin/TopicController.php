@@ -113,8 +113,8 @@ class TopicController extends Controller
     {
         $topic = NewsTopic::findOrFail($id);
 
-        if ($topic->generation_status !== 'failed') {
-            return response()->json(['message' => 'Can only retry failed topics'], 422);
+        if (! in_array($topic->generation_status, ['failed', 'duplicate_skipped'], true)) {
+            return response()->json(['message' => 'Can only retry failed or duplicate-skipped topics'], 422);
         }
 
         if ($topic->retry_count >= 5) {
@@ -184,7 +184,10 @@ class TopicController extends Controller
 
         if ($action === 'retry') {
             $count = 0;
-            $topics = NewsTopic::whereIn('id', $ids)->where('generation_status', 'failed')->where('retry_count', '<', 5)->get();
+            $topics = NewsTopic::whereIn('id', $ids)
+                ->whereIn('generation_status', ['failed', 'duplicate_skipped'])
+                ->where('retry_count', '<', 5)
+                ->get();
             foreach ($topics as $topic) {
                 $topic->update(['generation_status' => 'pending']);
                 GenerateArticle::dispatch($topic->topic_signature);
