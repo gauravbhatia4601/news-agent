@@ -140,6 +140,12 @@ class DetectLiveStoriesCommand extends Command
                 'empty_cycles' => 0,
             ]);
 
+            // Make subsequent candidates in THIS batch see the story we just
+            // created — without this, two same-event candidates both pass the
+            // dedupe checks before either exists (root cause of prod dupes
+            // 212/213, both created in the same second).
+            $activeStories->push($story);
+
             // Insert story_topics pivot for the seeding topic.
             DB::table('story_topics')->insertOrIgnore([
                 'story_id' => $story->id,

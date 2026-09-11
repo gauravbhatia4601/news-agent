@@ -126,6 +126,92 @@ class DetectLiveStoriesCommandTest extends TestCase
     }
 
     /**
+     * Two same-event candidates in one batch (near-identical suggested titles)
+     * must produce only ONE story — the second candidate must see the first
+     * via the in-batch dedupe (root cause of prod dupe stories 212/213, both
+     * created in the same second).
+     */
+    public function test_detect_dedupes_two_same_event_candidates_in_one_batch(): void
+    {
+        $parent = Category::create(['name' => 'World', 'slug' => 'world', 'display_order' => 1]);
+        $category = Category::create([
+            'name' => 'Trade & Diplomacy',
+            'slug' => 'trade-diplomacy',
+            'parent_id' => $parent->id,
+            'display_order' => 1,
+        ]);
+
+        // Two distinct topics (different signatures) about the same event.
+        $topicA = NewsTopic::create([
+            'category' => 'trade-diplomacy',
+            'topic_name' => 'EU-India FTA progresses toward signing',
+            'topic_signature' => 'sig-fta-a-'.uniqid(),
+            'source_count' => 2,
+            'generation_status' => 'completed',
+            'category_id' => $category->id,
+            'created_at' => now()->subHour(),
+        ]);
+        $topicB = NewsTopic::create([
+            'category' => 'trade-diplomacy',
+            'topic_name' => 'EU-India FTA enters final approval stage',
+            'topic_signature' => 'sig-fta-b-'.uniqid(),
+            'source_count' => 2,
+            'generation_status' => 'completed',
+            'category_id' => $category->id,
+            'created_at' => now()->subHour(),
+        ]);
+
+        foreach ([$topicA, $topicB] as $topic) {
+            DB::table('news_topic_sources')->insert([
+                'topic_id' => $topic->id,
+                'source_name' => 'Reuters',
+                'source_url' => 'https://reuters.com/'.uniqid(),
+                'source_url_hash' => sha1('https://reuters.com/'.uniqid()),
+                'headline' => 'EU-India FTA nears final signing',
+                'summary' => 'EU and India close in on a free trade agreement.',
+                'published_at' => now()->subMinutes(30),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // The LLM returns two same-event candidates in one batch with
+        // near-identical suggested titles (stemmed overlap >= 0.5) and
+        // overlapping search queries. Without the in-batch dedupe, both
+        // pass before either story exists.
+        $mock = Mockery::mock(LiveStoryAgentService::class);
+        $mock->shouldReceive('detectLiveStories')
+            ->once()
+            ->andReturn([
+                [
+                    'topic_signature' => $topicA->topic_signature,
+                    'is_live_event' => true,
+                    'suggested_title' => 'EU-India Free Trade Agreement Nears Final Signing',
+                    'search_query' => 'EU India free trade agreement signing',
+                    'urgency' => 'live',
+                    'reasoning' => 'Ongoing trade negotiations.',
+                ],
+                [
+                    'topic_signature' => $topicB->topic_signature,
+                    'is_live_event' => true,
+                    'suggested_title' => 'EU-India Free Trade Agreement Reaches Final Approval',
+                    'search_query' => 'EU India free trade agreement final approval',
+                    'urgency' => 'live',
+                    'reasoning' => 'Same event, different framing.',
+                ],
+            ]);
+
+        $this->app->instance(LiveStoryAgentService::class, $mock);
+
+        $this->artisan('news:detect-live-stories')->assertSuccessful();
+
+        // Exactly one story — the second candidate was caught by the in-batch
+        // title/query dedupe (HeadlineSimilarity overlap on the shared
+        // "EU-India FTA" stem set).
+        $this->assertSame(1, Story::count(), 'Two same-event candidates in one batch must produce only one story.');
+    }
+
+    /**
      * Non-live-event topics do not create stories.
      */
     public function test_detect_skips_non_live_events(): void

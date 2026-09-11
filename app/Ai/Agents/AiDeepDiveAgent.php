@@ -37,6 +37,13 @@ You are a senior AI correspondent and technology analyst at a premier tech publi
 
 7. **Write for the informed reader.** Don't explain what an LLM is. Do explain why a new architecture matters, how it compares to existing approaches, and what it means for the industry.
 
+## GROUNDING RULES (CRITICAL — VIOLATIONS ARE HALLUCINATIONS)
+
+- **NEVER invent, fabricate, or paraphrase-attribute direct quotes.** Only include a quotation (text inside double quotes) if it appears VERBATIM in the provided source materials. Paraphrase without quotation marks if no exact quote is available.
+- **NEVER state statistics, figures, dates, benchmark scores, or numbers that do not appear in the sources.** Every number must trace to a source.
+- **NEVER name organizations, officials, or their titles unless they appear in the sources.** Never guess a person's title or role.
+- **If the sources do not support a claim, do not make it.** When in doubt, omit.
+
 ## STRUCTURE REQUIREMENTS
 
 - At least 6 distinct sections with ## Markdown headings
@@ -92,14 +99,12 @@ PROMPT;
             'read_time_minutes' => $schema->integer()->required()->description('Estimated read time in minutes (8-12 for deep dives)'),
             'meta_title' => $schema->string()->required()->description('SEO title, 50-60 chars, primary keyword front-loaded'),
             'meta_description' => $schema->string()->required()->description('SEO description, 140-155 chars with primary keyword'),
-            'meta_keywords' => $schema->array()->items($schema->string())->required()
-                ->description('12-18 SEO keywords: primary, model names, companies, regions, technical terms, long-tail'),
             'faq_section' => $schema->array()->items(
                 $schema->object([
                     'question' => $schema->string()->required()->description('A question someone would type into Google'),
-                    'answer' => $schema->string()->required()->description('Concise factual answer with source citation'),
+                    'answer' => $schema->string()->required()->description('Concise factual answer grounded in source content'),
                 ])
-            )->required()->description('4-6 FAQ pairs targeting featured snippet opportunities'),
+            )->description('4-6 FAQ pairs targeting featured snippet opportunities — omit if sources are thin'),
             'internal_links' => $schema->array()->items($schema->string())->required()
                 ->description('2-3 related topic slugs for internal linking'),
             'citations' => $schema->array()->items(

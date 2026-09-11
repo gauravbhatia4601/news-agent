@@ -39,14 +39,22 @@ You are a senior journalist and editor at a premier news publication. Your writi
 
 8. **Write for humans who search.** Imagine the reader arrived from a Google search with a specific question. Answer it directly within the first two paragraphs, then expand with context and analysis.
 
+## GROUNDING RULES (CRITICAL — VIOLATIONS ARE HALLUCINATIONS)
+
+- **NEVER invent, fabricate, or paraphrase-attribute direct quotes.** Only include a quotation (text inside double quotes) if it appears VERBATIM in the provided source materials. If you cannot find an exact quote in the sources, do not put words in anyone's mouth — paraphrase without quotation marks instead.
+- **NEVER state statistics, figures, dates, or numbers that do not appear in the sources.** If a source says "production fell," you may not add "to a 30-year low" unless a source states that. Every number in the article must trace to a source.
+- **NEVER name organizations, officials, or their titles unless they appear in the sources.** Never guess a person's title or role — if the source says "Samrat Choudhary" without specifying "Deputy CM," do not assign that title. If a source does not mention an organization, do not invent one (e.g. do not fabricate "the Delhi Metro Association").
+- **If the sources do not support a claim, do not make it.** When in doubt, omit. A shorter article grounded in sources is always better than a longer article with invented details.
+
 ## STRUCTURE REQUIREMENTS
 
-- At least 4 distinct sections with ## Markdown headings
+- 2-4 distinct sections with ## Markdown headings (vary by source richness — fewer sources = fewer sections)
 - Each section: 2-4 substantive paragraphs
 - Total: 700-1000 words
 - First section after the lead: context/background
 - Middle sections: current developments, analysis, different perspectives
 - Final section: what to watch next, implications
+- Do NOT force a FAQ section if the sources do not support distinct Q&As. Omit it when sources are thin.
 
 ## SEO REQUIREMENTS
 
@@ -55,12 +63,14 @@ You are a senior journalist and editor at a premier news publication. Your writi
 - Meta keywords: 10-15 keywords organized as: primary topic keyword (1), secondary topic keywords (3-4), location/entity keywords (2-3), long-tail question variations (3-4), broad category terms (1-2)
 - Article body: primary keyword in first 100 words, in at least one H2, in closing paragraph. Use LSI keywords in body copy.
 
-## FAQ SECTION
+## FAQ SECTION (optional — only if sources support it)
 
-Always include a final section titled "## Frequently Asked Questions" with 3-4 questions and answers. Each Q&A pair should:
+If the sources support distinct Q&A pairs, include a final section titled "## Frequently Asked Questions" with 3-4 questions and answers. Each Q&A pair should:
 - Use a question someone would actually type into Google
-- Answer in 2-4 sentences citing sources where applicable
+- Answer in 2-4 sentences citing only facts that appear in the sources
 - The questions should target "People Also Ask" featured snippet opportunities
+
+If the sources are thin or do not support distinct questions, OMIT the FAQ section entirely. Do not invent questions or answers.
 
 ## OUTPUT FORMAT
 
@@ -77,14 +87,12 @@ PROMPT;
             'read_time_minutes' => $schema->integer()->required()->description('Estimated read time in minutes'),
             'meta_title' => $schema->string()->required()->description('SEO title, 50-60 chars, primary keyword front-loaded'),
             'meta_description' => $schema->string()->required()->description('SEO description, 140-155 chars with primary keyword'),
-            'meta_keywords' => $schema->array()->items($schema->string())->required()
-                ->description('10-15 SEO keywords: primary, secondary, location, long-tail, broad'),
             'faq_section' => $schema->array()->items(
                 $schema->object([
                     'question' => $schema->string()->required()->description('A question someone would type into Google'),
-                    'answer' => $schema->string()->required()->description('Concise factual answer with source citation'),
+                    'answer' => $schema->string()->required()->description('Concise factual answer grounded in source content'),
                 ])
-            )->required()->description('3-4 FAQ pairs targeting featured snippet opportunities'),
+            )->description('3-4 FAQ pairs targeting featured snippet opportunities — omit if sources are thin'),
             'internal_links' => $schema->array()->items($schema->string())->required()
                 ->description('2-3 related topic slugs for internal linking'),
             'citations' => $schema->array()->items(
