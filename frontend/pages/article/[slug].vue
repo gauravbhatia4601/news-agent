@@ -56,7 +56,7 @@ useHead({
   script: [
     {
       type: 'application/ld+json',
-      children: () => JSON.stringify({
+      innerHTML: () => JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'NewsArticle',
         headline: article.value?.meta_title || article.value?.title,
@@ -91,7 +91,7 @@ useHead({
     },
     {
       type: 'application/ld+json',
-      children: () => JSON.stringify({
+      innerHTML: () => JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
@@ -118,7 +118,7 @@ useHead({
     },
     ...(article.value?.faq_section?.length ? [{
       type: 'application/ld+json',
-      children: () => JSON.stringify({
+      innerHTML: () => JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
         mainEntity: article.value!.faq_section.map((faq: { question: string; answer: string }) => ({
