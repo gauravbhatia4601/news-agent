@@ -32,21 +32,35 @@ final class HeadlineSimilarity
     ];
 
     /**
-     * Tokenize + stem: lowercase, strip non-alnum, drop ≤2-char tokens and
-     * stopwords, strip possessive 's, then strip trailing 's' on stems > 3
-     * chars (symmetric: pledges→pledge, midterms→midterm, trumps→trump).
+     * Tokenize + stem: lowercase, strip publisher suffixes, strip non-alnum,
+     * drop short purely-alpha tokens (≤2 chars) but keep digit-containing
+     * tokens of any length (6, 1b, 5000, 2026), drop stopwords, strip
+     * possessive 's, then strip trailing 's' on purely-alpha stems > 3 chars
+     * (symmetric: pledges→pledge, midterms→midterm, trumps→trump). Digit
+     * tokens are never stemmed (1b → 1 would lose the unit).
      *
      * @return array<int, string>
      */
     public static function tokens(string $text): array
     {
         $lower = mb_strtolower($text);
+        $lower = self::stripPublisherSuffix($lower);
+        // Normalize currency symbols to words so €6.1B → "euro 6 1b" — the
+        // word "euro" becomes a shared token between headlines that reference
+        // the same EU amount, lifting overlap above the match threshold.
+        $lower = str_replace(
+            ['€', '$', '£', '¥', '₹'],
+            [' euro ', ' dollar ', ' pound ', ' yen ', ' rupee '],
+            $lower,
+        );
         $normalized = preg_replace('/[^a-z0-9\s]/', ' ', $lower) ?? '';
         $rawTokens = preg_split('/\s+/', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
         $stemmed = [];
         foreach ($rawTokens as $token) {
-            if (strlen($token) <= 2) {
+            // Keep digit-containing tokens regardless of length (6, 1b, 5000);
+            // drop short purely-alpha tokens (≤2 chars).
+            if (strlen($token) <= 2 && ! preg_match('/\d/', $token)) {
                 continue;
             }
             if (in_array($token, self::STOPWORDS, true)) {
@@ -54,20 +68,54 @@ final class HeadlineSimilarity
             }
 
             $stem = $token;
-            // Strip possessive 's' (handled by non-alnum strip already, but
-            // guard for tokens that were exactly "word's" → "words" after strip).
-            // Strip trailing 's' when the stem is long enough that the singular
-            // form survives meaningfully (length > 3 after the 's' is dropped).
-            if (strlen($stem) > 3 && str_ends_with($stem, 's')) {
+            // Strip trailing 's' for plural/possessive normalization, but
+            // only on purely-alpha stems long enough to survive meaningfully
+            // — never on digit-containing tokens (1b → 1 would lose the unit).
+            if (strlen($stem) > 3 && str_ends_with($stem, 's') && ! preg_match('/\d/', $stem)) {
                 $stem = substr($stem, 0, -1);
             }
 
-            if ($stem !== '' && strlen($stem) > 2) {
+            // Final length gate mirrors the initial filter: keep digit tokens
+            // even when short (5, 1, 0); drop short alpha remnants.
+            if ($stem !== '' && (strlen($stem) > 2 || preg_match('/\d/', $stem))) {
                 $stemmed[] = $stem;
             }
         }
 
         return array_values(array_unique($stemmed));
+    }
+
+    /**
+     * Strip trailing publisher suffixes from Google News headlines
+     * ("Headline - Publisher"). Cuts at the last " - ", " – ", " — ", or " | "
+     * when it sits in the last ~40% of the string — avoids chopping legit
+     * mid-headline dashes.
+     */
+    private static function stripPublisherSuffix(string $lower): string
+    {
+        $separators = [' - ', ' – ', ' — ', ' | '];
+        $len = mb_strlen($lower);
+        if ($len === 0) {
+            return $lower;
+        }
+
+        $cutPoint = -1;
+        foreach ($separators as $sep) {
+            $pos = mb_strrpos($lower, $sep);
+            if ($pos === false) {
+                continue;
+            }
+            // Only strip when the separator is in the last ~40% of the string.
+            if ($pos >= (int) ($len * 0.6) && $pos > $cutPoint) {
+                $cutPoint = $pos;
+            }
+        }
+
+        if ($cutPoint >= 0) {
+            return trim(mb_substr($lower, 0, $cutPoint));
+        }
+
+        return $lower;
     }
 
     /**

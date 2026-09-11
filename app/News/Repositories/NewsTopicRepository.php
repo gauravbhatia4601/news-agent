@@ -108,8 +108,11 @@ class NewsTopicRepository
         // Signatures are untouched — only the attach-vs-insert decision changes.
         $candidateTokens = HeadlineSimilarity::tokens($topic->name);
 
+        // 36h recency window — same-event detection, not cross-week entity
+        // merging. Two distinct events sharing entities 5 days apart is a
+        // worse failure than a missed match; the save-time gate backstops.
         $recentTopics = DB::table('news_topics')
-            ->where('created_at', '>=', now()->subDays(7))
+            ->where('created_at', '>=', now()->subHours(36))
             ->orderByDesc('id')
             ->get(['id', 'topic_name']);
 

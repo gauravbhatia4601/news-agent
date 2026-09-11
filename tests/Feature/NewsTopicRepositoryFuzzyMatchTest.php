@@ -152,4 +152,95 @@ class NewsTopicRepositoryFuzzyMatchTest extends TestCase
 
         $this->assertSame($topicsBefore + 1, NewsTopic::count(), 'forceUniqueSignature must always create a new row.');
     }
+
+    /**
+     * The verified production failure case: same EU event discovered by two
+     * different sources with different publishers in the headline. Before the
+     * fix, publisher-suffix junk and dropped digit tokens kept overlap below
+     * 0.6 — the candidate got its own topic row and one LLM generation ran.
+     * Now the candidate attaches to the existing topic at layer 1.
+     */
+    public function test_eu_patriot_pair_attaches_to_existing_topic(): void
+    {
+        NewsTopic::create([
+            'category' => 'world',
+            'topic_name' => "EU Commission approves €6.1 billion for Ukraine's Patriot missiles and drones - RBC-Ukraine",
+            'topic_signature' => 'sig-eu-existing-'.uniqid(),
+            'core_tokens' => json_encode(['eu', 'commission', 'approves', 'billion', 'ukraine', 'patriot', 'missiles', 'drones']),
+            'source_count' => 1,
+            'generation_status' => 'generated',
+            'created_at' => now()->subHour(),
+        ]);
+
+        $topicsBefore = NewsTopic::count();
+
+        $candidate = new DiscoveredTopic(
+            category: 'world',
+            name: 'EU Clears €6.1B Tranche for Patriot Missiles and Drones - streamlinefeed.co.ke',
+            signature: 'sig-eu-candidate-'.uniqid(),
+            sources: [
+                new DiscoveredSource(
+                    sourceName: 'StreamlineFeed',
+                    sourceUrl: 'https://streamlinefeed.co.ke/example',
+                    headline: 'EU Clears €6.1B Tranche for Patriot Missiles and Drones',
+                    summary: 'The EU has cleared funding for Patriot missiles.',
+                    publishedAt: Carbon::now(),
+                    signature: 'src-sig-eu-'.uniqid(),
+                ),
+            ],
+            coreTokens: ['eu', 'clears', 'tranche', 'patriot', 'missiles', 'drones'],
+        );
+
+        $repository = app(NewsTopicRepository::class);
+        $topicId = $repository->saveTopicWithSources($candidate, false);
+
+        // Layer-1 catch: no new topic row — attached to the existing one.
+        $this->assertSame($topicsBefore, NewsTopic::count(), 'EU pair candidate should attach to the existing topic, not create a new row.');
+
+        $attached = NewsTopic::find($topicId);
+        $this->assertNotNull($attached);
+    }
+
+    /**
+     * Two events that share an entity (EU) and an amount (€6.1 billion) but
+     * describe fundamentally different things (missiles vs infrastructure)
+     * must NOT merge — the overlap is below the 0.6 threshold.
+     */
+    public function test_distinct_events_sharing_entity_and_amount_do_not_merge(): void
+    {
+        NewsTopic::create([
+            'category' => 'world',
+            'topic_name' => 'EU approves €6.1 billion for Patriot missiles',
+            'topic_signature' => 'sig-distinct-amt-'.uniqid(),
+            'core_tokens' => json_encode(['eu', 'approves', 'billion', 'patriot', 'missiles']),
+            'source_count' => 1,
+            'generation_status' => 'generated',
+            'created_at' => now()->subHour(),
+        ]);
+
+        $topicsBefore = NewsTopic::count();
+
+        $candidate = new DiscoveredTopic(
+            category: 'world',
+            name: 'EU rejects €6.1 billion infrastructure bill',
+            signature: 'sig-distinct-infra-'.uniqid(),
+            sources: [
+                new DiscoveredSource(
+                    sourceName: 'Reuters',
+                    sourceUrl: 'https://reuters.com/infra-example',
+                    headline: 'EU rejects €6.1 billion infrastructure bill',
+                    summary: 'The EU rejected the infrastructure spending bill.',
+                    publishedAt: Carbon::now(),
+                    signature: 'src-sig-infra-'.uniqid(),
+                ),
+            ],
+            coreTokens: ['eu', 'rejects', 'billion', 'infrastructure', 'bill'],
+        );
+
+        $repository = app(NewsTopicRepository::class);
+        $repository->saveTopicWithSources($candidate, false);
+
+        // Distinct events must create separate topic rows.
+        $this->assertSame($topicsBefore + 1, NewsTopic::count(), 'Distinct events sharing an entity and amount must not merge.');
+    }
 }
