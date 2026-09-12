@@ -68,6 +68,15 @@ Code-review (`code-reviewer`) runs after any multi-file change. `security-scan` 
 - Don't edit `database/migrations/*` — some are already applied in deployed environments. Add new migrations instead.
 - cold-email-service keeps state in `data/*.json` (gitignored) — never commit PII there. `leads/*.csv` and any lead list are real personal data: never commit new ones, never print contents into logs.
 
+## Per-page SEO structure rules
+
+`docs/SEO_RULES.md` is the binding spec for every article/page's SEO structure — title
+lengths, meta description band + uniqueness, OG/Twitter completeness, JSON-LD rendering
+(unhead v2 `innerHTML`, not `children`), single-h1, lang, canonicals, content grounding,
+sitemap hygiene. Derived from the 12 Sep 2026 Ahrefs audit (28/100 score). Generation code
+(`MetaClamp`, grounding checker, sanitizer) and the frontend templates already enforce it —
+consult it before touching generation prompts, page templates, or head/meta code.
+
 ## Known open items (as of 2026-09-08)
 
 All verified issues from the Sep 2026 audit are fixed except the opportunistic items below. Check this list before re-investigating.
