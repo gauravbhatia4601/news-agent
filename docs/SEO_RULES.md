@@ -12,7 +12,8 @@
 |---|---|
 | Total length (incl. brand suffix) | **≤ 65 chars** (Ahrefs flag threshold; Google truncates ~60) |
 | Article headline portion | **≤ 60 chars**, clamped at word boundary with ellipsis |
-| Brand suffix | `— The Neural Journal` (~20 chars) — keep the headline ≤ 45 when both must fit |
+| Brand suffix on ARTICLES | **None** — article pages set `titleTemplate: '%s'` and render the bare headline (suffix ≈ 20 chars would push every article past 65; verified against the 1,771-page flag) |
+| Brand suffix on other pages | `— The Neural Journal` stays for home/category/story/etc. — keep those titles ≤ 45 |
 | Uniqueness | Every page must have a **unique** title — slug-collision suffixes (`-2`) are a hard failure |
 | Style | Headline-style, no keyword stuffing, no broken auto-questions |
 

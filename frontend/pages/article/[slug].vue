@@ -61,6 +61,10 @@ useSeoMeta({
 })
 
 useHead({
+  // News headlines render bare in the <title> (clamped ≤60 at generation) —
+  // the ~20-char brand suffix would push every article title over the
+  // 65-char flag threshold (1,771 pages in the Ahrefs audit).
+  titleTemplate: '%s',
   link: [
     { rel: 'canonical', href: article.value ? `${siteUrl}/article/${article.value.slug}` : '' },
   ],
