@@ -66,9 +66,21 @@ class RegenerateArticleMetaCommand extends Command
             // is kept intentionally (~155 bytes per description).
             unset($articles);
             gc_collect_cycles();
+
+            // Visible liveness — the full run is silent otherwise.
+            $this->line("  processed {$this->total} articles… (title/desc/collisions: {$this->titleFixed}/{$this->descFixed}/{$this->collisionsResolved})");
         }, 'id');
 
         $this->report();
+
+        if ($this->total === 0) {
+            $this->error('No published articles found — nothing to process.');
+        } elseif ($this->titleFixed + $this->descFixed + $this->bothFixed === 0) {
+            $this->info('✔ Everything is already up to date — all published articles match the clamped meta rules. Nothing to change.');
+        } else {
+            $this->info('✔ Regeneration complete — totals above reflect what was updated.');
+        }
+        $this->info('Peak memory: '.round(memory_get_peak_usage(true) / 1048576, 1).' MB');
 
         return self::SUCCESS;
     }
@@ -91,7 +103,8 @@ class RegenerateArticleMetaCommand extends Command
         }
 
         // Collision check: if another article already has this exact description, use the title instead.
-        if (isset($this->usedDescriptions[$newDesc])) {
+        // The sample only logs when the collision actually CHANGES the stored value.
+        if (isset($this->usedDescriptions[$newDesc]) && $newDesc !== $originalDesc) {
             $this->collisionsResolved++;
             $newDesc = MetaClamp::clamp(
                 $article->title.'. The Neural Journal covers this story with detailed reporting and analysis.',
