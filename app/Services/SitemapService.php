@@ -164,6 +164,7 @@ class SitemapService
                 $query->whereNotNull('content')
                     ->whereRaw("TRIM(content) <> ''");
             })
+            ->where('created_at', '<', now()->subHours(48))
             ->orderByDesc('created_at')
             ->chunk($perFile, function ($articles) use (&$files, &$batch) {
                 $batch++;

@@ -10,7 +10,11 @@ const { data: stories } = await useAsyncData(
 )
 
 useSeoMeta({
-  description: 'Live minute-by-minute timelines of breaking news events.',
+  description: 'Live minute-by-minute timelines of breaking news events — follow every development as it happens, from conflicts and elections to court rulings.',
+  ogTitle: 'Live Stories — The Neural Journal',
+  ogDescription: 'Live minute-by-minute timelines of breaking news events — follow every development as it happens, from conflicts and elections to court rulings.',
+  twitterTitle: 'Live Stories — The Neural Journal',
+  twitterDescription: 'Live minute-by-minute timelines of breaking news events — follow every development as it happens, from conflicts and elections to court rulings.',
 })
 
 // Hydration-safe: formatAbsolute (deterministic UTC) during SSR + initial client

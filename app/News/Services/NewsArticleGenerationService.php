@@ -10,6 +10,7 @@ use App\Ai\Services\EntityExtractionService;
 use App\Models\AiInvocation;
 use App\Models\Setting;
 use App\News\Repositories\NewsTopicRepository;
+use App\News\Support\MetaClamp;
 use App\News\Support\SourceGroundingChecker;
 use Illuminate\Support\Str;
 
@@ -161,9 +162,9 @@ class NewsArticleGenerationService
                 // Clamp title/meta_title to 60 chars and meta_description to 155
                 // at word boundary — the titleTemplate appends a brand suffix
                 // (~20 chars), so titles must be ≤60 to stay under 80 total.
-                $title = $this->clampTitle($title, 60);
-                $metaTitle = $this->clampTitle($metaTitle, 60);
-                $metaDescription = $this->clampTitle($metaDescription, 155);
+                $title = MetaClamp::clampTitle($title);
+                $metaTitle = MetaClamp::clampTitle($metaTitle);
+                $metaDescription = MetaClamp::clampDescription($metaDescription);
                 // meta_keywords: stop populating — the meta tag is ignored by
                 // Google and was being stuffed with spammy auto-generated
                 // question fragments. Null is a clean break.
@@ -347,9 +348,9 @@ class NewsArticleGenerationService
 
         // Clamp title/meta_title to 60 chars and meta_description to 155
         // at word boundary — same as the primary generation path.
-        $title = $this->clampTitle($title, 60);
-        $metaTitle = $this->clampTitle($metaTitle, 60);
-        $metaDescription = $this->clampTitle($metaDescription, 155);
+        $title = MetaClamp::clampTitle($title);
+        $metaTitle = MetaClamp::clampTitle($metaTitle);
+        $metaDescription = MetaClamp::clampDescription($metaDescription);
 
         $resolvedImage = $this->imageService->resolveImageForTopic($topic, $title);
         [$status, $qualityReport] = $this->assessQuality($articleMarkdown, $article, count($sourceRows), $metaKeywords, $faqSection);
@@ -641,28 +642,6 @@ class NewsArticleGenerationService
         $clean = preg_replace('/\[\d+\]/', '', $clean) ?? $clean;
 
         return trim($clean);
-    }
-
-    /**
-     * Truncate a string to $max chars at word boundary (whole-word safe).
-     * Never splits a word in half; appends an ellipsis when truncated.
-     */
-    private function clampTitle(string $text, int $max): string
-    {
-        $text = trim($text);
-        if (mb_strlen($text) <= $max) {
-            return $text;
-        }
-
-        // Cut at $max, then backtrack to the last space.
-        $cut = mb_substr($text, 0, $max);
-        $lastSpace = mb_strrpos($cut, ' ');
-        if ($lastSpace === false || $lastSpace < $max * 0.6) {
-            // No good word boundary — hard-cut at $max (minus ellipsis room).
-            return mb_substr($text, 0, $max - 1).'…';
-        }
-
-        return mb_substr($cut, 0, $lastSpace).'…';
     }
 
     private function countSections(string $markdown): int

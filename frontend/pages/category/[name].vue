@@ -3,6 +3,7 @@ import type { CategoryNode, NewsArticleCard } from '~/types/news'
 
 const route = useRoute()
 const categorySlug = route.params.name as string
+const { public: { siteUrl } } = useRuntimeConfig()
 
 const api = useNewsApi()
 
@@ -18,46 +19,82 @@ const categoryName = computed(() => {
   return match?.name ?? categorySlug
 })
 
-const page = ref(1)
-const articles = ref<NewsArticleCard[]>([])
-const lastPage = ref(1)
-const loading = ref(false)
+// URL-based pagination: ?page=N drives SSR-rendered article links.
+const currentPage = computed(() => {
+  const p = Number(route.query.page ?? 1)
+  return Number.isFinite(p) && p >= 1 ? p : 1
+})
 
-const { data: firstPage } = await useAsyncData(
-  `category-${categorySlug}`,
-  () => api.getLatestPaginated({ category: categorySlug, perPage: 9, page: 1 }),
+const perPage = 9
+
+const { data: pageData, pending } = await useAsyncData(
+  `category-${categorySlug}-page-${currentPage.value}`,
+  () => api.getLatestPaginated({ category: categorySlug, perPage, page: currentPage.value }),
+  { watch: [currentPage] },
 )
 
-if (firstPage.value) {
-  articles.value = firstPage.value.data
-  lastPage.value = firstPage.value.meta.last_page
-}
-
-const canLoadMore = computed(() => page.value < lastPage.value)
+const articles = computed<NewsArticleCard[]>(() => pageData.value?.data ?? [])
+const lastPage = computed(() => pageData.value?.meta.last_page ?? 1)
+const total = computed(() => pageData.value?.meta.total ?? 0)
 
 const heroRel = useRelativeTime(() => articles.value[0]?.published_at)
 
-async function loadMore() {
-  if (loading.value || !canLoadMore.value) return
-  loading.value = true
-  page.value++
-  try {
-    const res = await api.getLatestPaginated({ category: categorySlug, perPage: 9, page: page.value })
-    articles.value = [...articles.value, ...res.data]
-    lastPage.value = res.meta.last_page
-  } finally {
-    loading.value = false
-  }
-}
+// Build category description deterministically (100-155 chars).
+const categoryDescription = computed(() => {
+  const name = categoryName.value
+  const base = `Read the latest ${name} news, in-depth analysis, and breaking updates from The Neural Journal. `
+  const tail = 'Stay informed with curated, fact-driven coverage of developing stories and trending topics.'
+  const full = base + tail
+  return full.length <= 155 ? full : full.slice(0, 154) + '…'
+})
+
+// Canonical: page 1 = self-canonical on path; page 2+ = self-canonical with ?page=N.
+const canonicalUrl = computed(() => {
+  const base = `${siteUrl}${route.path}`
+  return currentPage.value > 1 ? `${base}?page=${currentPage.value}` : base
+})
+
+const prevHref = computed(() => {
+  if (currentPage.value <= 1) return null
+  return currentPage.value === 2 ? `${siteUrl}${route.path}` : `${siteUrl}${route.path}?page=${currentPage.value - 1}`
+})
+
+const nextHref = computed(() => {
+  if (currentPage.value >= lastPage.value) return null
+  return `${siteUrl}${route.path}?page=${currentPage.value + 1}`
+})
 
 useHead({
   title: computed(() => `${categoryName.value} News`),
   meta: [
-    { name: 'description', content: computed(() => `Latest news, analysis and updates about ${categoryName.value} — curated by The Neural Journal.`) },
+    { name: 'description', content: categoryDescription },
   ],
-  link: [
-    { rel: 'canonical', href: useCanonical() },
-  ],
+  link: computed(() => [
+    { rel: 'canonical', href: canonicalUrl.value },
+    ...(prevHref.value ? [{ rel: 'prev', href: prevHref.value }] : []),
+    ...(nextHref.value ? [{ rel: 'next', href: nextHref.value }] : []),
+  ]),
+})
+
+// Navigation helpers for pagination links.
+const page1Href = computed(() => `${route.path}`)
+function pageHref(n: number): string {
+  return n <= 1 ? page1Href.value : `${route.path}?page=${n}`
+}
+
+const pageNumbers = computed(() => {
+  const last = lastPage.value
+  const cur = currentPage.value
+  const pages: (number | '…')[] = []
+  const window = 2
+  for (let i = 1; i <= last; i++) {
+    if (i === 1 || i === last || (i >= cur - window && i <= cur + window)) {
+      pages.push(i)
+    } else if (pages[pages.length - 1] !== '…') {
+      pages.push('…')
+    }
+  }
+  return pages
 })
 </script>
 
@@ -83,8 +120,8 @@ useHead({
     </div>
 
     <template v-else>
-      <!-- Hero lead (first article) — inline, uses card excerpt (no content field on cards) -->
-      <section v-if="articles[0]" class="group">
+      <!-- Hero lead (first article on page 1) -->
+      <section v-if="articles[0] && currentPage === 1" class="group">
         <NuxtLink :to="`/article/${articles[0].slug}`" class="block">
           <div v-if="articles[0].image_url" class="mb-4 overflow-hidden">
             <img
@@ -118,10 +155,10 @@ useHead({
         </NuxtLink>
       </section>
 
-      <!-- Grid for the rest -->
-      <div v-if="articles.length > 1" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">
+      <!-- Grid for the rest (all articles on pages 2+) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">
         <NewsCompactArticleCard
-          v-for="article in articles.slice(1)"
+          v-for="article in (currentPage === 1 ? articles.slice(1) : articles)"
           :key="article.slug"
           :article="article"
           variant="default"
@@ -129,16 +166,36 @@ useHead({
         />
       </div>
 
-      <!-- Load more -->
-      <div v-if="canLoadMore" class="flex justify-center pt-4">
-        <button
-          :disabled="loading"
-          class="border border-border px-6 py-3 font-label text-xs font-bold uppercase tracking-[0.062em] text-muted-foreground hover:text-foreground hover:border-foreground transition-colors disabled:opacity-40"
-          @click="loadMore"
+      <!-- URL-based pagination: crawlers see all page links as <a> tags -->
+      <nav v-if="lastPage > 1" class="flex items-center justify-center gap-2 pt-6" aria-label="Pagination">
+        <NuxtLink
+          v-if="currentPage > 1"
+          :to="pageHref(currentPage - 1)"
+          class="border border-border px-4 py-2 font-label text-xs font-bold uppercase tracking-[0.062em] text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
         >
-          {{ loading ? 'Loading…' : 'Load more' }}
-        </button>
-      </div>
+          ← Prev
+        </NuxtLink>
+
+        <template v-for="(p, i) in pageNumbers" :key="i">
+          <span v-if="p === '…'" class="font-label text-xs text-muted-foreground px-1">…</span>
+          <NuxtLink
+            v-else
+            :to="pageHref(p)"
+            class="border px-3 py-2 font-label text-xs font-bold transition-colors"
+            :class="p === currentPage ? 'border-foreground text-foreground' : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground'"
+          >
+            {{ p }}
+          </NuxtLink>
+        </template>
+
+        <NuxtLink
+          v-if="currentPage < lastPage"
+          :to="pageHref(currentPage + 1)"
+          class="border border-border px-4 py-2 font-label text-xs font-bold uppercase tracking-[0.062em] text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+        >
+          Next →
+        </NuxtLink>
+      </nav>
     </template>
   </div>
 </template>

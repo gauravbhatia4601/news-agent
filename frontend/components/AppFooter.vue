@@ -1,3 +1,24 @@
+<script setup lang="ts">
+import type { CategoryNode } from '~/types/news'
+
+const api = useNewsApi()
+const { data: categoryTree } = await useAsyncData('footer-categories-tree', () => api.getCategoryTree(), {
+  default: () => [] as CategoryNode[],
+})
+
+// Flatten the tree into a single list of (parent, children) for crawlable links.
+const allCategoryLinks = computed(() => {
+  const links: { slug: string; name: string }[] = []
+  for (const cat of categoryTree.value ?? []) {
+    links.push({ slug: cat.slug, name: cat.name })
+    for (const child of cat.children ?? []) {
+      links.push({ slug: child.slug, name: child.name })
+    }
+  }
+  return links
+})
+</script>
+
 <template>
   <NewsletterSignup variant="card" />
   <footer class="border-t-strong mt-16">
@@ -9,6 +30,7 @@
             <li><NuxtLink to="/" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Home</NuxtLink></li>
             <li><NuxtLink to="/trending" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Trending</NuxtLink></li>
             <li><NuxtLink to="/categories" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Topics</NuxtLink></li>
+            <li><NuxtLink to="/stories" class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors">Live</NuxtLink></li>
           </ul>
         </div>
         <div>
@@ -34,6 +56,20 @@
           </ul>
         </div>
       </div>
+
+      <!-- Crawlable category index: ALL categories as flat link list -->
+      <div class="mt-8 border-t border-border pt-6">
+        <h4 class="font-label text-xs font-bold uppercase tracking-[0.062em] mb-3">All Categories</h4>
+        <ul class="flex flex-wrap gap-x-4 gap-y-1.5">
+          <li v-for="cat in allCategoryLinks" :key="cat.slug">
+            <NuxtLink
+              :to="`/category/${cat.slug}`"
+              class="font-label text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >{{ cat.name }}</NuxtLink>
+          </li>
+        </ul>
+      </div>
+
       <div class="mt-8 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2">
         <p class="font-label text-xs text-muted-foreground">
           &copy; {{ new Date().getFullYear() }} The Neural Journal. All rights reserved.

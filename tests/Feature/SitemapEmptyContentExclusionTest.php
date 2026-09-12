@@ -20,19 +20,24 @@ class SitemapEmptyContentExclusionTest extends TestCase
     public function test_sitemap_excludes_articles_with_empty_content(): void
     {
         // Each article needs its own topic (topic_id has a unique constraint)
+        // Articles must be older than 48h to appear in the article sitemap
+        // (recent ones go to the news sitemap only).
         $goodArticle = NewsArticle::factory()->create([
             'status' => 'published',
             'content' => '<p>Real article content with substance.</p>',
+            'created_at' => now()->subDays(3),
         ]);
 
         $emptyContent = NewsArticle::factory()->create([
             'status' => 'published',
             'content' => '',
+            'created_at' => now()->subDays(3),
         ]);
 
         $whitespaceContent = NewsArticle::factory()->create([
             'status' => 'published',
             'content' => '   ',
+            'created_at' => now()->subDays(3),
         ]);
 
         $service = app(SitemapService::class);
@@ -58,6 +63,36 @@ class SitemapEmptyContentExclusionTest extends TestCase
         $response = $this->getJson("/api/v1/articles/{$emptyArticle->slug}");
 
         $response->assertStatus(404);
+    }
+
+    public function test_article_sitemap_excludes_recent_48h_articles(): void
+    {
+        // Old article (> 48h) — must be in article sitemap
+        $oldArticle = NewsArticle::factory()->create([
+            'status' => 'published',
+            'content' => '<p>Real article content with substance.</p>',
+            'created_at' => now()->subDays(3),
+        ]);
+
+        // Recent article (< 48h) — must be in news sitemap only, NOT article sitemap
+        $recentArticle = NewsArticle::factory()->create([
+            'status' => 'published',
+            'content' => '<p>Breaking news content for the news sitemap.</p>',
+            'created_at' => now()->subHours(12),
+        ]);
+
+        $service = app(SitemapService::class);
+        $service->generate();
+
+        $articleSitemap = file_get_contents(public_path('sitemaps/sitemap-articles-1.xml'));
+        $newsSitemap = file_get_contents(public_path('sitemaps/sitemap-news.xml'));
+
+        // Old article in article sitemap
+        $this->assertStringContainsString("/article/{$oldArticle->slug}", $articleSitemap);
+        // Recent article NOT in article sitemap (covered by news sitemap)
+        $this->assertStringNotContainsString("/article/{$recentArticle->slug}", $articleSitemap);
+        // Recent article IS in news sitemap
+        $this->assertStringContainsString("/article/{$recentArticle->slug}", $newsSitemap);
     }
 
     protected function tearDown(): void
