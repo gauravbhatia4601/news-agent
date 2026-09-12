@@ -36,16 +36,27 @@ function generateImageAlt(): string {
   return `${article.value.category?.name || 'News'} - ${keywords.split(',')[0] || article.value.title}: Latest news and analysis`
 }
 
+const metaDescription = computed(() => {
+  if (!article.value) return ''
+  if (article.value.meta_description) return article.value.meta_description
+  // Strip HTML tags from content and take first 150 chars at word boundary
+  const plain = article.value.content?.replace(/<[^>]*>/g, '').trim() ?? ''
+  if (plain.length > 150) {
+    return plain.slice(0, 150).replace(/\s+\S*$/, '') + '…'
+  }
+  return plain || article.value.title
+})
+
 useSeoMeta({
   title: () => article.value ? (article.value.meta_title || article.value.title) : 'Article Not Found',
-  description: () => article.value ? (article.value.meta_description || article.value.title) : '',
+  description: metaDescription,
   keywords: () => article.value?.meta_keywords || '',
   ogTitle: () => article.value ? (article.value.meta_title || article.value.title) : '',
-  ogDescription: () => article.value ? (article.value.meta_description || article.value.title) : '',
+  ogDescription: metaDescription,
   ogImage: () => article.value?.image_url || undefined,
   ogUrl: () => article.value ? `${siteUrl}/article/${article.value.slug}` : '',
   twitterTitle: () => article.value ? (article.value.meta_title || article.value.title) : '',
-  twitterDescription: () => article.value ? (article.value.meta_description || article.value.title) : '',
+  twitterDescription: metaDescription,
   twitterImage: () => article.value?.image_url || undefined,
 })
 
@@ -60,7 +71,7 @@ useHead({
         '@context': 'https://schema.org',
         '@type': 'NewsArticle',
         headline: article.value?.meta_title || article.value?.title,
-        description: article.value?.meta_description || '',
+        description: metaDescription.value,
         keywords: article.value?.meta_keywords || '',
         datePublished: article.value?.published_at,
         dateModified: article.value?.published_at,

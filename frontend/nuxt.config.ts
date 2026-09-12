@@ -48,6 +48,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      htmlAttrs: { lang: 'en' },
       titleTemplate: '%s — The Neural Journal',
       script: [
         {
@@ -65,8 +66,13 @@ export default defineNuxtConfig({
         { property: 'og:site_name', content: 'The Neural Journal' },
         { property: 'og:type', content: 'website' },
         { property: 'og:locale', content: 'en_IN' },
+        { property: 'og:image', content: 'https://news.technioz.com/og-default.jpg' },
+        { property: 'og:image:alt', content: 'The Neural Journal — AI-Powered News' },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:site', content: '@theneuraljournal' },
+        { name: 'twitter:image', content: 'https://news.technioz.com/og-default.jpg' },
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },

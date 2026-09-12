@@ -8,6 +8,8 @@ use App\Http\Requests\ArticleSearchRequest;
 use App\Http\Resources\ArticleDetailResource;
 use App\Http\Resources\ArticleResource;
 use App\Services\ArticleService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ArticleController extends Controller
@@ -101,12 +103,23 @@ class ArticleController extends Controller
         return ArticleResource::collection($articles);
     }
 
-    public function show(string $slug): ArticleDetailResource
+    public function show(string $slug): ArticleDetailResource|JsonResponse
     {
-        $this->articleService->incrementArticleViews($slug);
+        try {
+            $this->articleService->incrementArticleViews($slug);
 
-        $article = $this->articleService->getArticle($slug);
+            $article = $this->articleService->getArticle($slug);
 
-        return new ArticleDetailResource($article);
+            // Articles with empty/whitespace-only content would produce
+            // broken pages — return 404 so crawlers drop them instead of
+            // indexing a 5XX error page.
+            if (trim((string) ($article->content ?? '')) === '') {
+                abort(404, 'Article not found');
+            }
+
+            return new ArticleDetailResource($article);
+        } catch (ModelNotFoundException) {
+            abort(404, 'Article not found');
+        }
     }
 }

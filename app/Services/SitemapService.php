@@ -156,8 +156,14 @@ class SitemapService
         $batch = 0;
         $perFile = 1000;
 
-        NewsArticle::select('slug', 'updated_at', 'created_at')
+        NewsArticle::select('slug', 'updated_at', 'created_at', 'content')
             ->where('status', 'published')
+            ->where(function ($query) {
+                // Exclude articles with empty/whitespace-only content —
+                // they produce 5XX on the frontend and shouldn't be in the sitemap.
+                $query->whereNotNull('content')
+                    ->whereRaw("TRIM(content) <> ''");
+            })
             ->orderByDesc('created_at')
             ->chunk($perFile, function ($articles) use (&$files, &$batch) {
                 $batch++;
