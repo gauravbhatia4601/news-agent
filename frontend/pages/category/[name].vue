@@ -40,12 +40,15 @@ const total = computed(() => pageData.value?.meta.total ?? 0)
 const heroRel = useRelativeTime(() => articles.value[0]?.published_at)
 
 // Build category description deterministically (100-155 chars).
+// Pagination pages get a page indicator so no two archive pages share a
+// description (OpenSEO round-4 duplicate-meta flags on ?page=N).
 const categoryDescription = computed(() => {
   const name = categoryName.value
+  const page = currentPage.value > 1 ? ` — page ${currentPage.value} of the ${name} archive.` : ''
   const base = `Read the latest ${name} news, in-depth analysis, and breaking updates from The Neural Journal. `
   const tail = 'Stay informed with curated, fact-driven coverage of developing stories and trending topics.'
-  const full = base + tail
-  return full.length <= 155 ? full : full.slice(0, 154) + '…'
+  const full = (base + tail).slice(0, 155 - page.length).replace(/\s+\S*$/, '') + page
+  return full
 })
 
 // Canonical: page 1 = self-canonical on path; page 2+ = self-canonical with ?page=N.
@@ -65,7 +68,7 @@ const nextHref = computed(() => {
 })
 
 useHead({
-  title: computed(() => `${categoryName.value} News`),
+  title: computed(() => currentPage.value > 1 ? `${categoryName.value} News — Page ${currentPage.value}` : `${categoryName.value} News`),
   meta: [
     { name: 'description', content: categoryDescription },
   ],
@@ -111,9 +114,11 @@ const pageNumbers = computed(() => {
         {{ categoryName }}
       </h1>
       <p class="font-serif text-muted-foreground">
-        Latest stories in {{ categoryName }}.
+        Latest stories in {{ categoryName }}, reported by The Neural Journal's automated newsroom. Each article is synthesized from multiple verified sources and published within minutes of the story breaking. This archive holds every {{ categoryName }} piece we have published, with older coverage one page down.
       </p>
     </header>
+    <!-- h2 bridges the h1 to the card h3 headings (heading-order-skip) -->
+    <h2 class="sr-only">{{ categoryName }} archive</h2>
 
     <div v-if="articles.length === 0" class="py-16 text-center font-serif text-muted-foreground">
       No articles found for this category yet.
