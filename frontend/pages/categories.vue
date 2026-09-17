@@ -5,7 +5,7 @@ const { data: categories } = await useAsyncData('browse-categories', () => api.g
 useHead({
   title: 'Browse Topics',
   meta: [
-    { name: 'description', content: 'Browse every newsroom section on The Neural Journal — politics, business, technology, sports, world affairs, states and more. Pick a topic and read the latest curated coverage.' },
+    { name: 'description', content: 'Browse every newsroom section on The Neural Journal — politics, business, technology, sports, world affairs and more.' },
   ],
   link: [
     { rel: 'canonical', href: useCanonical() },

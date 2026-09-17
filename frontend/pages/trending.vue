@@ -14,7 +14,7 @@ const displayArticles = computed(() => (showMomentum.value ? trending.value : (f
 useHead({
   title: 'Trending',
   meta: [
-    { name: 'description', content: 'What\'s trending right now — the fastest-moving stories across India and the world, ranked live by reader momentum. Updated continuously as stories gain attention.' },
+    { name: 'description', content: 'What\'s trending right now — the fastest-moving stories across India and the world, ranked live by reader momentum.' },
   ],
   link: [
     { rel: 'canonical', href: useCanonical() },
