@@ -123,6 +123,9 @@ useSeoMeta({
 })
 
 useHead({
+  // Story titles render bare (like articles) — LLM-generated titles can run
+  // long and the ~20-char suffix pushed story pages past the 65-char limit.
+  titleTemplate: '%s',
   link: [
     { rel: 'canonical', href: canonicalUrl },
   ],

@@ -83,7 +83,9 @@ export default defineNuxtConfig({
   nitro: {
     routeRules: {
       '/': { swr: 120 },
+      '/about': { swr: 600 },
       '/article/**': { swr: 300 },
+      '/categories': { swr: 600 },
       '/category/**': { swr: 600 },
       '/stories': { swr: 300 },
       '/story/**': { swr: 120 },
