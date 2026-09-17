@@ -39,24 +39,20 @@ php artisan news:discover --queue          # run discovery manually
 
 Test DB is sqlite in-memory (`phpunit.xml`) — tests need no Postgres/Redis.
 
-## Orchestration contract (ECC agents)
+## Work contract
 
-For any non-trivial request, work as ORCHESTRATOR → specialist agents. Define tasks small enough that each is one focused deliverable.
-
-**ORCHESTRATOR** (ECC `ORCHESTRATOR`) owns the plan:
+For any non-trivial request:
 
 1. Break the request into small tasks (each: one subsystem, one concern, verifiable done-state). Track them in a task list; do them one by one.
-2. Delegate per role — never let one agent both design and blindly implement:
-   - **ARCHITECT** (`architect`) — before structural changes: design, boundaries, file evidence. Read-only unless explicitly asked to write.
-   - **DEVELOPER** (`DEVELOPER`) — implements; smallest working diff; follows the code style already in the touched files.
-   - **DESIGNER** (`DESIGNER`) — for any UI change: verify against `BRANDING.md` tokens before and after.
-   - **TESTING** (`TESTING`) — after behavior changes; this repo is far below coverage targets, so new behavior ships with a test.
-   - **SECURITY** (`security-reviewer`) — mandatory before finishing anything touching auth, webhooks, sanitization, or external APIs.
-   - **DOCUMENTATION** (`DOCUMENTATION`) — docs touched only when behavior or setup changes.
-3. Collect every delegated result and integrate before ending the turn (no fire-and-forget).
-4. Verify: run `php artisan test` after backend changes, `npm run build` in `frontend/` after frontend changes. Report failures verbatim, never claim green without running.
+2. Design before structural changes: boundaries and file evidence first; read files before editing. Smallest working diff; follow the code style already in the touched files.
+3. UI changes: verify against `BRANDING.md` tokens before and after.
+4. Behavior changes ship with a test — this repo is far below coverage targets, so new behavior ships with a test.
+5. Anything touching auth, webhooks, sanitization, or external APIs gets a deliberate security pass before it's called done.
+6. Docs change only when behavior or setup changes.
+7. Integrate every result before ending the turn (no fire-and-forget).
+8. Verify: run `php artisan test` after backend changes, `npm run build` in `frontend/` after frontend changes. Report failures verbatim, never claim green without running.
 
-Code-review (`code-reviewer`) runs after any multi-file change. `security-scan` before anything auth/webhook-related ships.
+Code-review (`code-review` command) runs after any multi-file change; for anything auth/webhook-related, do the security pass manually — check input validation at trust boundaries, sanitization of user data, and least-privilege on external calls.
 
 ## Rules of this repo
 

@@ -14,7 +14,7 @@ const displayArticles = computed(() => (showMomentum.value ? trending.value : (f
 useHead({
   title: 'Trending',
   meta: [
-    { name: 'description', content: 'What\'s trending right now — the fastest-moving stories across India.' },
+    { name: 'description', content: 'What\'s trending right now — the fastest-moving stories across India and the world, ranked live by reader momentum. Updated continuously as stories gain attention.' },
   ],
   link: [
     { rel: 'canonical', href: useCanonical() },
@@ -30,6 +30,8 @@ useHead({
     </div>
 
     <div v-if="displayArticles.length > 0" class="space-y-6">
+      <!-- h2 bridges h1 -> h3 card headings (heading-order-skip in the OpenSEO audit) -->
+      <h2 class="sr-only">Fastest moving stories</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <NewsCompactArticleCard
           v-for="article in displayArticles"

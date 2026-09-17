@@ -57,6 +57,9 @@
 <script setup lang="ts">
 useHead({
   title: 'About',
+  meta: [
+    { name: 'description', content: 'The Neural Journal is an AI-powered newsroom run by Technioz — discover how we discover, verify, and publish India-focused journalism automatically, and meet the team behind it.' },
+  ],
   link: [
     { rel: 'canonical', href: useCanonical() },
   ],
