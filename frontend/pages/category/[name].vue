@@ -68,7 +68,16 @@ const nextHref = computed(() => {
 })
 
 useHead({
-  title: computed(() => currentPage.value > 1 ? `${categoryName.value} News — Page ${currentPage.value}` : `${categoryName.value} News`),
+  // Paginated pages drop the brand suffix: long category names + " — Page N"
+  // + the ~20-char suffix stacked past the 65-char flag threshold
+  // (14 title-too-long flags in the stratified audit).
+  titleTemplate: computed(() => currentPage.value > 1 ? '%s' : '%s — The Neural Journal'),
+  title: computed(() => {
+    const base = currentPage.value > 1
+      ? `${categoryName.value} News — Page ${currentPage.value}`
+      : `${categoryName.value} News`
+    return base.length > 60 ? base.slice(0, 59).replace(/\s+\S*$/, '') + '…' : base
+  }),
   meta: [
     { name: 'description', content: categoryDescription },
   ],
