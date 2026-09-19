@@ -14,6 +14,11 @@ import type {
 export function useNewsApi() {
   const client = $fetch.create({
     baseURL: '/api/v1',
+    // SSR fetches occasionally hit transient proxy failures ('no available
+    // server') — retry so a blip doesn't cache an empty/error page render
+    // for the whole SWR window.
+    retry: 2,
+    retryDelay: 300,
   })
 
   const normalizeMediaUrl = (url?: string | null): string | null => {
