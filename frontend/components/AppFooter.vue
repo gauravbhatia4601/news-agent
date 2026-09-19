@@ -75,7 +75,7 @@ const allCategoryLinks = computed(() => {
           &copy; {{ new Date().getFullYear() }} The Neural Journal. All rights reserved.
         </p>
         <p class="font-label text-xs text-muted-foreground">
-          Built by <a href="https://www.technioz.com" target="_blank" class="underline underline-offset-4 hover:text-foreground">Technioz</a>
+          Built by <a href="https://technioz.com" target="_blank" class="underline underline-offset-4 hover:text-foreground">Technioz</a>
         </p>
       </div>
     </div>
