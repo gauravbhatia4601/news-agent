@@ -56,6 +56,31 @@ export default defineNuxtConfig({
           'data-key': 'ORT1RC2upv80EsIo9fWuWg',
           async: true,
         },
+        // Sitewide entity + sitelinks-searchbox schema (rendered on every page).
+        {
+          type: 'application/ld+json',
+          innerHTML: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'The Neural Journal',
+              url: 'https://news.technioz.com',
+              parentOrganization: { '@type': 'Organization', name: 'Technioz', url: 'https://technioz.com' },
+              logo: 'https://news.technioz.com/og-default.jpg',
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'The Neural Journal',
+              url: 'https://news.technioz.com',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: { '@type': 'EntryPoint', urlTemplate: 'https://news.technioz.com/search?q={search_term_string}' },
+                'query-input': 'required name=search_term_string',
+              },
+            },
+          ]),
+        },
       ],
       meta: [
         { charset: 'utf-8' },
