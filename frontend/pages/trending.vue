@@ -20,6 +20,7 @@ useHead({
     { rel: 'canonical', href: useCanonical() },
   ],
 })
+usePageSeo('Trending', 'What\'s trending right now — the fastest-moving stories across India and the world, ranked live by reader momentum.')
 </script>
 
 <template>

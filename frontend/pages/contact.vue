@@ -39,8 +39,12 @@
 <script setup lang="ts">
 useHead({
   title: 'Contact',
+  meta: [
+    { name: 'description', content: 'Get in touch with The Neural Journal — report a correction, ask about our automated newsroom, or reach the Technioz team behind it.' },
+  ],
   link: [
     { rel: 'canonical', href: useCanonical() },
   ],
 })
+usePageSeo('Contact', 'Get in touch with The Neural Journal — report a correction, ask about our automated newsroom, or reach the Technioz team behind it.')
 </script>

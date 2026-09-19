@@ -64,4 +64,5 @@ useHead({
     { rel: 'canonical', href: useCanonical() },
   ],
 })
+usePageSeo('About', 'The Neural Journal is an AI-powered newsroom by Technioz — see how we discover, verify, and publish India-focused journalism automatically.')
 </script>

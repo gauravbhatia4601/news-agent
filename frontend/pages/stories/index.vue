@@ -33,6 +33,7 @@ useHead({
     { rel: 'canonical', href: useCanonical() },
   ],
 })
+usePageSeo('Live Stories', 'Live minute-by-minute timelines of breaking news events — follow every development as it happens, from conflicts and elections to court rulings.')
 </script>
 
 <template>

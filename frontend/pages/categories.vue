@@ -11,6 +11,7 @@ useHead({
     { rel: 'canonical', href: useCanonical() },
   ],
 })
+usePageSeo('Browse Topics', 'Browse every newsroom section on The Neural Journal — politics, business, technology, sports, world affairs and more.')
 </script>
 
 <template>

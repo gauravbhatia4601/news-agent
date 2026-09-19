@@ -14,9 +14,14 @@ const { data: categoryTree } = await useAsyncData(
 )
 
 const categoryName = computed(() => {
+  // Fallback chain: tree match -> the articles payload's own category name
+  // (survives a transient tree-fetch failure) -> prettified slug.
   const flat = (categoryTree.value ?? []).flatMap((c: CategoryNode) => [c, ...(c.children ?? [])])
   const match = flat.find((c) => c.slug === categorySlug)
-  return match?.name ?? categorySlug
+  if (match?.name) return match.name
+  const fromArticle = articles.value[0]?.category?.name
+  if (fromArticle) return fromArticle
+  return categorySlug.replace(/-/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
 })
 
 // URL-based pagination: ?page=N drives SSR-rendered article links.
@@ -78,14 +83,26 @@ useHead({
       : `${categoryName.value} News`
     return base.length > 60 ? base.slice(0, 59).replace(/\s+\S*$/, '') + '…' : base
   }),
-  meta: [
-    { name: 'description', content: categoryDescription },
-  ],
+  meta: computed(() => [
+    { name: 'description', content: categoryDescription.value },
+    { property: 'og:title', content: categoryHeadline.value },
+    { property: 'og:description', content: categoryDescription.value },
+    { property: 'og:url', content: canonicalUrl.value },
+    { name: 'twitter:title', content: categoryHeadline.value },
+    { name: 'twitter:description', content: categoryDescription.value },
+  ]),
   link: computed(() => [
     { rel: 'canonical', href: canonicalUrl.value },
     ...(prevHref.value ? [{ rel: 'prev', href: prevHref.value }] : []),
     ...(nextHref.value ? [{ rel: 'next', href: nextHref.value }] : []),
   ]),
+})
+
+const categoryHeadline = computed(() => {
+  const base = currentPage.value > 1
+    ? `${categoryName.value} News — Page ${currentPage.value}`
+    : `${categoryName.value} News`
+  return base
 })
 
 // Navigation helpers for pagination links.
