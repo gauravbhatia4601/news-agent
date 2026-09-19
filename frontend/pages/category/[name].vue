@@ -114,7 +114,7 @@ const pageNumbers = computed(() => {
         {{ categoryName }}
       </h1>
       <p class="font-serif text-muted-foreground">
-        Latest stories in {{ categoryName }}, reported by The Neural Journal's automated newsroom. Each article is synthesized from multiple verified sources and published within minutes of the story breaking. This archive holds every {{ categoryName }} piece we have published, with older coverage one page down.
+        Latest stories in {{ categoryName }}, reported by The Neural Journal's automated newsroom. Each article is synthesized from multiple verified sources, checked for grounding, and published within minutes of the story breaking — so you read the facts without the wait. This archive holds every {{ categoryName }} piece we have published: the newest coverage loads first, and older reporting is one page down. Bookmark this section to follow the beat as it develops, or browse the related sections in the footer for adjacent coverage.
       </p>
     </header>
     <!-- h2 bridges the h1 to the card h3 headings (heading-order-skip) -->
