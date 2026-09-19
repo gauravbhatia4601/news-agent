@@ -47,4 +47,9 @@ fi
 # Ensure storage link
 su -s /bin/sh www-data -c "php artisan storage:link 2>/dev/null || true"
 
+# Regenerate sitemaps at boot: deploys wipe public/sitemaps (not a volume),
+# and the 30-min cron leaves a 0-30 min window where /sitemaps/* returns
+# 404 to crawlers. Regenerate in the background so boot isn't blocked.
+(sleep 20; su -s /bin/sh www-data -c "php artisan news:sitemap-generate" >> /var/www/html/storage/logs/sitemap-boot.log 2>&1) &
+
 exec "$@"
