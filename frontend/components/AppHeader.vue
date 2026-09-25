@@ -184,9 +184,9 @@ watch(() => route.path, () => {
         </NuxtLink>
 
         <NuxtLink
-          to="/category/artificial-intelligence"
+          to="/ai"
           class="shrink-0 px-2 py-1 font-label text-xs font-bold uppercase tracking-[0.062em] transition-colors"
-          :class="route.path === '/category/artificial-intelligence' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          :class="route.path === '/ai' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
         >
           AI
         </NuxtLink>
