@@ -11,6 +11,38 @@ import type {
   StoryUrgency,
 } from '~/types/news'
 
+export interface HomeFeedCategory {
+  id: number
+  name: string
+  slug: string
+  parent_id: number | null
+  children?: Omit<CategoryNode, 'children'>[]
+  headlines: NewsArticleCard[]
+}
+
+export interface HomeFeed {
+  featured: NewsArticleDetail | null
+  hot: NewsArticleCard[]
+  categories: HomeFeedCategory[]
+  stories: NewsStory[]
+  generated_at: string
+}
+
+function normalizeHomeFeed(feed: HomeFeed): HomeFeed {
+  const card = (a: NewsArticleCard): NewsArticleCard => normalizeArticleMedia(a)
+  return {
+    featured: feed.featured ? normalizeArticleMedia(feed.featured) : null,
+    hot: (feed.hot ?? []).map(card),
+    categories: (feed.categories ?? []).map(c => ({
+      ...c,
+      children: c.children ?? [],
+      headlines: (c.headlines ?? []).map(card),
+    })),
+    stories: feed.stories ?? [],
+    generated_at: feed.generated_at,
+  }
+}
+
 export function useNewsApi() {
   const client = $fetch.create({
     baseURL: '/api/v1',
@@ -103,15 +135,11 @@ export function useNewsApi() {
       return (response.data ?? []).map(normalizeArticleMedia)
     },
 
-    async getHot(params: { category?: string; perPage?: number } = {}): Promise<NewsArticleCard[]> {
-      const response = await client<ApiCollectionResponse<NewsArticleCard>>('/articles/hot', {
-        query: {
-          category: params.category,
-          per_page: params.perPage ?? 12,
-        },
-      })
-
-      return (response.data ?? []).map(normalizeArticleMedia)
+    // Batched homepage feed — one scheduler-warmed payload replaces the old
+    // featured/hot/headlines/stories/categories N+1 (16 HTTP calls → 1).
+    async getHomeFeed(): Promise<HomeFeed> {
+      const response = await client<{ data: HomeFeed }>('/home')
+      return normalizeHomeFeed(response.data)
     },
 
     async getTrending(limit = 10): Promise<NewsArticleCard[]> {
@@ -120,23 +148,6 @@ export function useNewsApi() {
       })
 
       return (response.data ?? []).map(normalizeArticleMedia)
-    },
-
-    async getHeadlines(limit = 5, category?: string): Promise<NewsArticleCard[]> {
-      const response = await client<ApiCollectionResponse<NewsArticleCard>>('/articles/headlines', {
-        query: { per_page: limit, category },
-      })
-
-      return (response.data ?? []).map(normalizeArticleMedia)
-    },
-
-    async getFeatured(): Promise<NewsArticleDetail | null> {
-      try {
-        const response = await client<ApiItemResponse<NewsArticleDetail>>('/articles/featured')
-        return response.data ? normalizeArticleMedia(response.data) : null
-      } catch {
-        return null
-      }
     },
 
     async getArticle(slug: string): Promise<NewsArticleDetail | null> {

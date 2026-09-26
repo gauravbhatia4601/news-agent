@@ -29,17 +29,6 @@ class ArticleController extends Controller
         return ArticleResource::collection($articles);
     }
 
-    public function featured(): ArticleDetailResource|\Illuminate\Http\JsonResponse
-    {
-        $article = $this->articleService->getFeaturedArticle();
-
-        if (! $article) {
-            return response()->json(['message' => 'No featured article found'], 404);
-        }
-
-        return new ArticleDetailResource($article);
-    }
-
     public function related(string $slug): AnonymousResourceCollection
     {
         $article = $this->articleService->getArticle($slug);
@@ -73,32 +62,12 @@ class ArticleController extends Controller
         return ArticleResource::collection($articles);
     }
 
-    public function hot(ArticleListRequest $request): AnonymousResourceCollection
-    {
-        $category = $request->validated('category');
-        $perPage = (int) $request->validated('per_page', 15);
-
-        $articles = $this->articleService->getHotArticles($perPage, $category);
-
-        return ArticleResource::collection($articles);
-    }
-
     public function trending(ArticleListRequest $request): AnonymousResourceCollection
     {
         $category = $request->validated('category');
         $limit = (int) $request->validated('per_page', 10);
 
         $articles = $this->articleService->getTrendingArticles($limit, $category);
-
-        return ArticleResource::collection($articles);
-    }
-
-    public function headlines(ArticleListRequest $request): AnonymousResourceCollection
-    {
-        $category = $request->validated('category');
-        $limit = (int) $request->validated('per_page', 5);
-
-        $articles = $this->articleService->getHeadlines($limit, $category);
 
         return ArticleResource::collection($articles);
     }

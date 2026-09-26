@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const api = useNewsApi()
-const { data: categories } = await useAsyncData('browse-categories', () => api.getCategoryTree(), { default: () => [] as any[] })
+// Shared cache key with AppHeader — one /categories fetch per render.
+const { data: categories } = await useAsyncData('nav-categories-tree', () => api.getCategoryTree(), { default: () => [] as any[] })
 
 useHead({
   title: 'Browse Topics',

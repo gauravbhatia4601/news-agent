@@ -111,6 +111,9 @@ export interface ApiItemResponse<T> {
 
 export type StoryUrgency = 'live' | 'developing' | 'ongoing' | 'concluded'
 
+// HomeFeed / HomeFeedCategory are defined in composables/useNewsApi.ts
+// (next to the payload normalization) and re-exported here.
+
 export interface NewsStory {
   id: number
   slug: string

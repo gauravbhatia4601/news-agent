@@ -48,6 +48,12 @@ Schedule::command('news:recompute-rankings')->everyFifteenMinutes()
     ->withoutOverlapping(120)
     ->runInBackground();
 
+// Homepage feed: scheduler is the only cache writer (60s refresh, 120s TTL —
+// key never expires between ticks, so user requests are pure cache reads).
+Schedule::command('news:warm-home-feed')->everyMinute()
+    ->withoutOverlapping(30)
+    ->runInBackground();
+
 Schedule::command('news:detect-live-stories --scope=india')->hourlyAt(10)
     ->withoutOverlapping(300)
     ->runInBackground();

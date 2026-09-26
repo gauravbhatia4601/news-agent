@@ -2,7 +2,8 @@
 import type { CategoryNode } from '~/types/news'
 
 const api = useNewsApi()
-const { data: categoryTree } = await useAsyncData('footer-categories-tree', () => api.getCategoryTree(), {
+// Shared cache key with AppHeader — one /categories fetch per render.
+const { data: categoryTree } = await useAsyncData('nav-categories-tree', () => api.getCategoryTree(), {
   default: () => [] as CategoryNode[],
 })
 

@@ -10,17 +10,11 @@ interface ArticleRepositoryInterface
 
     public function incrementViews(string $slug): void;
 
-    public function getFeatured();
-
     public function paginateLatest(int $perPage = 15, ?string $categorySlug = null);
 
     public function paginatePopular(int $perPage = 15, ?string $categorySlug = null);
 
-    public function paginateHot(int $perPage = 15, ?string $categorySlug = null);
-
     public function getTrending(int $limit = 10, ?string $categorySlug = null);
-
-    public function getHeadlines(int $limit = 5, ?string $categorySlug = null);
 
     public function search(string $keyword, int $perPage = 15, ?string $categorySlug = null);
 

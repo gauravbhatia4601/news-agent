@@ -1,49 +1,38 @@
 <script setup lang="ts">
+import type { HomeFeed, HomeFeedCategory } from '~/composables/useNewsApi'
+import type { NewsArticleCard } from '~/types/news'
 import type { NewsStory } from '~/types/news'
 
 const api = useNewsApi()
 
-// Over-fetch by 1 so dedup can drop collisions without leaving sections thin.
-const { data: featured } = await useAsyncData('featured', () => api.getFeatured())
-const { data: hot } = await useAsyncData('hot', () => api.getHot({ perPage: 7 }), { default: () => [] as any[] })
-const { data: categoryTree } = await useAsyncData('home-category-tree', () => api.getCategoryTree(), { default: () => [] as any[] })
+// One batched call replaces the old 16-request N+1 (featured + hot + 9×
+// headlines + 3× categories + stories). Backend payload is scheduler-warmed.
+const { data: feed } = await useAsyncData('home-feed', () => api.getHomeFeed(), {
+  default: () => ({
+    featured: null,
+    hot: [] as NewsArticleCard[],
+    categories: [] as HomeFeedCategory[],
+    stories: [] as NewsStory[],
+    generated_at: '',
+  }),
+})
 
-const { data: liveStories } = await useAsyncData<{ data: NewsStory[]; meta: { current_page: number; last_page: number; total: number } }>(
-  'home-live-stories',
-  () => api.getStories({ perPage: 5 }),
-  { default: () => ({ data: [] as NewsStory[], meta: { current_page: 1, last_page: 1, total: 0 } }) },
-)
-
-const hasLiveStories = computed(() => (liveStories.value?.data?.length ?? 0) > 0)
-
-// ponytail: one getHeadlines per top-level category; ceiling = category count (no single endpoint buckets by category)
-const { data: categorySections } = await useAsyncData(
-  'home-category-headlines',
-  async () => {
-    if (!categoryTree.value?.length) return []
-    return Promise.all(
-      categoryTree.value.map(async (cat: any) => ({
-        name: cat.name,
-        slug: cat.slug,
-        articles: await api.getHeadlines(5, cat.slug),
-      })),
-    )
-  },
-  { default: () => [] as { name: string; slug: string; articles: any[] }[] },
-)
+const featured = computed(() => feed.value.featured)
+const liveStories = computed(() => ({ data: feed.value.stories }))
+const hasLiveStories = computed(() => feed.value.stories.length > 0)
 
 // Priority dedup: featured → hot → category sections.
 const deduped = computed(() => {
   const seen = new Set<string>()
   if (featured.value?.slug) seen.add(featured.value.slug)
 
-  const hotD = dedupeBySlug(hot.value ?? [], seen).slice(0, 6)
+  const hotD = dedupeBySlug(feed.value.hot ?? [], seen).slice(0, 6)
 
-  const sections = (categorySections.value ?? [])
-    .map(section => ({
+  const sections = (feed.value.categories ?? [])
+    .map((section: HomeFeedCategory) => ({
       name: section.name,
       slug: section.slug,
-      articles: dedupeBySlug(section.articles ?? [], seen).slice(0, 4),
+      articles: dedupeBySlug(section.headlines ?? [], seen).slice(0, 4),
     }))
     .filter(section => section.articles.length > 0)
 

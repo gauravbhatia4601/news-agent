@@ -36,19 +36,9 @@ class ArticleService
         return $this->articleRepository->paginatePopular($perPage, $categorySlug);
     }
 
-    public function getHotArticles(int $perPage = 15, ?string $categorySlug = null)
-    {
-        return $this->articleRepository->paginateHot($perPage, $categorySlug);
-    }
-
     public function getTrendingArticles(int $limit = 10, ?string $categorySlug = null)
     {
         return $this->articleRepository->getTrending($limit, $categorySlug);
-    }
-
-    public function getHeadlines(int $limit = 5, ?string $categorySlug = null)
-    {
-        return $this->articleRepository->getHeadlines($limit, $categorySlug);
     }
 
     public function getArticle(string $slug)
@@ -72,10 +62,5 @@ class ArticleService
     public function getRelatedArticles(int $articleId, string $categorySlug, int $limit = 3)
     {
         return $this->articleRepository->getRelated($articleId, $categorySlug, $limit);
-    }
-
-    public function getFeaturedArticle()
-    {
-        return $this->articleRepository->getFeatured();
     }
 }
