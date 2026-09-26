@@ -11,6 +11,11 @@ import type {
   StoryUrgency,
 } from '~/types/news'
 
+// ── HomeFeed types + normalization ──────────────────────────────────────────
+// Defined at module level (outside useNewsApi) so pages can import the types.
+// Normalization itself lives INSIDE useNewsApi below — it closes over
+// normalizeArticleMedia, which lives there too.
+
 export interface HomeFeedCategory {
   id: number
   name: string
@@ -26,21 +31,6 @@ export interface HomeFeed {
   categories: HomeFeedCategory[]
   stories: NewsStory[]
   generated_at: string
-}
-
-function normalizeHomeFeed(feed: HomeFeed): HomeFeed {
-  const card = (a: NewsArticleCard): NewsArticleCard => normalizeArticleMedia(a)
-  return {
-    featured: feed.featured ? normalizeArticleMedia(feed.featured) : null,
-    hot: (feed.hot ?? []).map(card),
-    categories: (feed.categories ?? []).map(c => ({
-      ...c,
-      children: c.children ?? [],
-      headlines: (c.headlines ?? []).map(card),
-    })),
-    stories: feed.stories ?? [],
-    generated_at: feed.generated_at,
-  }
 }
 
 export function useNewsApi() {
@@ -139,7 +129,19 @@ export function useNewsApi() {
     // featured/hot/headlines/stories/categories N+1 (16 HTTP calls → 1).
     async getHomeFeed(): Promise<HomeFeed> {
       const response = await client<{ data: HomeFeed }>('/home')
-      return normalizeHomeFeed(response.data)
+      const feed = response.data
+      const card = (a: NewsArticleCard): NewsArticleCard => normalizeArticleMedia(a)
+      return {
+        featured: feed.featured ? normalizeArticleMedia(feed.featured) : null,
+        hot: (feed.hot ?? []).map(card),
+        categories: (feed.categories ?? []).map(c => ({
+          ...c,
+          children: c.children ?? [],
+          headlines: (c.headlines ?? []).map(card),
+        })),
+        stories: feed.stories ?? [],
+        generated_at: feed.generated_at,
+      }
     },
 
     async getTrending(limit = 10): Promise<NewsArticleCard[]> {
