@@ -29,7 +29,6 @@ class NewsArticleImageServiceTest extends TestCase
     {
         config()->set('news-engine.images.enabled', true);
         config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.ai.enabled', true);
 
         Http::fake([
             'https://reuters.com/article-123' => Http::response(
@@ -42,8 +41,6 @@ class NewsArticleImageServiceTest extends TestCase
                 200,
                 ['Content-Type' => 'image/jpeg']
             ),
-            // No pollinations call expected, but fake it defensively.
-            'image.pollinations.ai/*' => Http::response(str_repeat('y', 30_000), 200, ['Content-Type' => 'image/jpeg']),
         ]);
 
         $service = $this->app->make(NewsArticleImageService::class);
@@ -59,24 +56,19 @@ class NewsArticleImageServiceTest extends TestCase
     }
 
     /**
-     * Source page has no og:image → AI fallback via pollinations → image_origin 'ai'.
+     * Source page has no og:image → no image (Brave/AI fallbacks removed:
+     * decode+scrape is the only path — articles ship unillustrated).
      */
-    public function test_no_source_image_falls_back_to_ai_generation(): void
+    public function test_no_source_image_returns_null(): void
     {
         config()->set('news-engine.images.enabled', true);
         config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.ai.enabled', true);
 
         Http::fake([
             'https://reuters.com/article-gdp' => Http::response(
                 '<html><head><title>No image here</title></head><body>story</body></html>',
                 200,
                 ['Content-Type' => 'text/html']
-            ),
-            'image.pollinations.ai/*' => Http::response(
-                str_repeat('z', 30_000),
-                200,
-                ['Content-Type' => 'image/jpeg']
             ),
         ]);
 
@@ -87,21 +79,21 @@ class NewsArticleImageServiceTest extends TestCase
             'sources' => [['source_url' => 'https://reuters.com/article-gdp']],
         ], 'India GDP grows 7.8 percent in Q1');
 
-        $this->assertSame('ai', $result['image_origin']);
-        $this->assertNotNull($result['image_url']);
-        $this->assertStringStartsWith('/storage/news-images/', $result['image_url']);
+        $this->assertNull($result['image_origin']);
+        $this->assertNull($result['image_url']);
+        $this->assertNull($result['thumbnail_url']);
     }
 
     /**
-     * AI fallback disabled → no image, no pollinations HTTP call.
+     * A no-image page produces null — and never hits any third-party image
+     * API (Brave/AI removed 2026-09-27; decode+scrape is the only path).
      */
-    public function test_ai_disabled_returns_null_without_calling_pollinations(): void
+    public function test_no_image_sources_never_call_third_party_apis(): void
     {
         config()->set('news-engine.images.enabled', true);
         config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.ai.enabled', false);
 
-        $pollinationsCalled = false;
+        $thirdPartyCalled = false;
 
         Http::fake([
             'https://reuters.com/article-rbi' => Http::response(
@@ -109,10 +101,15 @@ class NewsArticleImageServiceTest extends TestCase
                 200,
                 ['Content-Type' => 'text/html']
             ),
-            'image.pollinations.ai/*' => function () use (&$pollinationsCalled) {
-                $pollinationsCalled = true;
+            'image.pollinations.ai/*' => function () use (&$thirdPartyCalled) {
+                $thirdPartyCalled = true;
 
                 return Http::response(str_repeat('z', 30_000), 200, ['Content-Type' => 'image/jpeg']);
+            },
+            'api.search.brave.com/*' => function () use (&$thirdPartyCalled) {
+                $thirdPartyCalled = true;
+
+                return Http::response(['image_results' => []], 200, ['Content-Type' => 'application/json']);
             },
         ]);
 
@@ -125,7 +122,7 @@ class NewsArticleImageServiceTest extends TestCase
 
         $this->assertNull($result['image_origin']);
         $this->assertNull($result['image_url']);
-        $this->assertFalse($pollinationsCalled);
+        $this->assertFalse($thirdPartyCalled);
     }
 
     /**
@@ -136,7 +133,6 @@ class NewsArticleImageServiceTest extends TestCase
     {
         config()->set('news-engine.images.enabled', true);
         config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.ai.enabled', true);
 
         $realUrl = 'https://www.thehindu.com/news/national/story-999/article.ece';
         $bytes = chr(0x08).chr(strlen($realUrl)).$realUrl;
@@ -174,7 +170,6 @@ class NewsArticleImageServiceTest extends TestCase
     {
         config()->set('news-engine.images.enabled', true);
         config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.ai.enabled', true);
 
         $googleRedirect = 'https://news.google.com/rss/articles/CBMi'.str_repeat('A', 20);
         $directUrl = 'https://gdelt-project.org/some-article';
@@ -216,200 +211,5 @@ class NewsArticleImageServiceTest extends TestCase
         $this->assertFalse($reflection->invoke($service, 'https://example.com/assets/logo.png'));
         $this->assertFalse($reflection->invoke($service, 'https://gstatic.com/sprite.png'));
         $this->assertTrue($reflection->invoke($service, 'https://cdn.reuters.com/article-photo-2024.jpg'));
-    }
-
-    /**
-     * Source scraping fails → Brave Images API returns a usable image →
-     * downloaded, stored, image_origin 'brave', image_url non-null.
-     */
-    public function test_brave_images_fallback_stores_image_when_sources_fail(): void
-    {
-        config()->set('news-engine.images.enabled', true);
-        config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.brave.enabled', true);
-        config()->set('news-engine.images.ai.enabled', true);
-        config()->set('news-engine.sources.brave_search.api_key', 'test-brave-key');
-        config()->set('news-engine.sources.brave_search.base_url', 'https://api.search.brave.com/res/v1');
-
-        $braveImageUrl = 'https://cdn.brave.example.com/india-parliament-photo-2024.jpg';
-
-        Http::fake([
-            'https://reuters.com/article-brave' => Http::response(
-                '<html><head><title>No image</title></head><body>story</body></html>',
-                200,
-                ['Content-Type' => 'text/html']
-            ),
-            'api.search.brave.com/res/v1/images/search*' => Http::response([
-                'image_results' => [
-                    [
-                        'url' => $braveImageUrl,
-                        'thumbnail' => ['src' => 'https://cdn.brave.example.com/thumb.jpg'],
-                        'properties' => ['url' => 'https://example.com/article'],
-                        'title' => 'India parliament photo',
-                    ],
-                ],
-            ], 200, ['Content-Type' => 'application/json']),
-            $braveImageUrl => Http::response(
-                str_repeat('x', 30_000),
-                200,
-                ['Content-Type' => 'image/jpeg']
-            ),
-            'image.pollinations.ai/*' => Http::response(str_repeat('y', 30_000), 200, ['Content-Type' => 'image/jpeg']),
-        ]);
-
-        $service = $this->app->make(NewsArticleImageService::class);
-        $result = $service->resolveImageForTopic([
-            'topic_name' => 'Parliament passes bill',
-            'category' => 'national',
-            'sources' => [['source_url' => 'https://reuters.com/article-brave']],
-        ], 'Parliament passes key bill today');
-
-        $this->assertSame('brave', $result['image_origin']);
-        $this->assertNotNull($result['image_url']);
-        $this->assertStringStartsWith('/storage/news-images/', $result['image_url']);
-    }
-
-    /**
-     * Brave returns empty/garbage → null, and with AI disabled → null image.
-     */
-    public function test_brave_images_empty_results_returns_null_and_skips_ai_when_disabled(): void
-    {
-        config()->set('news-engine.images.enabled', true);
-        config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.brave.enabled', true);
-        config()->set('news-engine.images.ai.enabled', false);
-        config()->set('news-engine.sources.brave_search.api_key', 'test-brave-key');
-
-        Http::fake([
-            'https://reuters.com/article-empty' => Http::response(
-                '<html><head><title>No image</title></head><body>story</body></html>',
-                200,
-                ['Content-Type' => 'text/html']
-            ),
-            'api.search.brave.com/res/v1/images/search*' => Http::response(
-                ['image_results' => []],
-                200,
-                ['Content-Type' => 'application/json']
-            ),
-        ]);
-
-        $service = $this->app->make(NewsArticleImageService::class);
-        $result = $service->resolveImageForTopic([
-            'topic_name' => 'RBI policy',
-            'category' => 'markets-finance',
-            'sources' => [['source_url' => 'https://reuters.com/article-empty']],
-        ], 'RBI holds rates steady');
-
-        $this->assertNull($result['image_origin']);
-        $this->assertNull($result['image_url']);
-    }
-
-    /**
-     * Second resolve for the same query does not re-hit the Brave API
-     * (cached outcome — path or null — reused).
-     */
-    public function test_brave_images_result_is_cached_per_query(): void
-    {
-        config()->set('news-engine.images.enabled', true);
-        config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.brave.enabled', true);
-        config()->set('news-engine.images.ai.enabled', false);
-        config()->set('news-engine.sources.brave_search.api_key', 'test-brave-key');
-
-        $braveCalls = 0;
-        $braveImageUrl = 'https://cdn.brave.example.com/cached-photo-2024.jpg';
-
-        Http::fake([
-            'https://reuters.com/article-cached' => Http::response(
-                '<html><head><title>No image</title></head><body>story</body></html>',
-                200,
-                ['Content-Type' => 'text/html']
-            ),
-            'api.search.brave.com/res/v1/images/search*' => function () use (&$braveCalls, $braveImageUrl) {
-                $braveCalls++;
-
-                return Http::response([
-                    'image_results' => [
-                        ['url' => $braveImageUrl, 'title' => 'cached photo'],
-                    ],
-                ], 200, ['Content-Type' => 'application/json']);
-            },
-            $braveImageUrl => Http::response(
-                str_repeat('x', 30_000),
-                200,
-                ['Content-Type' => 'image/jpeg']
-            ),
-        ]);
-
-        $service = $this->app->make(NewsArticleImageService::class);
-
-        $first = $service->resolveImageForTopic([
-            'topic_name' => 'Cache topic',
-            'category' => 'national',
-            'sources' => [['source_url' => 'https://reuters.com/article-cached']],
-        ], 'Cache topic headline');
-
-        $second = $service->resolveImageForTopic([
-            'topic_name' => 'Cache topic',
-            'category' => 'national',
-            'sources' => [['source_url' => 'https://reuters.com/article-cached']],
-        ], 'Cache topic headline');
-
-        $this->assertSame('brave', $first['image_origin']);
-        $this->assertSame('brave', $second['image_origin']);
-        $this->assertSame($first['image_url'], $second['image_url']);
-        $this->assertSame(1, $braveCalls, 'Brave Images API must only be hit once for a cached query');
-    }
-
-    /**
-     * A Brave result whose image URL is in the blocklist (logo.png) is skipped,
-     * and the next result is used instead.
-     */
-    public function test_brave_images_skips_blocklisted_url_and_uses_next_result(): void
-    {
-        config()->set('news-engine.images.enabled', true);
-        config()->set('news-engine.images.source.enabled', true);
-        config()->set('news-engine.images.brave.enabled', true);
-        config()->set('news-engine.images.ai.enabled', false);
-        config()->set('news-engine.sources.brave_search.api_key', 'test-brave-key');
-
-        $goodImageUrl = 'https://cdn.brave.example.com/real-photo-2024.jpg';
-
-        Http::fake([
-            'https://reuters.com/article-skip' => Http::response(
-                '<html><head><title>No image</title></head><body>story</body></html>',
-                200,
-                ['Content-Type' => 'text/html']
-            ),
-            'api.search.brave.com/res/v1/images/search*' => Http::response([
-                'image_results' => [
-                    [
-                        // Blocklisted (contains "logo.") — must be skipped.
-                        'url' => 'https://cdn.brave.example.com/logo.png',
-                        'title' => 'site logo',
-                    ],
-                    [
-                        'url' => $goodImageUrl,
-                        'title' => 'real photo',
-                    ],
-                ],
-            ], 200, ['Content-Type' => 'application/json']),
-            $goodImageUrl => Http::response(
-                str_repeat('x', 30_000),
-                200,
-                ['Content-Type' => 'image/jpeg']
-            ),
-        ]);
-
-        $service = $this->app->make(NewsArticleImageService::class);
-        $result = $service->resolveImageForTopic([
-            'topic_name' => 'Skip topic',
-            'category' => 'national',
-            'sources' => [['source_url' => 'https://reuters.com/article-skip']],
-        ], 'Skip topic headline');
-
-        $this->assertSame('brave', $result['image_origin']);
-        $this->assertNotNull($result['image_url']);
-        $this->assertStringStartsWith('/storage/news-images/', $result['image_url']);
     }
 }

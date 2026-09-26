@@ -146,35 +146,11 @@ return [
             'html_timeout' => (int) env('NEWS_SOURCE_IMAGES_HTML_TIMEOUT', 10),
             'image_timeout' => (int) env('NEWS_SOURCE_IMAGES_DOWNLOAD_TIMEOUT', 20),
             // Gate the batchexecute HTTP resolution of opaque Google News
-            // redirect tokens. The local protobuf decode stays free; this only
-            // fires for the opaque-token path where the payload is not a URL.
+            // redirect tokens (wrapper page → data-n-a-sg/ts → garturlreq RPC).
+            // The local protobuf decode stays free; this only fires for the
+            // opaque-token path where the payload is not a URL. Verified live
+            // 2026-09-26; decode+scrape is the sole image path — no fallbacks.
             'resolve_google_redirects' => (bool) env('NEWS_RESOLVE_GNEWS_REDIRECTS', true),
-        ],
-
-        'ai' => [
-            'enabled' => (bool) env('NEWS_AI_IMAGE_ENABLED', true),
-            'provider' => env('NEWS_AI_IMAGE_PROVIDER', 'pollinations'),
-            'style_prompt' => env(
-                'NEWS_AI_IMAGE_STYLE_PROMPT',
-                'Minimalist editorial illustration, modern flat style, clean composition, soft neutral palette, no text, no logos, no watermarks.'
-            ),
-            'pollinations' => [
-                'base_url' => env('NEWS_AI_IMAGE_BASE_URL', 'https://image.pollinations.ai'),
-                'model' => env('NEWS_AI_IMAGE_MODEL', 'flux'),
-                'width' => (int) env('NEWS_AI_IMAGE_WIDTH', 1536),
-                'height' => (int) env('NEWS_AI_IMAGE_HEIGHT', 864),
-                'timeout' => (int) env('NEWS_AI_IMAGE_TIMEOUT', 35),
-            ],
-        ],
-
-        // Brave Images API fallback — runs after source scraping fails and
-        // before the (config-gated, off-in-prod) AI generator. Reuses the same
-        // Brave API key + base URL as the brave_search source so there is a
-        // single configured credential.
-        'brave' => [
-            'enabled' => (bool) env('NEWS_BRAVE_IMAGES_ENABLED', true),
-            'timeout' => (int) env('NEWS_BRAVE_IMAGES_TIMEOUT', 15),
-            'results_limit' => (int) env('NEWS_BRAVE_IMAGES_RESULTS_LIMIT', 5),
         ],
     ],
 

@@ -3,7 +3,6 @@
 namespace App\News\Services;
 
 use App\News\Support\GoogleNewsUrlDecoder;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -60,40 +59,19 @@ class NewsArticleImageService
             ];
         }
 
-        // Source scraping failed (usually Google News redirects that bot-block).
-        // Try the Brave Images API next — real photos without AI generation.
-        $braveImage = $this->fetchFromBraveImages(
-            (string) ($topic['topic_name'] ?? ''),
-            $articleTitle,
-        );
-        if ($braveImage !== null) {
-            return [
-                'image_url' => $braveImage,
-                'thumbnail_url' => $braveImage,
-                'image_origin' => 'brave',
-            ];
-        }
-
-        // Last resort: AI generation (config-gated, off in prod) — keeps
-        // articles illustrated when neither sources nor Brave yield an image.
-        $aiImage = $this->generateAiFallbackImage(
-            $articleTitle,
-            (string) ($topic['topic_name'] ?? ''),
-            (string) ($topic['category'] ?? ''),
-        );
-        if ($aiImage !== null) {
-            return [
-                'image_url' => $aiImage,
-                'thumbnail_url' => $aiImage,
-                'image_origin' => 'ai',
-            ];
-        }
-
+        // No image from publisher pages → article ships unillustrated.
+        // (Former Brave Images + AI fallbacks removed 2026-09-27: the
+        // batchexecute URL decode makes source scraping reliable, and real
+        // article photos beat AI-generated or topic-matched stock.)
         return ['image_url' => null, 'thumbnail_url' => null, 'image_origin' => null];
     }
 
     /**
-     * @param  array<int,array<string,mixed>>  $sources
+     * Scrape the article's publisher pages for an og:image/twitter:image.
+     *
+     * Google News redirect URLs are decoded to the real publisher URL first
+     * (batchexecute for opaque CBMi tokens), then the page is fetched and its
+     * meta image extracted, downloaded, validated and stored locally.
      */
     private function resolveFromSources(array $sources): ?string
     {
@@ -145,108 +123,6 @@ class NewsArticleImageService
                 }
             } catch (\Throwable $e) {
                 Log::warning('Source image fetch failed: '.$e->getMessage(), ['source_url' => $sourceUrl]);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Query the Brave Images API for a real photo matching the topic/headline.
-     * Reuses the same api_key + base_url as the brave_search source so only one
-     * credential is configured. Caches the chosen path (or null) per query for
-     * 24h so recurring topics don't re-hit the API.
-     */
-    private function fetchFromBraveImages(string $topicName, string $articleTitle): ?string
-    {
-        if (! (bool) config('news-engine.images.brave.enabled', true)) {
-            return null;
-        }
-
-        // Reuse the brave_search source credential — single source of truth.
-        $apiKey = (string) config('news-engine.sources.brave_search.api_key', '');
-        if ($apiKey === '') {
-            return null;
-        }
-
-        $query = trim($topicName) !== '' ? trim($topicName) : trim($articleTitle);
-        if ($query === '') {
-            return null;
-        }
-        $query = preg_replace('/\s+/', ' ', $query) ?? $query;
-
-        // Cache hits (including null) for 24h — avoids repeat API calls for
-        // recurring topic names across the same discovery cycle.
-        // v2: prior key cached 24h nulls from the wrong response-shape bug.
-        $cacheKey = 'news-images:brave:v2:'.sha1($query);
-        if (Cache::has($cacheKey)) {
-            return Cache::get($cacheKey);
-        }
-
-        $baseUrl = rtrim((string) config(
-            'news-engine.sources.brave_search.base_url',
-            'https://api.search.brave.com/res/v1',
-        ), '/');
-        $timeout = max(5, (int) config('news-engine.images.brave.timeout', 15));
-        $count = max(1, (int) config('news-engine.images.brave.results_limit', 5));
-
-        try {
-            $response = Http::timeout($timeout)
-                ->withHeaders([
-                    'X-Subscription-Token' => $apiKey,
-                    'Accept' => 'application/json',
-                ])
-                ->get($baseUrl.'/images/search', [
-                    'q' => $query,
-                    'count' => $count,
-                    'safesearch' => 'moderate',
-                ]);
-        } catch (\Throwable $e) {
-            // Transient failure — don't cache so the next cycle can retry.
-            Log::warning('Brave Images fetch failed: '.$e->getMessage(), ['query' => $query]);
-
-            return null;
-        }
-
-        $result = $this->pickBraveImageResult($response);
-        // Cache the outcome (path or null) so the same query doesn't re-hit
-        // Brave for 24h. Only an actual HTTP response reaches here; exceptions
-        // return above without caching to permit retry.
-        Cache::put($cacheKey, $result, now()->addHours(24));
-
-        return $result;
-    }
-
-    /**
-     * Pick the first Brave Images result that passes the blocklist and downloads.
-     *
-     * @param  \Illuminate\Http\Client\Response  $response
-     */
-    private function pickBraveImageResult($response): ?string
-    {
-        if (! $response->ok()) {
-            return null;
-        }
-
-        // Brave's Images endpoint nests items under "image_results" (the Web
-        // Search API uses "results"); accept both defensively.
-        $results = $response->json('image_results', []);
-        if (! is_array($results) || $results === []) {
-            $results = $response->json('results', []);
-        }
-        if (! is_array($results)) {
-            return null;
-        }
-
-        foreach ($results as $item) {
-            $imageUrl = trim((string) ($item['url'] ?? ''));
-            if ($imageUrl === '' || ! $this->isLikelyArticleImageUrl($imageUrl)) {
-                continue;
-            }
-
-            $stored = $this->downloadAndStoreImage($imageUrl, 'brave');
-            if ($stored !== null) {
-                return $stored;
             }
         }
 
@@ -403,72 +279,5 @@ class NewsArticleImageService
         }
 
         return array_merge($direct, $redirects);
-    }
-
-    private function generateAiFallbackImage(string $articleTitle, string $topicName, string $category): ?string
-    {
-        if (! (bool) config('news-engine.images.ai.enabled', true)) {
-            return null;
-        }
-
-        $provider = (string) config('news-engine.images.ai.provider', 'pollinations');
-
-        return match ($provider) {
-            'pollinations' => $this->generateWithPollinations($articleTitle, $topicName, $category),
-            default => null,
-        };
-    }
-
-    private function generateWithPollinations(string $articleTitle, string $topicName, string $category): ?string
-    {
-        $baseUrl = rtrim((string) config('news-engine.images.ai.pollinations.base_url', 'https://image.pollinations.ai'), '/');
-        $model = (string) config('news-engine.images.ai.pollinations.model', 'flux');
-        $width = max(640, (int) config('news-engine.images.ai.pollinations.width', 1536));
-        $height = max(360, (int) config('news-engine.images.ai.pollinations.height', 864));
-        $timeout = max(10, (int) config('news-engine.images.ai.pollinations.timeout', 35));
-        $style = (string) config('news-engine.images.ai.style_prompt');
-
-        $prompt = trim(
-            $style.' '
-            .'Topic: '.$topicName.'. '
-            .'Category: '.$category.'. '
-            .'Headline: '.$articleTitle.'.'
-        );
-
-        $url = $baseUrl.'/prompt/'.rawurlencode($prompt)
-            .'?model='.rawurlencode($model)
-            .'&width='.$width
-            .'&height='.$height
-            .'&nologo=true'
-            .'&safe=true'
-            .'&seed='.random_int(1, 999999);
-
-        try {
-            $response = Http::timeout($timeout)->get($url);
-
-            if (! $response->ok()) {
-                return null;
-            }
-
-            $contentType = Str::lower((string) $response->header('Content-Type', 'image/jpeg'));
-            if (! Str::startsWith($contentType, 'image/')) {
-                return null;
-            }
-
-            $extension = match (true) {
-                Str::contains($contentType, 'png') => 'png',
-                Str::contains($contentType, 'webp') => 'webp',
-                default => 'jpg',
-            };
-
-            $path = 'news-images/'.now()->format('Y/m').'/ai-'.Str::uuid().'.'.$extension;
-            Storage::disk('public')->put($path, $response->body());
-
-            return '/storage/'.$path;
-        } catch (\Throwable $e) {
-            Log::warning('AI image generation failed: '.$e->getMessage());
-
-            return null;
-        }
     }
 }

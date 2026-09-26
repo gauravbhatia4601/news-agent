@@ -39,16 +39,27 @@ class GoogleNewsUrlDecoderTest extends TestCase
     /**
      * Build a realistic batchexecute response body: )]}'-prefixed,
      * line-delimited JSON arrays, with the publisher URL nested inside
-     * a stringified inner JSON array.
+     * a stringified inner JSON array (the garturlres shape).
      */
     private function buildBatchexecuteResponse(string $publisherUrl): string
     {
         // Inner data element: a stringified JSON array containing the URL.
         $inner = json_encode([$publisherUrl], JSON_UNESCAPED_SLASHES);
-        // Outer wrapper: [["Fbv4je", "{\"inner-as-string}\"]], null, "generic"]
+        // Outer wrapper: [["Fbv4je", "{inner-as-string}"]], null, "generic"]
         $row = json_encode([['Fbv4je', $inner]], JSON_UNESCAPED_SLASHES);
 
         return ")]}'\n".$row;
+    }
+
+    /**
+     * Build a realistic Google News wrapper page carrying the signed
+     * attributes the batchexecute RPC requires.
+     */
+    private function buildWrapperPage(string $articleId): string
+    {
+        return '<html><body><c-wiz data-n-a-id="'.$articleId.'"'
+            .' data-n-a-ts="1790439596"'
+            .' data-n-a-sg="AbIaSL-u8jrGo8iiwrEMjJBkrluM">x</c-wiz></body></html>';
     }
 
     protected function setUp(): void
@@ -108,41 +119,59 @@ class GoogleNewsUrlDecoderTest extends TestCase
     public function test_decode_resolves_opaque_token_via_batchexecute(): void
     {
         $url = $this->buildOpaqueTokenUrl();
+        $articleId = substr($url, strpos($url, 'CBMi') + 0); // full CBMi… id
         $publisher = 'https://www.reuters.com/world/asia-pacific/real-article-2026-09-11/';
 
         Http::fake([
-            'news.google.com/*' => Http::response($this->buildBatchexecuteResponse($publisher), 200, ['Content-Type' => 'text/plain']),
+            $url => Http::response($this->buildWrapperPage($articleId), 200, ['Content-Type' => 'text/html']),
+            'news.google.com/_/DotsSplashUi/*' => Http::response($this->buildBatchexecuteResponse($publisher), 200, ['Content-Type' => 'text/plain']),
         ]);
 
         $resolved = GoogleNewsUrlDecoder::decode($url);
 
         $this->assertSame($publisher, $resolved);
-        Http::assertSentCount(1);
+        Http::assertSentCount(2); // wrapper page + RPC
     }
 
     public function test_decode_caches_batchexecute_resolution(): void
     {
         $url = $this->buildOpaqueTokenUrl();
+        $articleId = substr($url, strpos($url, 'CBMi') + 0);
         $publisher = 'https://www.bbc.com/news/world-asia-india-998877';
 
         Http::fake([
-            'news.google.com/*' => Http::response($this->buildBatchexecuteResponse($publisher), 200, ['Content-Type' => 'text/plain']),
+            $url => Http::response($this->buildWrapperPage($articleId), 200, ['Content-Type' => 'text/html']),
+            'news.google.com/_/DotsSplashUi/*' => Http::response($this->buildBatchexecuteResponse($publisher), 200, ['Content-Type' => 'text/plain']),
         ]);
 
         // First call hits HTTP.
         $this->assertSame($publisher, GoogleNewsUrlDecoder::decode($url));
-        // Second call must come from cache — HTTP count stays at 1.
+        // Second call must come from cache — HTTP count stays at 2.
         $this->assertSame($publisher, GoogleNewsUrlDecoder::decode($url));
 
-        Http::assertSentCount(1);
+        Http::assertSentCount(2);
+    }
+
+    public function test_decode_passthrough_when_wrapper_page_lacks_signature(): void
+    {
+        $url = $this->buildOpaqueTokenUrl();
+
+        Http::fake([
+            $url => Http::response('<html><body>no attrs</body></html>', 200, ['Content-Type' => 'text/html']),
+        ]);
+
+        $this->assertSame($url, GoogleNewsUrlDecoder::decode($url));
+        Http::assertSentCount(1); // wrapper only — no RPC without a signature
     }
 
     public function test_decode_passthrough_when_batchexecute_returns_no_url(): void
     {
         $url = $this->buildOpaqueTokenUrl();
+        $articleId = substr($url, strpos($url, 'CBMi') + 0);
 
         Http::fake([
-            'news.google.com/*' => Http::response(")]}'\n[[\"garbage\"]]", 200, ['Content-Type' => 'text/plain']),
+            $url => Http::response($this->buildWrapperPage($articleId), 200, ['Content-Type' => 'text/html']),
+            'news.google.com/_/DotsSplashUi/*' => Http::response(")]}'\n[[\"garbage\"]]", 200, ['Content-Type' => 'text/plain']),
         ]);
 
         $this->assertSame($url, GoogleNewsUrlDecoder::decode($url));
@@ -151,12 +180,14 @@ class GoogleNewsUrlDecoderTest extends TestCase
     public function test_decode_passthrough_when_batchexecute_returns_google_only_urls(): void
     {
         $url = $this->buildOpaqueTokenUrl();
+        $articleId = substr($url, strpos($url, 'CBMi') + 0);
 
         // Response only contains Google hosts — no publisher URL to extract.
         $body = ")]}'\n[\"https://news.google.com/foo https://google.com/bar\"]";
 
         Http::fake([
-            'news.google.com/*' => Http::response($body, 200, ['Content-Type' => 'text/plain']),
+            $url => Http::response($this->buildWrapperPage($articleId), 200, ['Content-Type' => 'text/html']),
+            'news.google.com/_/DotsSplashUi/*' => Http::response($body, 200, ['Content-Type' => 'text/plain']),
         ]);
 
         $this->assertSame($url, GoogleNewsUrlDecoder::decode($url));
@@ -165,9 +196,11 @@ class GoogleNewsUrlDecoderTest extends TestCase
     public function test_decode_passthrough_when_batchexecute_errors(): void
     {
         $url = $this->buildOpaqueTokenUrl();
+        $articleId = substr($url, strpos($url, 'CBMi') + 0);
 
         Http::fake([
-            'news.google.com/*' => Http::response('server error', 500),
+            $url => Http::response($this->buildWrapperPage($articleId), 200, ['Content-Type' => 'text/html']),
+            'news.google.com/_/DotsSplashUi/*' => Http::response('server error', 500),
         ]);
 
         $this->assertSame($url, GoogleNewsUrlDecoder::decode($url));
@@ -179,7 +212,8 @@ class GoogleNewsUrlDecoderTest extends TestCase
         $url = $this->buildOpaqueTokenUrl();
 
         Http::fake([
-            'news.google.com/*' => Http::response($this->buildBatchexecuteResponse('https://example.com/article'), 200),
+            $url => Http::response($this->buildWrapperPage($url), 200),
+            'news.google.com/_/DotsSplashUi/*' => Http::response($this->buildBatchexecuteResponse('https://example.com/article'), 200),
         ]);
 
         // No HTTP call, original URL returned.
@@ -187,25 +221,31 @@ class GoogleNewsUrlDecoderTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_decode_batchexecute_sends_correct_payload_shape(): void
+    public function test_decode_batchexecute_sends_garturlreq_payload_shape(): void
     {
         $url = $this->buildOpaqueTokenUrl();
+        $articleId = substr($url, strpos($url, 'CBMi') + 0);
         $publisher = 'https://example.com/news/story';
 
         Http::fake([
-            'news.google.com/*' => Http::response($this->buildBatchexecuteResponse($publisher), 200, ['Content-Type' => 'text/plain']),
+            $url => Http::response($this->buildWrapperPage($articleId), 200, ['Content-Type' => 'text/html']),
+            'news.google.com/_/DotsSplashUi/*' => Http::response($this->buildBatchexecuteResponse($publisher), 200, ['Content-Type' => 'text/plain']),
         ]);
 
         GoogleNewsUrlDecoder::decode($url);
 
-        Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($url) {
-            $fullId = 'CBMi'.substr($url, strpos($url, 'CBMi') + 4);
-            $expectedInner = json_encode(['gartsId' => $fullId], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $expectedFreq = json_encode([['Fbv4je', $expectedInner, null, 'generic']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            if ($request->method() !== 'POST') {
+                return false;
+            }
+            $body = $request->body();
 
-            // Request body is the urlencoded form, so f.req appears as "f.req=...".
+            // The signed garturlreq shape — not the legacy gartsId object.
             return $request->hasHeader('Content-Type', 'application/x-www-form-urlencoded')
-                && str_contains($request->body(), 'f.req='.rawurlencode($expectedFreq));
+                && str_contains($body, 'garturlreq')
+                && str_contains($body, '1790439596')
+                && str_contains($body, 'AbIaSL-u8jrGo8iiwrEMjJBkrluM')
+                && ! str_contains($body, 'gartsId');
         });
     }
 }

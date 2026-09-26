@@ -19,8 +19,11 @@ use Illuminate\Support\Facades\Http;
  *     this locally and for free.
  *  2. OPAQUE-TOKEN payloads (current default): the bytes after CBMi decode
  *     to an opaque token (starts `AU_`) that is NOT a URL. The publisher URL
- *     must be resolved via Google's undocumented `batchexecute` endpoint.
- *     `resolveViaBatchexecute` handles this with a single cached HTTP call.
+ *     must be resolved via Google's undocumented `batchexecute` endpoint:
+ *     GET the article's wrapper page (browser UA) for the signed
+ *     `data-n-a-ts`/`data-n-a-sg` attributes, then POST the signed
+ *     `garturlreq` RPC (arg layout verified live 2026-09-26 — other shapes
+ *     return 200 with a null body). `resolveViaBatchexecute` handles this.
  *
  * On any failure the original URL is returned unchanged — callers should
  * scrape as-is (current behavior) rather than drop the source. The HTTP
@@ -36,8 +39,14 @@ final class GoogleNewsUrlDecoder
     /** batchexecute endpoint. */
     private const BATCH_EXECUTE_URL = 'https://news.google.com/_/DotsSplashUi/data/batchexecute';
 
-    /** HTTP timeout for batchexecute (seconds). */
+    /** HTTP timeout for the wrapper page + batchexecute (seconds). */
     private const HTTP_TIMEOUT = 10;
+
+    /**
+     * Browser UA — the wrapper page must be served to a browser-like client
+     * or Google omits the signed attributes the RPC needs.
+     */
+    private const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
 
     /**
      * Decode a Google News redirect URL to its underlying publisher URL.
@@ -90,7 +99,10 @@ final class GoogleNewsUrlDecoder
     /**
      * Resolve an opaque Google News article token via the batchexecute RPC.
      *
-     * Sends a single POST with the full article ID (CBMi…) and parses the
+     * Flow (verified live 2026-09-26): GET the wrapper page for the article
+     * (Googlebot UA gets a 302 to a JS shell without the signed attrs, so a
+     * browser UA is required) → extract `data-n-a-ts` + `data-n-a-sg` from
+     * the `c-wiz` node → POST the signed `garturlreq` RPC → parse the
      * `)]}'`-prefixed line-delimited JSON response for the first plausible
      * publisher URL. Cached for 7 days per source URL. ANY failure returns
      * the original URL unchanged — never throws.
@@ -108,21 +120,63 @@ final class GoogleNewsUrlDecoder
         }
 
         try {
-            // f.req payload: [[["Fbv4je","{\"gartsId\":\"<fullId>\"}",null,"generic"]]]
-            $inner = json_encode(['gartsId' => $fullId], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $freq = json_encode([['Fbv4je', $inner, null, 'generic']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            // Step 1: wrapper page carries the per-article signature + timestamp.
+            $page = Http::timeout(self::HTTP_TIMEOUT)
+                ->connectTimeout(self::HTTP_TIMEOUT)
+                ->withHeaders(['User-Agent' => self::BROWSER_UA, 'Accept-Language' => 'en-US,en;q=0.9'])
+                ->get($sourceUrl);
+
+            if (! $page->ok()) {
+                return $sourceUrl;
+            }
+
+            if (! preg_match('/data-n-a-sg="([^"]*)"/', $page->body(), $sg)
+                || ! preg_match('/data-n-a-ts="([^"]*)"/', $page->body(), $ts)) {
+                return $sourceUrl;
+            }
+
+            // Step 2: signed RPC — the arg layout below is the exact shape
+            // Google's own client sends; other shapes 200 with a null body.
+            $inner = json_encode([
+                'garturlreq',
+                [
+                    ['X', 'X', ['X', 'X'], null, null, 1, 1, 'US:en', null, 1, null, null, null, null, null, 0, 1],
+                    'en-US',
+                    'US',
+                    1,
+                    [2, 3, 4, 8],
+                    1,
+                    0,
+                    '655000234',
+                    0,
+                    0,
+                    null,
+                    0,
+                ],
+                $fullId,
+                $ts[1],
+                $sg[1],
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
             $response = Http::asForm()
                 ->timeout(self::HTTP_TIMEOUT)
                 ->connectTimeout(self::HTTP_TIMEOUT)
-                ->post(self::BATCH_EXECUTE_URL, ['f.req' => $freq]);
+                ->withHeaders([
+                    'Origin' => 'https://news.google.com',
+                    'Referer' => 'https://news.google.com/',
+                    'User-Agent' => self::BROWSER_UA,
+                ])
+                ->post(self::BATCH_EXECUTE_URL, [
+                    'f.req' => json_encode([[
+                        ['Fbv4je', $inner, null, 'generic'],
+                    ]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                ]);
 
             if (! $response->successful()) {
                 return $sourceUrl;
             }
 
-            $body = $response->body();
-            $resolved = self::extractPublisherUrlFromBody($body);
+            $resolved = self::extractPublisherUrlFromBody($response->body());
             if ($resolved === null) {
                 return $sourceUrl;
             }
