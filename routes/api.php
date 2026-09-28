@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\NewsletterSubscriberController;
 use App\Http\Controllers\Api\StoryController;
+use App\Services\AiModelsService;
 use App\Services\HomeFeedService;
 use App\Services\MarketDataService;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,11 @@ Route::prefix('v1')->middleware('throttle:public-api')->group(function () {
     Route::get('/market', function () {
         return response()->json(['data' => app(MarketDataService::class)->getMarketData()]);
     });
+
+    // Model intelligence catalog — DB only, never live from the feed (ADR 0001).
+    Route::get('/ai/models', function () {
+        return response()->json(['data' => app(AiModelsService::class)->get()]);
+    })->name('ai.models');
 });
 
 Route::prefix('v1/admin')->group(function () {

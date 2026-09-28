@@ -57,6 +57,11 @@ Schedule::command('news:warm-home-feed')->everyMinute()
 Schedule::command('news:detect-live-stories --scope=india')->hourlyAt(10)
     ->withoutOverlapping(300)
     ->runInBackground();
+
+// AI model catalog sync (OpenRouter feed → DB). Off the :10/:30/:40 marks.
+Schedule::command('ai:sync-models')->hourlyAt(50)
+    ->withoutOverlapping(600)
+    ->runInBackground();
 Schedule::command('news:detect-live-stories --scope=global')->hourlyAt(40)
     ->withoutOverlapping(300)
     ->runInBackground();

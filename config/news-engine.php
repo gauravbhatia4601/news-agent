@@ -7,6 +7,41 @@ return [
     | Ranking (momentum-based trending)
     |--------------------------------------------------------------------------
     */
+    /*
+    |--------------------------------------------------------------------------
+    | AI Model Intelligence (/ai hub)
+    |--------------------------------------------------------------------------
+    */
+    'ai_models' => [
+        // Curated top-20 flagship ids for the hub charts (featured flag in the
+        // API). Updated by hand as the flagship lineup changes.
+        'featured' => [
+            'anthropic/claude-opus-5.5',
+            'anthropic/claude-sonnet-5',
+            'anthropic/claude-haiku-4.5',
+            'openai/gpt-5.6-terra-pro',
+            'openai/gpt-5.6-terra',
+            'openai/gpt-5.6-luna-pro',
+            'openai/gpt-5.6-luna',
+            'openai/gpt-5.6-sol-pro',
+            'openai/gpt-5.5',
+            'openai/gpt-5.5-pro',
+            'google/gemini-3.1-pro-preview',
+            'google/gemini-3-pro-image',
+            'google/gemini-2.5-pro',
+            'google/gemini-2.5-flash',
+            'x-ai/grok-4.7',
+            'x-ai/grok-4.6',
+            'deepseek/deepseek-v4-pro',
+            'deepseek/deepseek-v4-pro-0813',
+            'moonshotai/kimi-k3',
+            'qwen/qwen3.8-max-prime',
+            'meta-llama/llama-4-maverick',
+            'meta-llama/llama-4-scout',
+            'mistralai/mistral-large-2512',
+        ],
+    ],
+
     'ranking' => [
         'half_life_hours' => (float) env('NEWS_RANKING_HALF_LIFE_HOURS', 6.0),
         // View-count windows (hours). Columns views_1h/6h/24h are fixed — changing
