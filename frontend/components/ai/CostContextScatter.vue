@@ -50,7 +50,12 @@ const yTicks = [
 const points = computed(() =>
   props.models
     .filter((m) => m.pricePerMInput !== null && m.contextLength > 0)
-    .map((m) => ({ ...m, price: m.pricePerMInput as number })),
+    // Blended price (3×input + 1×output) — same headline metric as the ranked
+    // pricing list above, so both charts tell one consistent story.
+    .map((m) => ({
+      ...m,
+      price: (m.pricePerMInput as number) * 0.75 + (m.pricePerMOutput ?? (m.pricePerMInput as number)) * 0.25,
+    })),
 )
 
 // Value frontier: Pareto-efficient set. A point is on the frontier if no other
@@ -90,7 +95,7 @@ const labeled = computed(() => {
         :height="Math.max(0, y(1) - PAD)"
         class="fill-current text-muted" opacity="0.45"
       />
-      <text :x="x({ contextLength: 1000000 }) + 8" :y="y(1) - 8" class="fill-current text-muted-foreground font-label" font-size="10" opacity="0.9">more context, under $1/M</text>
+      <text :x="x({ contextLength: 1000000 }) + 8" :y="y(1) - 8" class="fill-current text-muted-foreground font-label" font-size="10" opacity="0.9">more context, under $1/M — best value zone</text>
 
       <!-- gridlines + tick labels -->
       <g stroke="currentColor" class="text-border" stroke-width="1">
@@ -126,7 +131,7 @@ const labeled = computed(() => {
           stroke-width="1.5"
           class="text-foreground"
         >
-          <title>{{ m.name }} — {{ m.contextLength.toLocaleString() }} ctx, ${{ m.price.toFixed(2) }}/M input</title>
+          <title>{{ m.name }} — {{ m.contextLength.toLocaleString() }} ctx, ${{ m.price.toFixed(2) }}/M blended (3 in / 1 out)</title>
         </circle>
       </g>
       <g class="fill-current text-foreground font-label" font-size="10">
@@ -146,7 +151,7 @@ const labeled = computed(() => {
         <tr v-for="m in points" :key="'t' + m.id">
           <td>{{ m.name }}</td>
           <td>{{ m.contextLength.toLocaleString() }} tokens</td>
-          <td>${{ m.price.toFixed(2) }} per million tokens</td>
+          <td>${{ m.price.toFixed(2) }} per million tokens, blended (3×input + 1×output)</td>
         </tr>
       </tbody>
     </table>
