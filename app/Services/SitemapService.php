@@ -51,6 +51,7 @@ class SitemapService
         $pages = [
             ['loc' => '', 'priority' => '1.0', 'changefreq' => 'hourly'],
             ['loc' => '/ai', 'priority' => '0.9', 'changefreq' => 'hourly'],
+            ['loc' => '/ai/models', 'priority' => '0.8', 'changefreq' => 'daily'],
             ['loc' => '/trending', 'priority' => '0.9', 'changefreq' => 'hourly'],
             ['loc' => '/categories', 'priority' => '0.8', 'changefreq' => 'daily'],
             ['loc' => '/stories', 'priority' => '0.8', 'changefreq' => 'daily'],

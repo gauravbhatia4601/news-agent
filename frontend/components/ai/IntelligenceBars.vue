@@ -9,7 +9,8 @@ const props = defineProps<{ models: AiModelRow[] }>()
 const scored = computed(() =>
   props.models
     .filter((m) => m.intelligenceIndex !== null && m.intelligenceIndex > 0)
-    .sort((a, b) => (b.intelligenceIndex as number) - (a.intelligenceIndex as number)),
+    .sort((a, b) => (b.intelligenceIndex as number) - (a.intelligenceIndex as number))
+    .slice(0, 20),
 )
 
 const max = computed(() => Math.max(...scored.value.map((m) => m.intelligenceIndex as number), 1))
@@ -45,7 +46,7 @@ function fmt(v: number): string {
       </div>
     </div>
     <p class="mt-3 font-label text-[11px] text-muted-foreground">
-      Ranked smartest first · Intelligence Index (Artificial Analysis, via OpenRouter) · every scored model shown · swatch = provider
+      Top 20, smartest first · Intelligence Index (Artificial Analysis, via OpenRouter) · swatch = provider
     </p>
   </div>
 </template>

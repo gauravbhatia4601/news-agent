@@ -14,7 +14,7 @@ const { data: modelsPayload } = await useAsyncData<AiModelsPayload>(
 )
 
 // Chart-row shape from the live catalog. All rows feed the charts; the
-// intelligence chart itself filters to scored models (not capped).
+// intelligence chart filters to scored models.
 const featuredRows = computed<AiModelRow[]>(() =>
   (modelsPayload.value?.models ?? [])
     .map((m) => ({
@@ -47,7 +47,7 @@ const articles = computed<NewsArticleCard[]>(() => pageData.value?.data ?? [])
 const heroRel = useRelativeTime(() => articles.value[0]?.published_at)
 
 const pageTitle = 'AI News & Model Intelligence'
-const pageDescription = 'The latest AI news with live model intelligence: flagship model prices per million tokens, context windows, and cost comparisons across top AI providers.'
+const pageDescription = 'The latest AI news with live model intelligence: model rankings by the Artificial Analysis Intelligence Index, prices per million tokens, and context windows.'
 const canonicalUrl = `${siteUrl}/ai`
 
 usePageSeo(pageTitle, pageDescription)
@@ -104,38 +104,23 @@ useHead({
         AI News &amp; Model Intelligence
       </h1>
       <p class="font-serif text-muted-foreground max-w-3xl">
-        The latest AI news — model launches, price changes, benchmarks, policy and research — alongside live model intelligence: what flagship models cost per million tokens and how far their context windows reach, tracked continuously.
+        The latest AI news — model launches, price changes, benchmarks, policy and research — with the state of model intelligence, tracked continuously.
       </p>
     </header>
 
     <h2 class="sr-only">Model intelligence</h2>
 
-    <!-- Model Intelligence data panel (hidden when the catalog is empty) -->
-    <template v-if="featuredRows.length > 0">
-      <section v-if="scoredRows.length > 0" class="border border-border p-5">
+    <!-- Intelligence ranking — top 20, vertical bars (hidden when no scores) -->
+    <template v-if="scoredRows.length > 0">
+      <section class="border border-border p-5">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-display text-xl font-bold">Model Intelligence</h3>
-          <span class="font-label text-[11px] text-muted-foreground">Intelligence Index · {{ scoredRows.length }} scored models</span>
+          <NuxtLink to="/ai/models" class="text-xs text-muted-foreground hover:text-foreground font-label uppercase tracking-[0.062em]">
+            All models &amp; pricing →
+          </NuxtLink>
         </div>
         <AiIntelligenceBars :models="featuredRows" />
         <AiProviderLegend :models="scoredRows" />
-      </section>
-
-      <section class="border border-border p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-display text-xl font-bold">Flagship Model Pricing</h3>
-          <span class="font-label text-[11px] text-muted-foreground">$ per 1M tokens</span>
-        </div>
-        <AiModelPriceBars :models="featuredRows.filter((m) => m.pricePerMInput !== null).slice(0, 20)" />
-        <AiProviderLegend :models="featuredRows" />
-      </section>
-
-      <section class="border border-border p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-display text-lg font-bold">Cost vs Context Window</h3>
-          <span class="font-label text-[11px] text-muted-foreground">log scale</span>
-        </div>
-        <AiCostContextScatter :models="featuredRows" />
       </section>
 
       <p class="font-label text-[11px] text-muted-foreground">
