@@ -110,7 +110,7 @@ useHead({
 
     <h2 class="sr-only">Model intelligence</h2>
 
-    <!-- Intelligence ranking — top 20, vertical bars (hidden when no scores) -->
+    <!-- Intelligence ranking — top 10 ranked rows (hidden when no scores) -->
     <template v-if="scoredRows.length > 0">
       <section class="border border-border p-5">
         <div class="flex items-center justify-between mb-4">
@@ -119,7 +119,7 @@ useHead({
             All models &amp; pricing →
           </NuxtLink>
         </div>
-        <AiIntelligenceBars :models="featuredRows" />
+        <AiIntelligenceBars :models="featuredRows" :scored-total="scoredRows.length" />
         <AiProviderLegend :models="scoredRows" />
       </section>
 

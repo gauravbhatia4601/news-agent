@@ -2,18 +2,18 @@
 import type { AiModelRow } from './CostContextScatter.vue'
 import { providerColor } from './providerColor'
 
-// Intelligence Index vertical bars — every scored model, smartest first.
-// Compact columns; hover gives the exact number. Pure CSS.
-const props = defineProps<{ models: AiModelRow[] }>()
+// Ranked top-10 intelligence rows — the artificialanalysis pattern:
+// rank | swatch | name | bar | score. Horizontal, linear scale, compact.
+const props = defineProps<{ models: AiModelRow[]; scoredTotal?: number }>()
 
-const scored = computed(() =>
+const top = computed(() =>
   props.models
     .filter((m) => m.intelligenceIndex !== null && m.intelligenceIndex > 0)
     .sort((a, b) => (b.intelligenceIndex as number) - (a.intelligenceIndex as number))
-    .slice(0, 20),
+    .slice(0, 10),
 )
 
-const max = computed(() => Math.max(...scored.value.map((m) => m.intelligenceIndex as number), 1))
+const max = computed(() => Math.max(...top.value.map((m) => m.intelligenceIndex as number), 1))
 
 function pct(m: AiModelRow): number {
   return Math.round(((m.intelligenceIndex as number) / max.value) * 100)
@@ -26,27 +26,24 @@ function fmt(v: number): string {
 
 <template>
   <div>
-    <div class="flex items-end gap-x-1.5 gap-y-4 flex-wrap">
+    <div class="space-y-2">
       <div
-        v-for="m in scored"
+        v-for="(m, i) in top"
         :key="m.id"
-        class="w-[52px] flex flex-col items-center"
+        class="grid grid-cols-[24px_16px_minmax(0,220px)_1fr_56px] items-center gap-2.5"
         :title="`${m.name} — Intelligence Index ${fmt(m.intelligenceIndex as number)}`"
       >
-        <span class="font-label text-[10px] font-bold tabular-nums">{{ fmt(m.intelligenceIndex as number) }}</span>
-        <div class="w-5 bg-muted rounded-t-sm overflow-hidden flex items-end" style="height: 64px">
-          <div
-            class="w-full rounded-t-sm"
-            :style="{ height: pct(m) + '%', background: providerColor(m.provider) }"
-          />
+        <span class="font-label text-[11px] text-muted-foreground tabular-nums text-right">{{ i + 1 }}</span>
+        <span class="inline-block w-2.5 h-2.5 rounded-sm" :style="{ background: providerColor(m.provider) }" :title="m.provider" />
+        <span class="font-label text-xs truncate" :title="m.name">{{ m.name }}</span>
+        <div class="bg-muted h-2 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" :style="{ width: pct(m) + '%', background: providerColor(m.provider) }" />
         </div>
-        <span class="font-label text-[9px] text-muted-foreground text-center leading-tight mt-1 line-clamp-2" :title="m.name">
-          {{ m.name }}
-        </span>
+        <span class="font-label text-xs font-bold tabular-nums text-right">{{ fmt(m.intelligenceIndex as number) }}</span>
       </div>
     </div>
     <p class="mt-3 font-label text-[11px] text-muted-foreground">
-      Top 20, smartest first · Intelligence Index (Artificial Analysis, via OpenRouter) · swatch = provider
+      Top {{ top.length }} of {{ scoredTotal ?? top.length }} scored · Intelligence Index by Artificial Analysis (via OpenRouter)
     </p>
   </div>
 </template>
