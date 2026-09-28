@@ -22,10 +22,10 @@ export interface AiModelRow {
 
 const props = defineProps<{ models: AiModelRow[] }>()
 
-const W = 380
-const H = 210
-const PAD_L = 30
-const PAD_B = 30
+const W = 560
+const H = 300
+const PAD_L = 36
+const PAD_B = 34
 
 const X_MIN = 3.8
 const X_MAX = 7.5
@@ -145,7 +145,7 @@ const labels = computed<Placed[]>(() => {
 
 <template>
   <div>
-    <svg :viewBox="`0 0 ${W} ${H}`" class="w-full h-auto max-w-[560px]" role="img" aria-label="Cost per million input tokens versus context window, log-log scale, provider colored">
+    <svg :viewBox="`0 0 ${W} ${H}`" class="w-full h-auto max-w-[680px]" role="img" aria-label="Cost per million input tokens versus context window, log-log scale, provider colored">
       <!-- quadrant shade: the "more for less" corner -->
       <rect
         :x="x({ contextLength: 1000000 })" :y="y(1)"
@@ -159,7 +159,7 @@ const labels = computed<Placed[]>(() => {
         <line v-for="t in xTicks" :key="'x' + t.v" :x1="x({ contextLength: t.v })" :y1="PAD_B + 4" :x2="x({ contextLength: t.v })" :y2="H - PAD_B" />
         <line v-for="t in yTicks" :key="'y' + t.v" :x1="PAD_L" :y1="y(t.v)" :x2="W - 14" :y2="y(t.v)" />
       </g>
-      <g class="fill-current text-muted-foreground font-label" font-size="8">
+      <g class="fill-current text-muted-foreground font-label" font-size="9">
         <text v-for="t in xTicks" :key="'xt' + t.v" :x="x({ contextLength: t.v })" :y="H - PAD_B + 12" text-anchor="middle">{{ t.label }}</text>
         <text v-for="t in yTicks" :key="'yt' + t.v" :x="PAD_L - 5" :y="y(t.v) + 2.5" text-anchor="end">{{ t.label }}</text>
       </g>
@@ -188,7 +188,7 @@ const labels = computed<Placed[]>(() => {
           <title>{{ m.name }} — {{ m.contextLength.toLocaleString() }} ctx, ${{ m.price.toFixed(2) }}/M blended (3 in / 1 out)</title>
         </circle>
       </g>
-      <g class="fill-current text-foreground font-label" font-size="7">
+      <g class="fill-current text-foreground font-label" font-size="8">
         <text v-for="l in labels" :key="'l' + l.id" :x="l.x" :y="l.y" :text-anchor="l.anchor">{{ l.text }}</text>
       </g>
     </svg>
