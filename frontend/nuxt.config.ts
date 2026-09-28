@@ -107,7 +107,9 @@ export default defineNuxtConfig({
 
   nitro: {
     routeRules: {
-      '/': { swr: 120 },
+      // Homepage: longer SWR so the client-side swap is rare and invisible.
+      // The backend feed cache refreshes every 60s, so content stays ≤5min old.
+      '/': { swr: 300 },
       '/about': { swr: 600 },
       '/article/**': { swr: 300 },
       '/categories': { swr: 600 },
