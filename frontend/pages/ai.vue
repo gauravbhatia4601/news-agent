@@ -114,7 +114,7 @@ useHead({
           <h3 class="font-display text-xl font-bold">Flagship Model Pricing</h3>
           <span class="font-label text-[11px] text-muted-foreground">input price per 1M tokens</span>
         </div>
-        <NewsAiModelPriceBars :models="featuredRows" />
+        <AiModelPriceBars :models="featuredRows" />
       </section>
 
       <section class="border border-border p-5">
@@ -122,7 +122,7 @@ useHead({
           <h3 class="font-display text-lg font-bold">Cost vs Context Window</h3>
           <span class="font-label text-[11px] text-muted-foreground">log scale</span>
         </div>
-        <NewsAiCostContextScatter :models="featuredRows" />
+        <AiCostContextScatter :models="featuredRows" />
       </section>
 
       <p class="font-label text-[11px] text-muted-foreground">
