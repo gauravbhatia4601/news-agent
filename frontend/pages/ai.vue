@@ -112,9 +112,10 @@ useHead({
       <section class="border border-border p-5">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-display text-xl font-bold">Flagship Model Pricing</h3>
-          <span class="font-label text-[11px] text-muted-foreground">input price per 1M tokens</span>
+          <span class="font-label text-[11px] text-muted-foreground">$ per 1M tokens</span>
         </div>
         <AiModelPriceBars :models="featuredRows" />
+        <AiProviderLegend :models="featuredRows" />
       </section>
 
       <section class="border border-border p-5">

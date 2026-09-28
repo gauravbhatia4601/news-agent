@@ -1,6 +1,9 @@
 <script setup lang="ts">
-// Cost vs context window scatter — hand-rolled inline SVG, no chart library.
-// Log-log axes: prices span ~0.04–300 $/M, contexts 8k–10M tokens.
+import { providerColor } from './providerColor'
+
+// Cost vs context window scatter with a "value frontier" — models on or near
+// the cheap+big corner are connected; everything above it costs more for the
+// same capability envelope. Log-log, provider-colored, hand-rolled SVG.
 export interface AiModelRow {
   id: string
   name: string
@@ -17,13 +20,6 @@ const W = 600
 const H = 340
 const PAD = 44
 
-const points = computed(() =>
-  props.models
-    .filter((m) => m.pricePerMInput !== null && m.contextLength > 0)
-    .map((m) => ({ ...m, price: m.pricePerMInput as number })),
-)
-
-// x: log10(context) from 3.8 (~6k) to 7.5 (~30M); y: log10(price) from -1.3 (~$0.05) to 2.5 (~$316)
 const X_MIN = 3.8
 const X_MAX = 7.5
 const Y_MIN = -1.3
@@ -51,17 +47,51 @@ const yTicks = [
   { v: 100, label: '$100' },
 ]
 
-// Label only extreme points so the chart stays readable.
+const points = computed(() =>
+  props.models
+    .filter((m) => m.pricePerMInput !== null && m.contextLength > 0)
+    .map((m) => ({ ...m, price: m.pricePerMInput as number })),
+)
+
+// Value frontier: Pareto-efficient set. A point is on the frontier if no other
+// point is both cheaper AND wider-context (log-space). Walk sorted by context
+// ascending, keep decreasing price — a step-down line = the value frontier.
+const frontier = computed(() => {
+  const sorted = [...points.value].sort((a, b) => a.contextLength - b.contextLength)
+  const out: typeof sorted = []
+  let bestPrice = Infinity
+  for (const p of sorted) {
+    if (p.price < bestPrice) {
+      out.push(p)
+      bestPrice = p.price
+    }
+  }
+  return out
+})
+
+// Label frontier points + the most expensive point; never more than 5 labels.
 const labeled = computed(() => {
-  if (points.value.length === 0) return []
-  const sorted = [...points.value].sort((a, b) => b.price - a.price)
-  return [sorted[0], sorted[sorted.length - 1]].filter(Boolean)
+  const extras = [...points.value]
+    .sort((a, b) => b.price - a.price)
+    .slice(0, 2)
+  const merged = [...frontier.value, ...extras]
+  const seen = new Set<string>()
+  return merged.filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true))).slice(0, 5)
 })
 </script>
 
 <template>
   <div>
-    <svg :viewBox="`0 0 ${W} ${H}`" class="w-full h-auto" role="img" aria-label="Cost per million input tokens versus context window, log-log scale">
+    <svg :viewBox="`0 0 ${W} ${H}`" class="w-full h-auto" role="img" aria-label="Cost per million input tokens versus context window, log-log scale, provider colored">
+      <!-- quadrant shade: the "more for less" corner -->
+      <rect
+        :x="x({ contextLength: 1000000 })" :y="y(1)"
+        :width="Math.max(0, W - PAD * 0.6 - x({ contextLength: 1000000 }))"
+        :height="Math.max(0, y(1) - PAD)"
+        class="fill-current text-muted" opacity="0.45"
+      />
+      <text :x="x({ contextLength: 1000000 }) + 8" :y="y(1) - 8" class="fill-current text-muted-foreground font-label" font-size="10" opacity="0.9">more context, under $1/M</text>
+
       <!-- gridlines + tick labels -->
       <g stroke="currentColor" class="text-border" stroke-width="1">
         <line v-for="t in xTicks" :key="'x' + t.v" :x1="x({ contextLength: t.v })" :y1="PAD" :x2="x({ contextLength: t.v })" :y2="H - PAD" />
@@ -75,6 +105,14 @@ const labeled = computed(() => {
       <text :x="W / 2" :y="H - 6" text-anchor="middle" class="fill-current text-muted-foreground font-label" font-size="10">Context window</text>
       <text :x="12" :y="PAD + 4" class="fill-current text-muted-foreground font-label" font-size="10" transform="rotate(-90 12 60)">Input price $/M</text>
 
+      <!-- frontier line: step path through the Pareto points -->
+      <polyline
+        v-if="frontier.length > 1"
+        :points="frontier.map((m) => `${x(m)},${y(m.price)}`).join(' ')"
+        fill="none" stroke="currentColor" class="text-foreground" stroke-width="1.5"
+        stroke-dasharray="4 3" opacity="0.6"
+      />
+
       <!-- points -->
       <g>
         <circle
@@ -82,8 +120,11 @@ const labeled = computed(() => {
           :key="m.id"
           :cx="x(m)"
           :cy="y(m.price)"
-          r="4"
-          class="fill-current text-accent"
+          r="4.5"
+          :fill="providerColor(m.provider)"
+          :stroke="frontier.some((f) => f.id === m.id) ? 'currentColor' : 'none'"
+          stroke-width="1.5"
+          class="text-foreground"
         >
           <title>{{ m.name }} — {{ m.contextLength.toLocaleString() }} ctx, ${{ m.price.toFixed(2) }}/M input</title>
         </circle>
@@ -92,6 +133,8 @@ const labeled = computed(() => {
         <text v-for="m in labeled" :key="'l' + m.id" :x="x(m) + 6" :y="y(m.price) - 6">{{ m.name }}</text>
       </g>
     </svg>
+
+    <NewsProviderLegend :models="points" />
 
     <!-- sr-only table: the crawlable + accessible mirror of the chart -->
     <table class="sr-only">
