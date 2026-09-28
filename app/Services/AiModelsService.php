@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AiModel;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,8 +23,12 @@ class AiModelsService
 
         $featured = array_flip((array) config('news-engine.ai_models.featured', []));
 
+        // ISO 8601 — the raw DB string ("2026-09-28 10:08:21") isn't parseable
+        // by the frontend's date helpers.
+        $syncedAt = DB::table('ai_sync_state')->where('source', 'openrouter')->value('synced_at');
+
         return [
-            'synced_at' => DB::table('ai_sync_state')->where('source', 'openrouter')->value('synced_at'),
+            'synced_at' => $syncedAt ? Carbon::parse($syncedAt)->toIso8601String() : null,
             'models' => $models->map(fn (AiModel $model) => [
                 'feed_id' => $model->feed_id,
                 'name' => $model->name,

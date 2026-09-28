@@ -1,24 +1,37 @@
 <script setup lang="ts">
 import type { NewsArticleCard } from '~/types/news'
 import type { AiModelRow } from '~/components/ai/CostContextScatter.vue'
+import type { AiModelsPayload } from '~/composables/useNewsApi'
 
 const api = useNewsApi()
 const { public: { siteUrl } } = useRuntimeConfig()
 
-// ── Static model data (Milestone 1 fixture — replaced by live /api/v1/ai/models in M2) ──
-interface AiModelFixture extends AiModelRow {}
-const MODEL_FIXTURES: AiModelFixture[] = [
-  { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat', provider: 'DeepSeek', contextLength: 128000, pricePerMInput: 0.27, pricePerMOutput: 1.1, modality: 'text' },
-  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', contextLength: 1048576, pricePerMInput: 0.3, pricePerMOutput: 2.5, modality: 'multimodal' },
-  { id: 'meta-llama/llama-4-maverick', name: 'Llama 4 Maverick', provider: 'Meta', contextLength: 1000000, pricePerMInput: 0.5, pricePerMOutput: 0.77, modality: 'multimodal' },
-  { id: 'mistralai/mistral-large', name: 'Mistral Large', provider: 'Mistral', contextLength: 128000, pricePerMInput: 2.0, pricePerMOutput: 6.0, modality: 'text' },
-  { id: 'qwen/qwen-3-max', name: 'Qwen 3 Max', provider: 'Alibaba', contextLength: 262144, pricePerMInput: 1.2, pricePerMOutput: 6.0, modality: 'text' },
-  { id: 'openai/gpt-4.1-mini', name: 'GPT-4.1 Mini', provider: 'OpenAI', contextLength: 1000000, pricePerMInput: 0.4, pricePerMOutput: 1.6, modality: 'multimodal' },
-  { id: 'anthropic/claude-sonnet-4', name: 'Claude Sonnet 4', provider: 'Anthropic', contextLength: 200000, pricePerMInput: 3.0, pricePerMOutput: 15.0, modality: 'multimodal' },
-  { id: 'openai/gpt-5', name: 'GPT-5', provider: 'OpenAI', contextLength: 400000, pricePerMInput: 1.25, pricePerMOutput: 10.0, modality: 'multimodal' },
-  { id: 'x-ai/grok-4', name: 'Grok 4', provider: 'xAI', contextLength: 256000, pricePerMInput: 3.0, pricePerMOutput: 15.0, modality: 'multimodal' },
-  { id: 'anthropic/claude-opus-4.1', name: 'Claude Opus 4.1', provider: 'Anthropic', contextLength: 200000, pricePerMInput: 15.0, pricePerMOutput: 75.0, modality: 'multimodal' },
-]
+// ── Model intelligence (live, from GET /api/v1/ai/models — DB-backed, ADR 0001) ──
+const { data: modelsPayload } = await useAsyncData<AiModelsPayload>(
+  'ai-hub-models',
+  () => api.getAiModels(),
+  { default: () => ({ synced_at: null, models: [] }) },
+)
+
+// Both charts consume the chart-row shape; featured rows are the curated
+// flagship set (backend flag). Rows without a parseable price/context are
+// dropped — the charts can't plot them.
+const featuredRows = computed<AiModelRow[]>(() =>
+  (modelsPayload.value?.models ?? [])
+    .filter((m) => m.featured)
+    .map((m) => ({
+      id: m.feed_id,
+      name: m.name,
+      provider: m.provider_name ?? m.provider ?? 'Unknown',
+      contextLength: m.context_length ?? 0,
+      pricePerMInput: m.input_price_per_million,
+      pricePerMOutput: m.output_price_per_million,
+      modality: m.modality ?? undefined,
+    }))
+    .filter((m) => m.contextLength > 0),
+)
+
+const syncedRel = useRelativeTime(() => modelsPayload.value?.synced_at)
 
 // ── Latest AI news (existing category feed pattern) ──
 const perPage = 10
@@ -30,8 +43,8 @@ const { data: pageData } = await useAsyncData(
 const articles = computed<NewsArticleCard[]>(() => pageData.value?.data ?? [])
 const heroRel = useRelativeTime(() => articles.value[0]?.published_at)
 
-const pageTitle = 'AI News & LLM Model Leaderboard'
-const pageDescription = 'The latest AI news alongside a live LLM leaderboard: model prices per million tokens, context windows, and cost comparisons across top AI providers.'
+const pageTitle = 'AI News & Model Intelligence'
+const pageDescription = 'The latest AI news with live model intelligence: flagship model prices per million tokens, context windows, and cost comparisons across top AI providers.'
 const canonicalUrl = `${siteUrl}/ai`
 
 usePageSeo(pageTitle, pageDescription)
@@ -94,26 +107,28 @@ useHead({
 
     <h2 class="sr-only">Model intelligence</h2>
 
-    <!-- Model Intelligence data panel -->
-    <section class="border border-border p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-display text-xl font-bold">Flagship Model Pricing</h3>
-        <span class="font-label text-[11px] text-muted-foreground">input price per 1M tokens</span>
-      </div>
-      <NewsAiModelPriceBars :models="MODEL_FIXTURES" />
-    </section>
+    <!-- Model Intelligence data panel (hidden when the catalog is empty) -->
+    <template v-if="featuredRows.length > 0">
+      <section class="border border-border p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-display text-xl font-bold">Flagship Model Pricing</h3>
+          <span class="font-label text-[11px] text-muted-foreground">input price per 1M tokens</span>
+        </div>
+        <NewsAiModelPriceBars :models="featuredRows" />
+      </section>
 
-    <section class="border border-border p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-display text-lg font-bold">Cost vs Context Window</h3>
-        <span class="font-label text-[11px] text-muted-foreground">log scale</span>
-      </div>
-      <NewsAiCostContextScatter :models="MODEL_FIXTURES" />
-    </section>
+      <section class="border border-border p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-display text-lg font-bold">Cost vs Context Window</h3>
+          <span class="font-label text-[11px] text-muted-foreground">log scale</span>
+        </div>
+        <NewsAiCostContextScatter :models="featuredRows" />
+      </section>
 
-    <p class="font-label text-[11px] text-muted-foreground">
-      Source: OpenRouter public model data
-    </p>
+      <p class="font-label text-[11px] text-muted-foreground">
+        Source: OpenRouter · synced {{ syncedRel }}
+      </p>
+    </template>
 
     <!-- Latest AI news -->
     <section>

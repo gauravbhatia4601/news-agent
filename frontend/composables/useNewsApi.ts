@@ -11,6 +11,25 @@ import type {
   StoryUrgency,
 } from '~/types/news'
 
+// ── AI model intelligence types (module level so pages can import them) ─────
+// Shape mirrors the backend GET /api/v1/ai/models payload (T1).
+export interface AiModelRecord {
+  feed_id: string
+  name: string
+  provider: string | null
+  provider_name: string | null
+  context_length: number | null
+  input_price_per_million: number | null
+  output_price_per_million: number | null
+  modality: string | null
+  featured: boolean
+}
+
+export interface AiModelsPayload {
+  synced_at: string | null
+  models: AiModelRecord[]
+}
+
 // ── HomeFeed types + normalization ──────────────────────────────────────────
 // Defined at module level (outside useNewsApi) so pages can import the types.
 // Normalization itself lives INSIDE useNewsApi below — it closes over
@@ -189,6 +208,11 @@ export function useNewsApi() {
     async getMarketData(): Promise<any[]> {
       const response = await client<{ data: any[] }>('/market')
       return response.data ?? []
+    },
+
+    async getAiModels(): Promise<AiModelsPayload> {
+      const response = await client<{ data: AiModelsPayload }>('/ai/models')
+      return response.data ?? { synced_at: null, models: [] }
     },
 
     async getStories(params: { urgency?: StoryUrgency; perPage?: number; page?: number } = {}): Promise<{ data: NewsStory[]; meta: { current_page: number; last_page: number; total: number } }> {
