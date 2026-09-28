@@ -20,7 +20,7 @@ const featuredRows = computed<AiModelRow[]>(() =>
     .map((m) => ({
       id: m.feed_id,
       name: m.name,
-      provider: m.provider_name ?? m.provider ?? 'Unknown',
+      provider: (m.provider_name ?? m.provider ?? 'Unknown').replace(/^~/, ''),
       contextLength: m.context_length ?? 0,
       pricePerMInput: m.input_price_per_million,
       pricePerMOutput: m.output_price_per_million,

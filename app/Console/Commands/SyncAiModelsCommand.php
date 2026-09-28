@@ -56,7 +56,9 @@ class SyncAiModelsCommand extends Command
                     continue;
                 }
 
-                [$providerSlug] = explode('/', $feedId, 2);
+                [$rawSlug] = explode('/', $feedId, 2);
+                $aliases = (array) config('news-engine.ai_models.provider_aliases', []);
+                $providerSlug = $aliases[$rawSlug] ?? $rawSlug;
                 $variant = $this->variantOf($feedId);
 
                 // Skip rows without a usable input price before touching the provider
@@ -67,10 +69,18 @@ class SyncAiModelsCommand extends Command
                     continue;
                 }
 
+                $names = (array) config('news-engine.ai_models.provider_names', []);
+                $providerName = $names[$providerSlug] ?? $providerSlug;
+
                 $provider = AiModelProvider::firstOrCreate(
                     ['slug' => $providerSlug],
-                    ['name' => $providerSlug]
+                    ['name' => $providerName]
                 );
+                // firstOrCreate never updates the name of an existing row.
+                if ($provider->name !== $providerName) {
+                    $provider->name = $providerName;
+                    $provider->save();
+                }
 
                 $attrs = [
                     'ai_model_provider_id' => $provider->id,
@@ -106,6 +116,11 @@ class SyncAiModelsCommand extends Command
                 ->whereNotIn('feed_id', $seenFeedIds)
                 ->update(['is_active' => false, 'last_seen_at' => DB::raw('last_seen_at')]);
         });
+
+        // Re-attached alias models leave their old providers with zero models.
+        // Providers are pure metadata — delete orphans (models are never deleted;
+        // this rule covers providers only).
+        AiModelProvider::whereDoesntHave('aiModels')->delete();
 
         DB::table('ai_sync_state')->updateOrInsert(
             ['source' => self::SOURCE],

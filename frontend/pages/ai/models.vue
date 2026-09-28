@@ -21,6 +21,7 @@ interface TableRow {
   input: number | null
   output: number | null
   blended: number | null
+  intelligenceIndex: number | null
 }
 
 const rows = computed<TableRow[]>(() =>
@@ -33,11 +34,15 @@ const rows = computed<TableRow[]>(() =>
       return {
         id: m.feed_id,
         name: m.name,
-        provider: m.provider_name ?? m.provider ?? 'Unknown',
+        // Defensive '~' strip: the sync canonicalizes '~'-prefixed alias
+        // providers (config provider_aliases), but rows synced before that
+        // deploy still carry the prefix until the next hourly run.
+        provider: (m.provider_name ?? m.provider ?? 'Unknown').replace(/^~/, ''),
         contextLength: m.context_length as number,
         input,
         output,
         blended,
+        intelligenceIndex: m.intelligence_index,
       }
     }),
 )
@@ -61,9 +66,13 @@ function blendedOf(r: TableRow): number {
 }
 
 const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
   let out = rows.value
-  if (q) out = out.filter((r) => r.name.toLowerCase().includes(q))
+  // Search root cause (2026-09-28): the matcher compared model NAME only, so
+  // typing any provider string ("deepseek", "z-ai", "~deepseek") hit
+  // "No models match." even though the provider dropdown lists it — the search
+  // read as broken. matchesSearch() (utils/modelSearch.ts) matches name OR
+  // provider, punctuation-insensitively, so slug spellings find display names.
+  out = out.filter((r) => matchesSearch(r, search.value))
   if (providerFilter.value) out = out.filter((r) => r.provider === providerFilter.value)
   const dir = sortDir.value === 'asc' ? 1 : -1
   return [...out].sort((a, b) => {
@@ -268,7 +277,7 @@ useHead({
       <section class="border border-border p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-display text-lg font-bold">Cost vs Context Window</h2>
-          <span class="font-label text-[11px] text-muted-foreground">log scale · best value zone shaded</span>
+          <span class="font-label text-[11px] text-muted-foreground">log scale · $/M blended · best value zone shaded</span>
         </div>
         <AiCostContextScatter :models="rows.map((r) => ({
           id: r.id,
@@ -277,6 +286,7 @@ useHead({
           contextLength: r.contextLength,
           pricePerMInput: r.input,
           pricePerMOutput: r.output,
+          intelligenceIndex: r.intelligenceIndex,
         }))" />
       </section>
 

@@ -40,6 +40,50 @@ return [
             'meta-llama/llama-4-scout',
             'mistralai/mistral-large-2512',
         ],
+
+        // OpenRouter serves alias models with '~'-prefixed slugs ('~anthropic/...').
+        // Canonicalize those, plus merge near-duplicate org slugs, before firstOrCreate.
+        'provider_aliases' => [
+            '~anthropic' => 'anthropic',
+            '~deepseek' => 'deepseek',
+            '~google' => 'google',
+            '~moonshotai' => 'moonshotai',
+            '~openai' => 'openai',
+            '~x-ai' => 'x-ai',
+            '~z-ai' => 'z-ai',
+            'meta-llama' => 'meta',
+            'bytedance-seed' => 'bytedance',
+        ],
+
+        // Display names for the /ai provider dropdown; unknown slugs fall back to raw.
+        'provider_names' => [
+            'anthropic' => 'Anthropic',
+            'openai' => 'OpenAI',
+            'google' => 'Google',
+            'deepseek' => 'DeepSeek',
+            'x-ai' => 'xAI',
+            'qwen' => 'Qwen',
+            'moonshotai' => 'MoonshotAI',
+            'mistralai' => 'Mistral',
+            'meta' => 'Meta',
+            'meta-llama' => 'Meta',
+            'bytedance' => 'ByteDance',
+            'bytedance-seed' => 'ByteDance',
+            'z-ai' => 'Z.AI',
+            'amazon' => 'Amazon',
+            'nvidia' => 'NVIDIA',
+            'perplexity' => 'Perplexity',
+            'cohere' => 'Cohere',
+            'microsoft' => 'Microsoft',
+            'minimax' => 'MiniMax',
+            'tencent' => 'Tencent',
+            'baidu' => 'Baidu',
+            'xiaomi' => 'Xiaomi',
+            'stepfun' => 'StepFun',
+            'upstage' => 'Upstage',
+            'ibm-granite' => 'IBM Granite',
+            'inclusionai' => 'InclusionAI',
+        ],
     ],
 
     'ranking' => [

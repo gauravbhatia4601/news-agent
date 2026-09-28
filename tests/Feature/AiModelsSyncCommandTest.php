@@ -222,4 +222,37 @@ class AiModelsSyncCommandTest extends TestCase
 
         $this->assertSame(0, AiModelProvider::where('slug', 'no-slash-here')->count());
     }
+
+    public function test_sync_canonicalizes_alias_providers_and_cleans_orphans(): void
+    {
+        $rows = [
+            ['id' => '~anthropic/claude-opus-latest', 'name' => 'Claude Opus (alias)', 'context_length' => 1000000,
+                'pricing' => ['prompt' => '0.000005', 'completion' => '0.000025'], 'architecture' => ['modality' => 'text->text']],
+            ['id' => 'anthropic/claude-sonnet-5', 'name' => 'Claude Sonnet 5', 'context_length' => 1000000,
+                'pricing' => ['prompt' => '0.000002', 'completion' => '0.00001'], 'architecture' => ['modality' => 'text->text']],
+            ['id' => 'meta-llama/llama-4-scout', 'name' => 'Llama 4 Scout', 'context_length' => 131072,
+                'pricing' => ['prompt' => '0.000001', 'completion' => '0.000001'], 'architecture' => ['modality' => 'text->text']],
+            ['id' => 'meta/meta-model', 'name' => 'Meta Model', 'context_length' => 8192,
+                'pricing' => ['prompt' => '0.000001', 'completion' => '0.000001'], 'architecture' => ['modality' => 'text->text']],
+        ];
+
+        $this->fakeFeed($rows);
+        $this->artisan('ai:sync-models')->assertSuccessful();
+
+        // Alias slugs collapse onto canonical providers — exactly two, display-named.
+        $this->assertSame(
+            ['anthropic' => 'Anthropic', 'meta' => 'Meta'],
+            AiModelProvider::pluck('name', 'slug')->all()
+        );
+
+        $anthropic = AiModelProvider::where('slug', 'anthropic')->first();
+        $meta = AiModelProvider::where('slug', 'meta')->first();
+        $this->assertSame(2, $anthropic->aiModels()->count());
+        $this->assertSame(2, $meta->aiModels()->count());
+
+        // A second identical sync run re-points rows and leaves no orphans behind.
+        $this->artisan('ai:sync-models')->assertSuccessful();
+        $this->assertSame(2, AiModelProvider::count());
+        $this->assertSame(4, AiModel::count());
+    }
 }
