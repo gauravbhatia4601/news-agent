@@ -22,6 +22,9 @@ export interface AiModelRecord {
   input_price_per_million: number | null
   output_price_per_million: number | null
   modality: string | null
+  intelligence_index: number | null
+  coding_index: number | null
+  agentic_index: number | null
   featured: boolean
 }
 

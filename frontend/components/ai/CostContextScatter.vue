@@ -11,14 +11,15 @@ export interface AiModelRow {
   contextLength: number
   pricePerMInput: number | null
   pricePerMOutput: number | null
+  intelligenceIndex?: number | null
   modality?: string
 }
 
 const props = defineProps<{ models: AiModelRow[] }>()
 
-const W = 600
-const H = 340
-const PAD = 44
+const W = 520
+const H = 260
+const PAD = 36
 
 const X_MIN = 3.8
 const X_MAX = 7.5
@@ -95,20 +96,20 @@ const labeled = computed(() => {
         :height="Math.max(0, y(1) - PAD)"
         class="fill-current text-muted" opacity="0.45"
       />
-      <text :x="x({ contextLength: 1000000 }) + 8" :y="y(1) - 8" class="fill-current text-muted-foreground font-label" font-size="10" opacity="0.9">more context, under $1/M — best value zone</text>
+      <text :x="x({ contextLength: 1000000 }) + 6" :y="y(1) - 6" class="fill-current text-muted-foreground font-label" font-size="9" opacity="0.9">best value zone</text>
 
       <!-- gridlines + tick labels -->
       <g stroke="currentColor" class="text-border" stroke-width="1">
         <line v-for="t in xTicks" :key="'x' + t.v" :x1="x({ contextLength: t.v })" :y1="PAD" :x2="x({ contextLength: t.v })" :y2="H - PAD" />
         <line v-for="t in yTicks" :key="'y' + t.v" :x1="PAD" :y1="y(t.v)" :x2="W - PAD / 2" :y2="y(t.v)" />
       </g>
-      <g class="fill-current text-muted-foreground font-label" font-size="10">
-        <text v-for="t in xTicks" :key="'xt' + t.v" :x="x({ contextLength: t.v })" :y="H - PAD + 14" text-anchor="middle">{{ t.label }}</text>
-        <text v-for="t in yTicks" :key="'yt' + t.v" :x="PAD - 6" :y="y(t.v) + 3" text-anchor="end">{{ t.label }}</text>
+      <g class="fill-current text-muted-foreground font-label" font-size="9">
+        <text v-for="t in xTicks" :key="'xt' + t.v" :x="x({ contextLength: t.v })" :y="H - PAD + 12" text-anchor="middle">{{ t.label }}</text>
+        <text v-for="t in yTicks" :key="'yt' + t.v" :x="PAD - 5" :y="y(t.v) + 3" text-anchor="end">{{ t.label }}</text>
       </g>
       <!-- axis titles -->
-      <text :x="W / 2" :y="H - 6" text-anchor="middle" class="fill-current text-muted-foreground font-label" font-size="10">Context window</text>
-      <text :x="12" :y="PAD + 4" class="fill-current text-muted-foreground font-label" font-size="10" transform="rotate(-90 12 60)">Input price $/M</text>
+      <text :x="W / 2" :y="H - 4" text-anchor="middle" class="fill-current text-muted-foreground font-label" font-size="9">Context window</text>
+      <text :x="10" :y="PAD + 2" class="fill-current text-muted-foreground font-label" font-size="9" transform="rotate(-90 10 56)">Input price $/M</text>
 
       <!-- frontier line: step path through the Pareto points -->
       <polyline

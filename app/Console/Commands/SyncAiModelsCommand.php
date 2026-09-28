@@ -80,6 +80,10 @@ class SyncAiModelsCommand extends Command
                     'input_price_per_million' => $inputPrice,
                     'output_price_per_million' => $this->pricePerMillion($row['pricing']['completion'] ?? null),
                     'modality' => $row['architecture']['modality'] ?? null,
+                    // AA benchmark scores ride along in the feed's benchmarks block.
+                    'intelligence_index' => $this->indexValue($row['benchmarks']['artificial_analysis']['intelligence_index'] ?? null),
+                    'coding_index' => $this->indexValue($row['benchmarks']['artificial_analysis']['coding_index'] ?? null),
+                    'agentic_index' => $this->indexValue($row['benchmarks']['artificial_analysis']['agentic_index'] ?? null),
                     'variant' => $variant,
                     'is_active' => true,
                     'last_seen_at' => now(),
@@ -139,5 +143,14 @@ class SyncAiModelsCommand extends Command
         }
 
         return 'base';
+    }
+
+    /**
+     * Feed benchmark scores are numeric or absent; anything else is a bad row
+     * and becomes null rather than breaking the sync.
+     */
+    private function indexValue(mixed $value): ?float
+    {
+        return is_numeric($value) ? (float) $value : null;
     }
 }

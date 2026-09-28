@@ -35,6 +35,9 @@ class AiModelsEndpointTest extends TestCase
             'input_price_per_million' => 2.0,
             'output_price_per_million' => 10.0,
             'modality' => 'text+image+file->text',
+            'intelligence_index' => 52.7,
+            'coding_index' => 81.6,
+            'agentic_index' => null,
             'variant' => 'base',
             'is_active' => true,
         ]);
@@ -87,8 +90,12 @@ class AiModelsEndpointTest extends TestCase
         $this->assertSame(1000000, $sonnet['context_length']);
         $this->assertSame(2.0, (float) $sonnet['input_price_per_million']);
         $this->assertSame(10.0, (float) $sonnet['output_price_per_million']);
+        $this->assertSame(52.7, (float) $sonnet['intelligence_index']);
+        $this->assertSame(81.6, (float) $sonnet['coding_index']);
+        $this->assertNull($sonnet['agentic_index']);
 
         $gpt = array_values(array_filter($models, fn ($m) => $m['feed_id'] === 'openai/gpt-5.5'))[0];
         $this->assertFalse($gpt['featured']);
+        $this->assertNull($gpt['intelligence_index']);
     }
 }

@@ -28,6 +28,7 @@ class AiModelsSyncCommandTest extends TestCase
                 'context_length' => 1000000,
                 'pricing' => ['prompt' => '0.000002', 'completion' => '0.00001'],
                 'architecture' => ['modality' => 'text+image+file->text'],
+                'benchmarks' => ['artificial_analysis' => ['intelligence_index' => 52.7, 'coding_index' => 81.6, 'agentic_index' => 57.9]],
             ],
             [
                 'id' => 'anthropic/claude-sonnet-5:batch',
@@ -42,6 +43,7 @@ class AiModelsSyncCommandTest extends TestCase
                 'context_length' => 1050000,
                 'pricing' => ['prompt' => '0.000005', 'completion' => '0.000025'],
                 'architecture' => ['modality' => 'text+image+file->text'],
+                'benchmarks' => ['artificial_analysis' => ['intelligence_index' => 45.0, 'coding_index' => null, 'agentic_index' => null]],
             ],
             [
                 'id' => 'deepseek/deepseek-v4-flash:free',
@@ -106,6 +108,15 @@ class AiModelsSyncCommandTest extends TestCase
         $this->assertSame('base', $sonnet->variant);
         $this->assertTrue($sonnet->is_active);
         $this->assertNotNull($sonnet->last_seen_at);
+
+        // AA benchmark scores ride in from the feed's benchmarks block.
+        $this->assertSame(52.7, (float) $sonnet->intelligence_index);
+        $this->assertSame(81.6, (float) $sonnet->coding_index);
+        $this->assertSame(57.9, (float) $sonnet->agentic_index);
+
+        // Rows without a benchmarks block store null indexes, not errors.
+        $batch = AiModel::where('feed_id', 'anthropic/claude-sonnet-5:batch')->first();
+        $this->assertNull($batch->intelligence_index);
     }
 
     public function test_sync_marks_variant_rows(): void

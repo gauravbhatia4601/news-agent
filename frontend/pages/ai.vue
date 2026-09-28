@@ -13,12 +13,10 @@ const { data: modelsPayload } = await useAsyncData<AiModelsPayload>(
   { default: () => ({ synced_at: null, models: [] }) },
 )
 
-// Both charts consume the chart-row shape; featured rows are the curated
-// flagship set (backend flag). Rows without a parseable price/context are
-// dropped — the charts can't plot them.
+// Chart-row shape from the live catalog. All rows feed the charts; the
+// intelligence chart itself filters to scored models (not capped).
 const featuredRows = computed<AiModelRow[]>(() =>
   (modelsPayload.value?.models ?? [])
-    .filter((m) => m.featured)
     .map((m) => ({
       id: m.feed_id,
       name: m.name,
@@ -26,9 +24,14 @@ const featuredRows = computed<AiModelRow[]>(() =>
       contextLength: m.context_length ?? 0,
       pricePerMInput: m.input_price_per_million,
       pricePerMOutput: m.output_price_per_million,
+      intelligenceIndex: m.intelligence_index,
       modality: m.modality ?? undefined,
     }))
     .filter((m) => m.contextLength > 0),
+)
+
+const scoredRows = computed<AiModelRow[]>(() =>
+  featuredRows.value.filter((m) => m.intelligenceIndex !== null && m.intelligenceIndex > 0),
 )
 
 const syncedRel = useRelativeTime(() => modelsPayload.value?.synced_at)
@@ -109,12 +112,21 @@ useHead({
 
     <!-- Model Intelligence data panel (hidden when the catalog is empty) -->
     <template v-if="featuredRows.length > 0">
+      <section v-if="scoredRows.length > 0" class="border border-border p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-display text-xl font-bold">Model Intelligence</h3>
+          <span class="font-label text-[11px] text-muted-foreground">Intelligence Index · {{ scoredRows.length }} scored models</span>
+        </div>
+        <AiIntelligenceBars :models="featuredRows" />
+        <AiProviderLegend :models="scoredRows" />
+      </section>
+
       <section class="border border-border p-5">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-display text-xl font-bold">Flagship Model Pricing</h3>
           <span class="font-label text-[11px] text-muted-foreground">$ per 1M tokens</span>
         </div>
-        <AiModelPriceBars :models="featuredRows" />
+        <AiModelPriceBars :models="featuredRows.filter((m) => m.pricePerMInput !== null).slice(0, 20)" />
         <AiProviderLegend :models="featuredRows" />
       </section>
 
@@ -127,7 +139,7 @@ useHead({
       </section>
 
       <p class="font-label text-[11px] text-muted-foreground">
-        Source: OpenRouter · synced {{ syncedRel }}
+        Source: OpenRouter · synced {{ syncedRel }} · Intelligence Index by Artificial Analysis (via OpenRouter)
       </p>
     </template>
 

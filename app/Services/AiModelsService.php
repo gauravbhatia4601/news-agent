@@ -38,6 +38,9 @@ class AiModelsService
                 'input_price_per_million' => $model->input_price_per_million !== null ? (float) $model->input_price_per_million : null,
                 'output_price_per_million' => $model->output_price_per_million !== null ? (float) $model->output_price_per_million : null,
                 'modality' => $model->modality,
+                'intelligence_index' => $model->intelligence_index !== null ? (float) $model->intelligence_index : null,
+                'coding_index' => $model->coding_index !== null ? (float) $model->coding_index : null,
+                'agentic_index' => $model->agentic_index !== null ? (float) $model->agentic_index : null,
                 'featured' => isset($featured[$model->feed_id]),
             ])->all(),
         ];
